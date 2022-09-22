@@ -64,6 +64,10 @@ void PatchT4_PreLoad()
 
 void PatchT4_SteamDRM()
 {
+	// check if steam exe, fixes LAN, code from ineedbots
+	if (*(DWORD*)0x401000 != 0x9EF490B8)
+		return;
+	
 	// Replace encrypted .text segment
 	DWORD size = 0x3EA000;
 	std::string data = GetBinaryResource(IDB_TEXT);
