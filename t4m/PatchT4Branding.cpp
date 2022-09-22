@@ -16,7 +16,7 @@ const char* SetShortVersion();
 void PatchT4_Branding()
 {
 	// TODO: Replace shortversion DVars and other version related locations
-	nop(0x59D68B, 5);										// don't play intro video
+	// nop(0x59D68B, 5);										// intro video re-enabled because it's cool
 	nop(0x5FD91B, 5);										// disable pc_newversionavailable check
 	PatchMemory(0x851208, (PBYTE)CONSOLEVERSION_STR, 14);	// change the console input version
 	PatchMemory(0x871EE8, (PBYTE)va("T4-SP (r%i)\n", VERSION), 32);
