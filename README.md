@@ -1,7 +1,7 @@
 # T4M
 
 T4M loads into World at War through DirectX `d3d9.dll` and performs enhancements to the game.
-The mod works for valid versions of Worl at War on Steam or CD versions with a LanFixed .exe.
+The mod works for valid versions of World at War on Steam or CD versions with a LanFixed .exe.
 Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/index.php?topic=8092.0) on UGX-mods.
 
 > CD versions of World at War require the [LanFixed exe](http://bit.ly/1nqdKEF)
