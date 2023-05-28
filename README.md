@@ -33,7 +33,8 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
 
 ## Installation
 Installing the T4M mod is extremely simple:
-> Drag the (DLL)[https://www.mediafire.com/download/9p1zcena5seqfzp/T4M_r45_%5BRelease%5D.rar] from the RAR into World at War's root directory
+> Drag the DLL into World at War's root directory
+> If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll"
 
 ## Developers:
 - DidUknowiPwn
@@ -51,7 +52,7 @@ Installing the T4M mod is extremely simple:
 - Revision 45 of the DLL
 - Confirmed weapon limit to work along with every other asset limitation
 - Mods created that pass the asset limits require users to have T4M
-- Steam and "LanFixed" versions of the game will work with the mod not the CD version
+- Steam and "LanFixed" versions of the game will work with the mod, the CD version may not work
 
 ## Bugs
 - Vertex Corruption: Set all Texture/Specular/Normal Map Resolution to anything but your current settings. All THREE options SHOULD NOT BE the same as your current settings. Lower your texture settings one-by-one until it's working fine. The issue is the game is using too much VRAM than the allocated amount (1024MB capped) and I won't be able to fix it
