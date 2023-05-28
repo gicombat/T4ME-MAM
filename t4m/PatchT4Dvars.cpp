@@ -29,7 +29,15 @@ void PatchT4_Dvars()
 	//DVAR: cg_fovScale
 	//MODS: Clear cheat flag, set arhive flag
 	*(WORD*)0x65EE7C ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	
+	//DVAR: r_lodBiasRigid
+	//MODS: Clear cheat flag, set arhive flag
+	*(WORD*)0x707D0D ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
+	//DVAR: r_lodBiasSkinned
+	//MODS: Clear cheat flag, set arhive flag
+	*(WORD*)0x707D74 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	
 	//DVAR: fs_basegame
 	//MODS: Clear cheat flag, set archive flag
 	//*(WORD*)0x005DDEDD ^= DVAR_FLAG_INIT;
