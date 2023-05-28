@@ -17,7 +17,7 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
   - Xmodel: 1500 [r41]
 - Increased memory limit from 314572800 bytes to 343932928 bytes (425721856 bytes in r42 and afterwards)
 - Included windowed, no-border mode
-- Unlocked FoV dvars: `cg_fov`, `cg_fovMin`, and `cg_fovScale`
+- Unlocked FoV dvars: `cg_fov`, `cg_fovMin`, `cg_fovScale`, `r_lodBiasSkinned`, and `r_lodBiasRigid`
 - Display Dvar types in console
 - Unlocked external console and prevent in-game console from disabling
 - Included bool dvar ` r_externalconsole con_external` (r43+) for displaying the external console
@@ -46,6 +46,7 @@ Installing the T4M mod is extremely simple:
 - HitmanVere
 - Ray1235
 - ProGamerzFTW
+- JB Shady
 
 ## Notes
 - No Border: Enter this into console to enable no border -> r_fullscreen 0;vid_xpos 0;vid_ypos 0;r_noborder 1;vid_restart
