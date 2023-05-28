@@ -33,8 +33,8 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
 
 ## Installation
 Installing the T4M mod is extremely simple:
-> Drag the DLL into World at War's root directory
-> If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll"
+- Drag the DLL into World at War's root directory
+- If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll"
 
 ## Developers:
 - DidUknowiPwn
