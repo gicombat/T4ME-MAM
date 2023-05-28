@@ -41,7 +41,6 @@ void Main_DoInit()
 	}
 	
 	// load in another dll when attempting to run two d3d9, such as reshade (if installed, and must be renamed to d3d9r.dll)
-	TCHAR buf[MAX_PATH]; 
 	LoadLibrary("d3d9r.dll");
 	
 	Sys_RunInit();
