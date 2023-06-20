@@ -17,13 +17,21 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
   - Xmodel: 1500 [r41]
 - Increased memory limit from 314572800 bytes to 343932928 bytes (425721856 bytes in r42 and afterwards)
 - Included windowed, no-border mode
-- Unlocked FoV dvars: `cg_fov`, `cg_fovMin`, `cg_fovScale`, `r_lodBiasSkinned`, and `r_lodBiasRigid`
+- Unlocked FoV dvars: `cg_fov`, `cg_fovMin`, and `cg_fovScale`
 - Display Dvar types in console
 - Unlocked external console and prevent in-game console from disabling
 - Included bool dvar ` r_externalconsole con_external` (r43+) for displaying the external console
 - Added listassetpool
 - Added entity count for `cg_drawfps 2`
 - Added listassetcounts (r45+)
+
+## Fork Changes (r47+)
+- Re-enabled intro cinematic
+- Fixed issue when trying to play LAN with T4M
+- Added support for ReShade (rename ReShade's .dll to "d3d9r.dll")
+- Unlocked model LOD dvars: `r_lodBiasSkinned` and `r_lodBiasRigid`
+- Added a description and default value for a few bools added to my COD5-Remastered mod `gpad_flip_triggers`, `cg_drawXboxHUD`, and `cg_drawHealthCount` (Only applies if using this mod)
+- Tidied up new DVAR descriptions, should not use periods
 
 ## Game Fixes:
 - Suppressed console spam
@@ -34,7 +42,7 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
 ## Installation
 Installing the T4M mod is extremely simple:
 - Drag the DLL into World at War's root directory
-- If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll"
+- If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll" and also keep it in the same root directory
 
 ## Developers:
 - DidUknowiPwn
@@ -47,6 +55,7 @@ Installing the T4M mod is extremely simple:
 - Ray1235
 - ProGamerzFTW
 - JB Shady
+- Clippy95
 
 ## Notes
 - No Border: Enter this into console to enable no border -> r_fullscreen 0;vid_xpos 0;vid_ypos 0;r_noborder 1;vid_restart
@@ -56,5 +65,5 @@ Installing the T4M mod is extremely simple:
 - Steam and "LanFixed" versions of the game will work with the mod, the CD version may not work
 
 ## Bugs
-- Vertex Corruption: Set all Texture/Specular/Normal Map Resolution to anything but your current settings. All THREE options SHOULD NOT BE the same as your current settings. Lower your texture settings one-by-one until it's working fine. The issue is the game is using too much VRAM than the allocated amount (1024MB capped) and I won't be able to fix it
-- Steam vs CD can't connect to lobbies: Cannot fix
+- Vertex Corruption: Set all Texture/Specular/Normal Map Resolution to anything but your current settings. All THREE options SHOULD NOT BE the same as your current settings. Lower your texture settings one-by-one until it's working fine. The issue is the game is using too much VRAM than the allocated amount (1024MB capped), and the only way to fix it is to patch your game's .exe (x86 executable 4GB VRAM Patch: https://ntcore.com/?page_id=371)
+- Steam vs CD may not be able to connect to the same lobbies
