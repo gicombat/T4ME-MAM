@@ -212,7 +212,7 @@ void PatchT4_GetGEnts()
 
 void PatchT4_Console()
 {
-	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
+	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart)");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

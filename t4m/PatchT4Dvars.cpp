@@ -18,26 +18,26 @@ float cgFov90 = 90.0f;
 void PatchT4_Dvars()
 {
 	//DVAR: cg_fov
-	//MODS: Clear cheat flag, set arhive flag, set maximum to 90
+	//MODS: Clear cheat flag, set archive flag, set maximum to 90
 	*(WORD*)0x65EE46 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 	*(float**)0x65EE31 = &cgFov90;
 
 	//DVAR: cg_fovMin
-	//MODS: Clear cheat flag, set arhive flag
+	//MODS: Clear cheat flag, set archive flag
 	*(WORD*)0x65EEB6 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: cg_fovScale
-	//MODS: Clear cheat flag, set arhive flag
+	//MODS: Clear cheat flag, set archive flag
 	*(WORD*)0x65EE7C ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
-	
+
 	//DVAR: r_lodBiasRigid
-	//MODS: Clear cheat flag, set arhive flag
+	//MODS: Clear cheat flag, set archive flag
 	*(WORD*)0x707D0D ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: r_lodBiasSkinned
-	//MODS: Clear cheat flag, set arhive flag
+	//MODS: Clear cheat flag, set archive flag
 	*(WORD*)0x707D74 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
-	
+
 	//DVAR: fs_basegame
 	//MODS: Clear cheat flag, set archive flag
 	//*(WORD*)0x005DDEDD ^= DVAR_FLAG_INIT;
