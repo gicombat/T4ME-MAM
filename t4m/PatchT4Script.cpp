@@ -21,6 +21,9 @@ dvar_t** developer_script = (dvar_t**)0x01F9646C;
 dvar_t** logfile = (dvar_t**)0x01F552BC;
 
 dvar_t* developer_funcdump;
+dvar_t* cg_drawHealthCount;
+dvar_t* cg_drawXboxHUD;
+dvar_t* gpad_flip_triggers;
 
 // custom functions
 typedef struct
