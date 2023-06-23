@@ -234,7 +234,7 @@ void PatchT4_Script()
 
 	cg_drawXboxHUD = Dvar_RegisterBool(0, "cg_drawXboxHUD", 0, "Enable controller button style HUD icons (only in effect when enabled through menu setting)");
 
-	cg_drawXboxHUD = Dvar_RegisterBool(0, "gpad_flip_triggers", 0, "Flip controller binds for bumpers and triggers (only in effect when enabled through menu setting)");
+	gpad_flip_triggers = Dvar_RegisterBool(0, "gpad_flip_triggers", 0, "Flip controller binds for bumpers and triggers (only in effect when enabled through menu setting)");
 
 	// [GSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
