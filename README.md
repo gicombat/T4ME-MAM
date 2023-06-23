@@ -43,7 +43,7 @@ Modders can view the full release of T4M [here](https://www.ugx-mods.com/forum/i
 Installing the T4M mod is extremely simple:
 - Drag the DLL into World at War's root directory
 - If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll" and also keep it in the same root directory
-- For usage with WINE/Proton simply add `WINEDLLOVERRIDES="d3d9=n,b" %command%` in World At War's launch options in Steam.
+- For usage with WINE/Proton, simply add `WINEDLLOVERRIDES="d3d9=n,b" %command%` to World At War's launch options in Steam
 
 ## Developers:
 - DidUknowiPwn
