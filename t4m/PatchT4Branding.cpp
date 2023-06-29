@@ -6,7 +6,7 @@
 //
 // Initial author: DidUknowiPwn
 // Started: 2015-07-12
-// temp: manually set branding as r47 instead of using vars defined with COMMIT_STR
+// temp: manually set branding as r48 instead of using vars defined with COMMIT_STR
 // ==========================================================
 
 #include "StdInc.h"
@@ -28,7 +28,7 @@ void PatchT4_Branding()
 
 const char* SetConsoleVersion()
 {
-	return va("Call of Duty %s", "T4-SP (r47) (built " DATE " " TIME " by Nazi Zombies remastered developer JB with Clippy95)");
+	return va("Call of Duty %s", "T4-SP (r48) (built " DATE " " TIME " by Nazi Zombies remastered developer JB with Clippy95)");
 }
 
 const char* SetShortVersion()
