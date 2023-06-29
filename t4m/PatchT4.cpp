@@ -11,6 +11,7 @@
 #include "StdInc.h"
 
 void loadGameOverlay();
+void LAACheck();
 void PatchT4();
 void PatchT4_MemoryLimits();
 void PatchT4_Branding();
@@ -26,6 +27,7 @@ void PatchT4_Load();
 
 void Sys_RunInit()
 {
+	LAACheck();
 	PatchT4();
 }
 
