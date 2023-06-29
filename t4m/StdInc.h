@@ -28,7 +28,7 @@
 #define FS_BASEGAME "data"
 #define DATE __DATE__
 #define TIME __TIME__
-#define CONSOLEVERSION_STR "T4M r"COMMIT_STR"> "
+#define CONSOLEVERSION_STR "T4Me r"COMMIT_STR"> "
 #define VERSION_STR "T4-SP (r"COMMIT_STR") (built " DATE " " TIME " by Nazi Zombies remastered developer JB with Clippy95)"
 #define BUILDLOG_STR VERSION_STR "\nlogfile created\n"
 #define SHORTVERSION_STR "2.0."COMMIT_STR
