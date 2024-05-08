@@ -36,7 +36,6 @@ void LAACheck()
 	if (GameIsLargeAddressAware())
 		return; // Game is already 4GB/LAA patched, exit out
 
-
 	if (MessageBoxA(NULL,
 		"Your game executable is missing the 4GB/LAA patch. This patch fixes vertex corruption and texture issues by increasing accessible memory.\n\nDo you want T4Me to patch your game's .exe for you? (Recommended)",
 		"4GB / Large Address Aware patch missing!",
