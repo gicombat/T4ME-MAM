@@ -1,254 +1,160 @@
-// ==========================================================
-// alterIWnet project
-// 
-// Component: aiw_client
-// Sub-component: steam_api
-// Purpose: Functionality to interact with the GameScript 
-//          runtime.
-//
-// Initial author: NTAuthority
-// Adapted: 2015-07-21
-// Started: 2011-12-19
-// ==========================================================
-
 #include "StdInc.h"
-#include "T4.h"
-
-int __cdecl Scr_GetNumParam(scriptInstance_t inst);
-
-dvar_t** developer = (dvar_t**)0x01F55288;
-dvar_t** developer_script = (dvar_t**)0x01F9646C;
-dvar_t** logfile = (dvar_t**)0x01F552BC;
-
-dvar_t* developer_funcdump;
-dvar_t* cg_drawHealthCount;
-dvar_t* cg_drawXboxHUD;
-dvar_t* gpad_flip_triggers;
-
-// custom functions
-typedef struct
+#include "shellapi.h"
+std::wstring rootPath;
+bool GameIsLargeAddressAware()
 {
-	const char* functionName;
-	scr_function_t functionCall;
-	int developerOnly;
-} scr_funcdef_t;
+    static PBYTE module_base = reinterpret_cast<PBYTE>(GetModuleHandle(nullptr));
 
+    PIMAGE_DOS_HEADER dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(module_base);
+    PIMAGE_NT_HEADERS nt_headers = reinterpret_cast<PIMAGE_NT_HEADERS>(module_base + dos_header->e_lfanew);
 
-#pragma region setupFunctions
-static std::map<std::string, scr_funcdef_t> scriptFunctions;
-
-scr_function_t Scr_GetCustomFunction(const char** name, int* isDeveloper)
-{
-	scr_funcdef_t func = scriptFunctions[*name];
-
-	if (func.functionName)
-	{
-		*name = func.functionName;
-		*isDeveloper = func.developerOnly;
-
-		return func.functionCall;
-	}
-	else
-		return NULL;
+    return (nt_headers->FileHeader.Characteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) == IMAGE_FILE_LARGE_ADDRESS_AWARE;
 }
 
+//https://programmerall.com/article/8899839695/
+uint32_t calc_checksum(uint32_t checksum, void* data, int length) {
+    if (length && data != nullptr) {
+        uint32_t sum = 0;
+        do {
+            sum = *(uint16_t*)data + checksum;
+            checksum = (uint16_t)sum + (sum >> 16);
+            data = (char*)data + 2;
+        } while (--length);
+    }
 
-void Scr_DeclareFunction(const char* name, scr_function_t func, bool developerOnly = false)
-{
-	scr_funcdef_t funcDef;
-	funcDef.functionName = name;
-	funcDef.functionCall = func;
-	funcDef.developerOnly = (developerOnly) ? 1 : 0;
-
-	scriptFunctions[name] = funcDef;
-}
-#pragma endregion setupFunctions
-
-#pragma region engineFunctions
-int __cdecl Scr_GetNumParam(scriptInstance_t inst)
-{
-	DWORD *value = (DWORD *)0x03BD471C; // getNumParamArray location
-	return value[4298 * inst];
+    return checksum + (checksum >> 16);
 }
 
-RefString *__cdecl GetRefString(scriptInstance_t inst, unsigned int stringValue)
+void LAACheck()
 {
-	DWORD *gScrMemTreePub = (DWORD *)0x03702390;
-	return (RefString *)&(&gScrMemTreePub)[3 * stringValue + 1];
-}
+    static bool LAAChecked = false;
+    if (LAAChecked)
+        return; // user was prompted/EXE checked already, exit out
 
-char *__cdecl SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst)
-{
-	char *v3;
-	if (stringValue)
-		v3 = GetRefString(inst, stringValue)->str;
-	else
-		v3 = 0;
-	return v3;
-}
+    std::wstring dontAskAgainPath = rootPath + L"dontaskagain.LAA";
+    if (GetFileAttributesW(dontAskAgainPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        return; // "dontaskagain.LAA" file exists, skipping check
+    }
 
-void Scr_ClearOutParams(scriptInstance_t v1)
-{
-	static DWORD dwCall = 0x00693DA0;
+    LAAChecked = true; // prevent us from checking more than once
 
-	__asm
-	{
-		mov edi, v1
-		call[dwCall]
-	}
-}
+    if (GameIsLargeAddressAware())
+        return; // Game is already 4GB/LAA patched, exit out
 
-void __cdecl IncInParam(scriptInstance_t inst)
-{
-	Scr_ClearOutParams(inst);
+    if (MessageBoxA(NULL,
+        "Your game executable is missing the 4GB / LAA patch. This patch fixes vertex corruption and texture issues by increasing accessible memory.\n\nDo you want T4Me to patch the game's .exe for you? (Recommended)",
+        "4GB / Large Address Aware patch missing!",
+        MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
+    {
+        char module_path_array[4096];
+        GetModuleFileNameA(GetModuleHandle(nullptr), module_path_array, 4096);
 
-	// TO-DO: define sys_error
-	//if (dword_A05AC98[4298 * inst] == dword_A05AC8C[4298 * inst])
-	//	Sys_Error("Internal script stack overflow");
-	((DWORD *)0xA05AC98)[4296 * inst] += 8;
-	++((DWORD *)0xA05ACA0)[4296 * inst];
-}
+        std::string module_path = module_path_array;
+        std::string module_path_new = module_path + ".new";
+        std::string module_path_bak = module_path + ".bak";
 
-void __cdecl Scr_AddInt(int value, scriptInstance_t inst)
-{
-	IncInParam(inst);
-	*(DWORD *)((((DWORD *)0x03BD4710)[4296 * value]) + 4) = 6;
-	*(DWORD *)(((DWORD *)0x03BD4710)[4296 * value]) = value;
-}
-#pragma endregion engineFunctions
+        if (GetFileAttributesA(module_path_new.c_str()) != 0xFFFFFFFF)
+            DeleteFileA(module_path_new.c_str());
 
-#pragma region engineHKFunctions
-void(__cdecl *__cdecl Scr_GetFunction_Hook(const char **pName, int *type))()
-{
-	// this is aids and I don't care
-	// also if running debugger and a customf func is executed the debugger will instadie
-	void(__cdecl *function)();
-	// check if the function passed is part of our custom funcs
-	if (!(scriptFunctions.find(std::string(*pName)) != scriptFunctions.end()))
-		function = (void(__cdecl *)())Scr_GetFunction(pName, type);
-	else
-		function = (void(__cdecl *)())Scr_GetCustomFunction(pName, type);
+        if (GetFileAttributesA(module_path_bak.c_str()) != 0xFFFFFFFF)
+            DeleteFileA(module_path_bak.c_str());
 
-	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[GSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+        BOOL result_CopyFileA = CopyFileA(module_path.c_str(), module_path_new.c_str(), false);
 
-	return function;
-}
+        FILE* file;
+        int LAA_ErrorNum = fopen_s(&file, module_path_new.c_str(), "rb+");
+        if (LAA_ErrorNum == 0)
+        {
+            fseek(file, 0, SEEK_END);
+            std::vector<uint8_t> exe_data(ftell(file));
+            fseek(file, 0, SEEK_SET);
 
-int Scr_GetMethod(int *type, const char **pName)
-{
-	// also aids and again do not care. #3
-	int function;
+            if (fread(exe_data.data(), 1, exe_data.size(), file) != exe_data.size())
+            {
+                fclose(file);
+                LAA_ErrorNum = 1;
+            }
+            else
+            {
+                PIMAGE_DOS_HEADER dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(exe_data.data());
+                PIMAGE_NT_HEADERS nt_headers = reinterpret_cast<PIMAGE_NT_HEADERS>(exe_data.data() + dos_header->e_lfanew);
 
-	*type = 0;
-	function = Player_GetMethod(pName);
+                // Set LAA flag in PE headers
+                nt_headers->FileHeader.Characteristics |= IMAGE_FILE_LARGE_ADDRESS_AWARE;
 
-	if (!function)
-	{
-		function = ScriptEnt_GetMethod(pName);
-		if (!function)
-		{
-			function = ScriptVehicle_GetMethod(pName);
-			if (!function)
-			{
-				function = HudElem_GetMethod(pName);
-				if (!function)
-				{
-					function = Helicopter_GetMethod(pName);
-					if (!function)
-					{
-						function = Actor_GetMethod(pName);
-						if (!function)
-							function = BuiltIn_GetMethod(pName, type);
-					}
-				}
-			}
-		}
-	}
+                // Fix up PE checksum
+                uint32_t header_size = (uintptr_t)nt_headers - (uintptr_t)exe_data.data() +
+                    ((uintptr_t)&nt_headers->OptionalHeader.CheckSum - (uintptr_t)nt_headers);
 
-	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[GSC] Method: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+                // Skip over CheckSum field
+                uint32_t remain_size = (exe_data.size() - header_size - 4) / sizeof(uint16_t);
+                void* remain = &nt_headers->OptionalHeader.Subsystem;
 
-	return function;
-}
+                uint32_t header_checksum = calc_checksum(0, exe_data.data(), header_size / sizeof(uint16_t));
+                uint32_t file_checksum = calc_checksum(header_checksum, remain, remain_size);
+                if (exe_data.size() & 1)
+                    file_checksum += *((char*)exe_data.data() + exe_data.size() - 1);
 
+                nt_headers->OptionalHeader.CheckSum = file_checksum + exe_data.size();
 
-void __declspec(naked) Scr_GetMethod_Hook(int *type, const char **pName)
-{
-	__asm
-	{
-		push esi // pName
-		push edi // type
-		call Scr_GetMethod
-		add esp, 8
-		retn
-	}
-}
+                fseek(file, dos_header->e_lfanew, SEEK_SET);
+                auto wrote = fwrite(nt_headers, sizeof(IMAGE_NT_HEADERS), 1, file);
+                fclose(file);
 
-void(__cdecl *__cdecl CScr_GetFunction_Hook(const char **pName, int *type))()
-{
-	// this is aids and I don't care #2
-	// also if running debugger and a customf func is executed the debugger will instadie
-	void(__cdecl *function)();
+                if (wrote != 1)
+                {
+                    LAA_ErrorNum = 2;
+                }
+                else
+                {
+                    BOOL result_moveFile1 = MoveFileExA(module_path.c_str(), module_path_bak.c_str(), MOVEFILE_REPLACE_EXISTING);
+                    BOOL result_moveFile2 = MoveFileA(module_path_new.c_str(), module_path.c_str());
+                    if (!result_moveFile1)
+                        LAA_ErrorNum = 3;
+                    else if (!result_moveFile2)
+                        LAA_ErrorNum = 4;
 
-	function = (void(__cdecl *)())CScr_GetFunction(pName, type);
+                    if (result_moveFile1 && !result_moveFile2)
+                    {
+                        // Try restoring the original EXE if replacement failed
+                        MoveFileA(module_path_bak.c_str(), module_path.c_str());
+                    }
+                }
+            }
+        }
 
-	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[CSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+        if (LAA_ErrorNum == 0)
+        {
+            MessageBoxA(NULL, "T4Me has successfully patched the game's .exe and also created a backup copy.\n\nPress OK to relaunch the game for the patch to take effect!",
+                "4GB / Large Address Aware patch successful!", 0);
 
-	return function;
-}
-
-void(__cdecl *__cdecl CScr_GetMethod_Hook(const char **pName, int *type))()
-{
-	// aids #3 woo!
-	void(__cdecl *function)();
-
-	function = (void(__cdecl *)())CScr_GetMethod(pName, type);
-
-	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[CSC] Method: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
-
-	return function;
-}
-#pragma endregion engineHKFunctions
-
-#pragma region customFunctions
-void GScr_PrintLnConsole(scr_entref_t entity)
-{
-	// gets amount of parameters
-	if (Scr_GetNumParam(SCRIPTINSTANCE_SERVER) == 1)
-		Com_Printf(0, "^3Have one!\n");
-	else
-		Com_Printf(0, "^1the cake is a lie\n\n");
-	// iz ded af
-	//Scr_AddInt(Scr_GetNumParam(SCRIPTINSTANCE_SERVER), SCRIPTINSTANCE_SERVER);
-}
-#pragma endregion customFunctions
-
-void PatchT4_Script()
-{
-	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
-
-	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter");
-
-	cg_drawXboxHUD = Dvar_RegisterBool(0, "cg_drawXboxHUD", 0, "Draw controller button style HUD icons (only in effect when enabled through menu setting)");
-
-	gpad_flip_triggers = Dvar_RegisterBool(0, "gpad_flip_triggers", 0, "Flip game pad binds for bumpers and triggers (only in effect when enabled through menu setting)");
-
-	// [GSC]
-	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x00683043, (PBYTE)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
-	Scr_DeclareFunction("printlnconsole", GScr_PrintLnConsole);
-
-	// [CSC]
-	Detours::X86::DetourFunction((PBYTE)0x00682DC0, (PBYTE)&CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x0068305C, (PBYTE)&CScr_GetMethod_Hook, Detours::X86Option::USE_CALL);
-
-	nop(0x00465441, 2); // disable jnz on I_strnicmp for tesla notetrack
-
-	// DON'T USE
-	//nop(0x00668EDC, 5);
-	//nop(0x00668F86, 5);
-	//nop(0x00668E63, 5);
+            // Relaunch the game
+            std::wstring bio4path = rootPath + L"CoDWaW.exe";
+            if ((int)ShellExecuteW(nullptr, L"open", bio4path.c_str(), nullptr, nullptr, SW_SHOWDEFAULT) > 32)
+            {
+                exit(0);
+                return;
+            }
+        }
+        else
+        {
+            char errText[256];
+            sprintf_s(errText, "T4Me failed to patch the game's .exe (error %d)\n\nYou can manually patch it yourself by using the \"NTCore 4GB Patch\" tool - an internet search should help find it!", LAA_ErrorNum);
+            MessageBoxA(NULL, errText, "4GB / Large Address Aware patch failed...", MB_ICONEXCLAMATION);
+        }
+    }
+    else {
+        // New dialog to ask if the user doesn't want to be prompted again
+        if (MessageBoxA(NULL,
+            "T4Me has not patched the game's .exe, would you like to stop future reminders?",
+            "Stop Patch Notifications",
+            MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
+        {
+            // Create a file to remember the user's choice
+            HANDLE file = CreateFileW(dontAskAgainPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+            if (file != INVALID_HANDLE_VALUE) {
+                CloseHandle(file);  // Just need to create the file, close it immediately
+            }
+        }
+    }
 }
