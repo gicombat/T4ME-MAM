@@ -42,7 +42,7 @@ void LAACheck()
         return; // Game is already 4GB/LAA patched, exit out
 
     if (MessageBoxA(NULL,
-        "Your game executable is missing the 4GB/LAA patch. This patch fixes vertex corruption and texture issues by increasing accessible memory.\n\nDo you want T4Me to patch your game's .exe for you? (Recommended)",
+        "Your game executable is missing the 4GB / LAA patch. This patch fixes vertex corruption and texture issues by increasing accessible memory.\n\nDo you want T4Me to patch the game's .exe for you? (Recommended)",
         "4GB / Large Address Aware patch missing!",
         MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
     {
@@ -125,8 +125,8 @@ void LAACheck()
 
         if (LAA_ErrorNum == 0)
         {
-            MessageBoxA(NULL, "T4Me has successfully patched your game's .exe and also created a backup copy.\n\nPress OK to relaunch the game for the patch to take effect!",
-                "Game 4GB patched successfully!", 0);
+            MessageBoxA(NULL, "T4Me has successfully patched the game's .exe and also created a backup copy.\n\nPress OK to relaunch the game for the patch to take effect!",
+                "4GB / Large Address Aware patch successful!", 0);
 
             // Relaunch the game
             std::wstring bio4path = rootPath + L"CoDWaW.exe";
@@ -139,14 +139,14 @@ void LAACheck()
         else
         {
             char errText[256];
-            sprintf_s(errText, "T4Me failed to patch the game .exe (error %d)\n\nYou can manually patch it yourself by using the \"NTCore 4GB Patch\" tool - an internet search should help find it!", LAA_ErrorNum);
+            sprintf_s(errText, "T4Me failed to patch the game's .exe (error %d)\n\nYou can manually patch it yourself by using the \"NTCore 4GB Patch\" tool - an internet search should help find it!", LAA_ErrorNum);
             MessageBoxA(NULL, errText, "4GB / Large Address Aware patch failed...", MB_ICONEXCLAMATION);
         }
     }
     else {
         // New dialog to ask if the user doesn't want to be prompted again
         if (MessageBoxA(NULL,
-            "Do you want T4Me to stop asking you to patch the game in the future?",
+            "T4Me has not patched the game's .exe, would you like to stop future reminders?",
             "Stop Patch Notifications",
             MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
         {
