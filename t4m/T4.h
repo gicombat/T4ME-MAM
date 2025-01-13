@@ -252,7 +252,12 @@ extern "C"
 	typedef void(*DB_LoadXAssets_t)(XZoneInfo* data, int count, int sync);
 	extern DB_LoadXAssets_t DB_LoadXAssets;
 
+	//typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
+	//extern DvarRegisterFloatFunc Dvar_RegisterFloat;
+
 	extern dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description);
+
+	extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
 
 	typedef void(__cdecl * EmitMethod_t)(scriptInstance_t inst, sval_u expr, sval_u func_name, sval_u params, sval_u methodSourcePos, bool bStatement, scr_block_s *block);
 	extern EmitMethod_t EmitMethod;

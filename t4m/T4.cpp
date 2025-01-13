@@ -73,6 +73,34 @@ dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const cha
 	}
 	return ret;
 }
+
+//typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
+//DvarRegisterFloatFunc Dvar_RegisterFloat = (DvarRegisterFloatFunc)0x5EEF10;
+// fucking __usercall -- Clippy95 ~10 years later.
+dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description)
+{
+	DWORD func = 0x5EEF10;
+	dvar_t* ret;
+
+	__asm
+	{
+		movss xmm0, defaultValue
+		push description
+		push flags
+		sub esp, 8
+		fld max
+		fstp dword ptr[esp + 4]
+		fld min
+		fstp dword ptr[esp]
+		mov edi, dvarName
+		call func
+		add esp, 0x10
+		mov ret, eax
+	}
+
+	return ret;
+}
+
 //int __usercall CBuf_AddText@<eax>(int a1@<eax>, int a2@<ecx>), a1 = text, a2 = localClientNum
 void Cbuf_AddText(const char* text, int localClientNum)
 {
