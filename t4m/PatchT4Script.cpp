@@ -21,9 +21,15 @@ dvar_t** developer_script = (dvar_t**)0x01F9646C;
 dvar_t** logfile = (dvar_t**)0x01F552BC;
 
 dvar_t* developer_funcdump;
+
+// COD5R HUD stuff
 dvar_t* cg_drawHealthCount;
-dvar_t* cg_drawXboxHUD;
-dvar_t* gpad_flip_triggers;
+dvar_t* cg_drawDpadHUD;
+dvar_t* cg_drawDpadLogos;
+dvar_t* cg_SoloScoreColorWhite;
+
+dvar_t* cg_lowerGun; // lower gun 1st person
+dvar_t* zombiemode_dev; // experimental COD5R features
 
 // custom functions
 typedef struct
@@ -230,11 +236,15 @@ void PatchT4_Script()
 {
 	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
 
-	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter");
+	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)");
 
-	cg_drawXboxHUD = Dvar_RegisterBool(0, "cg_drawXboxHUD", 0, "Draw controller button style HUD icons (only in effect when enabled through menu setting)");
+	cg_drawDpadHUD = Dvar_RegisterBool(0, "cg_drawDpadHUD", 0, "Draw D-pad arrows and other gamepad HUD features optimized for controller use");
+	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad console-style background textures");
 
-	gpad_flip_triggers = Dvar_RegisterBool(0, "gpad_flip_triggers", 0, "Flip game pad binds for bumpers and triggers (only in effect when enabled through menu setting)");
+	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)");
+	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)");
+
+	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
 
 	// [GSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);

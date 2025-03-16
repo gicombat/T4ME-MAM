@@ -10,7 +10,7 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 - Automatically patches game .exe with 4GB/LAA flag which fixes vertex corruption/texture issues due to not enough memory (r48)
 - Added support for ReShade (rename ReShade's .dll to "d3d9r.dll") (r47+)
 - Unlocked model LOD dvars: `r_lodBiasSkinned` and `r_lodBiasRigid` (r47+)
-- Added a description and default value for a few bools added to my COD5-Remastered mod `gpad_flip_triggers`, `cg_drawXboxHUD`, and `cg_drawHealthCount` (Only applies if using this mod) (r47+)
+- Added a description and default value for custom bools added to my COD5-Remastered mod primarily related to the HUD (Only useful if using this mod) (r47+)
 - Tidied up new DVAR descriptions, should not use periods (r47+)
 - Fixed issue when trying to play LAN with T4M (r46+)
 - Re-enabled intro cinematic (r46+)
