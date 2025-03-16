@@ -23,7 +23,7 @@
 #define __thread __declspec(thread)
 #define HardDebugBreak() MessageBoxA(0, __FUNCTION__, 0, 0);
 
-#define BETA "b"
+#define BETA "b1"
 #define VERSION "1.0"
 #define FS_BASEGAME "data"
 #define DATE __DATE__
