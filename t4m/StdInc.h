@@ -23,6 +23,7 @@
 #define __thread __declspec(thread)
 #define HardDebugBreak() MessageBoxA(0, __FUNCTION__, 0, 0);
 
+#define IS_BETA
 #define BETA "b1"
 #define VERSION "1.0"
 #define FS_BASEGAME "data"
@@ -41,9 +42,11 @@
 #define BUILDLOG_STR VERSION_STR "\nlogfile created\n"
 #define SHORTVERSION_BETA_STR "T4Me-MAM " VERSION "" BETA ""
 #define SHORTVERSION_STR "T4Me-MAM " VERSION 
-#define SHORTVERSION_BETA_VULKAN_STR "TT4Me-MAM " VERSION "\ndxvk"
-#define SHORTVERSION_VULKAN_STR "T4Me-MAM " VERSION "" BETA "\ndxvk"
+#define SHORTVERSION_VULKAN_STR "TT4Me-MAM " VERSION "\ndxvk"
+#define SHORTVERSION_BETA_VULKAN_STR "T4Me-MAM " VERSION "" BETA "\ndxvk"
 #define LONGVERSION_STR SHORTVERSION_STR " CL " DATE " " TIME
+
+#define CONFIG_FILE_LOCATION ".\\T4M.conf"
 
 #define ADC_Prescaler_1 1
 #define ADC_Prescaler_2 2

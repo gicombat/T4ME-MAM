@@ -12,6 +12,9 @@
 #include "T4.h"
 
 dvar_t* con_external;
+dvar_t* enable_scoreboard;
+dvar_t* show_intro;
+dvar_t* vulkan;
 
 vec4_t whiteColor = { 8.0f, 8.0f, 8.0f, 1.0f };
 
@@ -24,6 +27,7 @@ ConDrawInput_TextLimitChars_t ConDrawInput_TextLimitChars = (ConDrawInput_TextLi
 // Dvar_RegisterInt(int default, const char* name, int min, int max, int flags, const char* description); 0x5EEEA0
 
 ConDrawInputGlob* conDraw = (ConDrawInputGlob*)0x92C370;
+
 
 void DrawDvarFlags(dvar_t* dvar)
 {
@@ -104,7 +108,7 @@ void FilterConsoleSpam()
 
 void PatchT4_ExternalConsole()
 {
-	Detours::X86::DetourFunction((PBYTE)0x0059D0F3, (PBYTE)&ShowExternalConsole, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x0059D0F3, (uintptr_t)&ShowExternalConsole, Detours::X86Option::USE_CALL);
 }
 
 void PatchT4_ConsoleBox()
@@ -155,6 +159,25 @@ void DB_ListAssetCounts_f()
 	}
 }
 
+void NullFunction()
+{
+}
+
+static uintptr_t score1;
+static uintptr_t score2;
+
+void ShowScoreboard()
+{
+	score1 = Detours::X86::DetourFunction((uintptr_t)0x437ACC, (uintptr_t)&NullFunction);
+	score2 = Detours::X86::DetourFunction((uintptr_t)0x6680D2, (uintptr_t)&NullFunction);
+}
+
+void HieScoreboard()
+{
+	Detours::X86::DetourRemove(score1);
+	Detours::X86::DetourRemove(score2);
+}
+
 void Cmd_Init_T4()
 {
 	DWORD Cmd_Init_T4 = 0x00595200;
@@ -164,6 +187,25 @@ void Cmd_Init_T4()
 	//Cmd_AddCommand("testcmd", testCmd_f);
 	Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
 	Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
+	UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
+	if (disableIntro == 1)
+	{
+	}
+	//Cmd_AddCommand("show_scoreboard", ShowScoreboard);
+	//Cmd_AddCommand("hide_scoreboard", HieScoreboard);
+	//Cmd_AddCommand("enablevulkan", enable_vulkan);
+	//Cmd_AddCommand("disablevulkan", disable_vulkan);
+	//Cmd_AddCommand("load_t4m", LoadConfig);
+}
+
+void enable_vulkan()
+{
+
+}
+
+void disable_vulkan()
+{
+
 }
 
 void ShitTest()
@@ -177,7 +219,7 @@ void ShitTest()
 
 void PatchT4_ConsoleCommands()
 {
-	Detours::X86::DetourFunction((PBYTE)0x0059CF48, (PBYTE)&Cmd_Init_T4, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x0059CF48, (uintptr_t)&Cmd_Init_T4, Detours::X86Option::USE_CALL);
 	//Detours::X86::DetourFunction((PBYTE)0x00608D16, (PBYTE)&ShitTest, Detours::X86Option::USE_CALL);
 }
 
@@ -203,7 +245,7 @@ void PatchT4_GetGEnts()
 	// override the lvl free msg
 	PatchMemory(0x0084D5A0, (PBYTE)" total ents", 11);
 	// detour the va call
-	Detours::X86::DetourFunction((PBYTE)0x00439C2D, (PBYTE)&Draw_G_Ents, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00439C2D, (uintptr_t)&Draw_G_Ents, Detours::X86Option::USE_CALL);
 	// remove verbose from cg_drawfps array, ends due to null terminator
 	*(DWORD *)0x8CFCE8 = 0;
 	// change jl to jmp, never executes cg_drawfps 3
@@ -212,7 +254,13 @@ void PatchT4_GetGEnts()
 
 void PatchT4_Console()
 {
-	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart)");
+	UINT enableVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
+	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
+	enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+	show_intro = Dvar_RegisterBool(0, "show_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
+	Dvar_RegisterBool(enableVulkan, "vulkan", DVAR_FLAG_ARCHIVE, "Use vulkan instead of DirectX 9.0c");
+
+	//con_external = Dvar_RegisterBool(0, "debug", DVAR_FLAG_ARCHIVE, "Enable custom debug");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

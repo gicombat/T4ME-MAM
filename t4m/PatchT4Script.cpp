@@ -247,13 +247,13 @@ void PatchT4_Script()
 	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
 
 	// [GSC]
-	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x00683043, (PBYTE)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00682DAF, (uintptr_t)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00683043, (uintptr_t)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 	Scr_DeclareFunction("printlnconsole", GScr_PrintLnConsole);
 
 	// [CSC]
-	Detours::X86::DetourFunction((PBYTE)0x00682DC0, (PBYTE)&CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x0068305C, (PBYTE)&CScr_GetMethod_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00682DC0, (uintptr_t)&CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x0068305C, (uintptr_t)&CScr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 
 	nop(0x00465441, 2); // disable jnz on I_strnicmp for tesla notetrack
 

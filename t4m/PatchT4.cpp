@@ -24,11 +24,17 @@ void PatchT4_Script();
 void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
 void PatchT4_Load();
+void PatchT4MP();
 
 void Sys_RunInit()
 {
-	LAACheck();
-	PatchT4();
+	if (*(DWORD*)0x881CAC != 0x62616E55)// SP!
+	{
+		LAACheck();
+		PatchT4();
+	} 
+	else
+		PatchT4MP();
 }
 
 void PatchT4()
@@ -44,7 +50,7 @@ void PatchT4()
 	PatchT4_NoBorder();
 	PatchT4_Script();
 	PatchT4_Load();
-	
+
 	// check if game got started using steam
 	if (!GetModuleHandle("gameoverlayrenderer.dll"))
 		loadGameOverlay();
@@ -57,7 +63,7 @@ void *MemCpyFix(void *a1, void **a2, int len)
 
 void PatchT4_PreLoad()
 {
-	Detours::X86::DetourFunction((PBYTE)0x007AFFC0, (PBYTE)&MemCpyFix);
+	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&MemCpyFix);
 	nop(0x0059D6F4, 5); // disable Com_DvarDump from Com_Init_Try_Block_Function
 	nop(0x005FF743, 5); // disable Sys_CreateSplash
 	//nop(0x005FF698, 5); // disable Sys_CheckCrashOrRerun
