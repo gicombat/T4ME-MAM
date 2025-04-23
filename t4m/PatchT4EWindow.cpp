@@ -29,7 +29,7 @@ struct ScreenPlacement
 };
 
 
-float ScrPlace_CalcSafeAreaOffsets(float* realViewableMin, float* realViewableMax, float viewportX, float viewportY, float viewportWidth, float viewportHeight, float aspect, float safeAreaRatioHorz, float safeAreaRatioVert, float* virtualViewableMin, float* virtualViewableMax, int width, int height)
+float* ScrPlace_CalcSafeAreaOffsets(float* realViewableMin, float* realViewableMax, float viewportX, float viewportY, float viewportWidth, float viewportHeight, float aspect, float safeAreaRatioHorz, float safeAreaRatioVert, float* virtualViewableMin, float* virtualViewableMax, int width, int height)
 {
 	double v15;
 	double v16;
@@ -100,10 +100,10 @@ float ScrPlace_CalcSafeAreaOffsets(float* realViewableMin, float* realViewableMa
 	*virtualViewableMax = 640.0 / v17 * (aspect * *realViewableMax);
 	virtualViewableMax[1] = 480.0 / v19 * realViewableMax[1];
 
-	return virtualViewableMin[1];
+	return virtualViewableMin;
 }
 
-float ScrPlace_SetupViewport(ScreenPlacement *scrPlace, float viewportX, float viewportY, float viewportWidth, float viewportHeight)
+float* ScrPlace_SetupViewport(ScreenPlacement *scrPlace, float viewportX, float viewportY, float viewportWidth, float viewportHeight)
 {
 
 	float vidConfig_aspectRatioScenePixel = *(float*)0x04DA90D4;
@@ -121,7 +121,7 @@ float ScrPlace_SetupViewport(ScreenPlacement *scrPlace, float viewportX, float v
 	if (adjustedRealWidth > viewportWidth)
 		adjustedRealWidth = viewportWidth;
 
-	float result = ScrPlace_CalcSafeAreaOffsets(
+	float* result = ScrPlace_CalcSafeAreaOffsets(
 		scrPlace->realViewableMin,
 		scrPlace->realViewableMax,
 		viewportX,
