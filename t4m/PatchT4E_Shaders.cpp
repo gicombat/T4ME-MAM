@@ -202,19 +202,37 @@ void __cdecl EndFrame() {
 
 	dvar_t* r_fullscreen = *(dvar_t**)0x042B6F88;
 	dvar_t* r_gamma = *(dvar_t**)0x042B6FB4;
-	if (r_gamma && r_fullscreen && r_gamma_windowed && !r_fullscreen->current.boolean && r_gamma_windowed->current.boolean) {
+	if (r_gamma && r_fullscreen && r_gamma_windowed && ((!r_fullscreen->current.boolean && r_gamma_windowed->current.integer) || r_gamma_windowed->current.integer >= 2)) {
 		whatever[1] = r_gamma->current.value;
 	}
 
 	SetPSConstF(187, whatever);
+
+	if (r_gamma_windowed && r_gamma) {
+		if (r_gamma_windowed->modified) {
+			r_gamma_windowed->modified = false;
+			// EndFrame will check it and set it to false
+			r_gamma->modified = true;
+
+		}
+	}
+
 	EndFrame_hook.unsafe_ccall();
 }
 
 void PatchT4E_Shaders() {
 	EndFrame_hook = safetyhook::create_inline(0x6FBF30, EndFrame);
 
+	static auto CalcGammaRamp_ignore = safetyhook::create_mid(0x6D550B, [](SafetyHookContext& ctx) {
+
+		if (r_gamma_windowed && r_gamma_windowed->current.integer >= 2) {
+			ctx.xmm1.f32[0] = 1.f;
+		}
+
+		});
+
 	r_gamma_x360 = Dvar_RegisterBool(true, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
-	r_gamma_windowed = Dvar_RegisterBool(false, "r_gamma_windowed", DVAR_FLAG_ARCHIVE, "Applies r_gamma in post-fx, works only when in Windowed mode");
+	r_gamma_windowed = Dvar_RegisterInt(0, "r_gamma_alt",0,2, DVAR_FLAG_ARCHIVE,"Applies r_gamma in post-fx, 1 is for Windowed mode only, 2 is for both Windowed and Fullscreen and ignores old DX9 Gamma");
 
 	Material_Register_FastFileD = safetyhook::create_inline(0x6E9C00, &Material_Register_FastFile);
 
