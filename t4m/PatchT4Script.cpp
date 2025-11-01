@@ -13,6 +13,25 @@
 
 #include "StdInc.h"
 #include "T4.h"
+#include "t4_headers.h"
+#include "safetyhook.hpp"
+
+WeaponDef** bg_weaponDefs = (WeaponDef**)0x8F6770;
+const WeaponDef* __cdecl BG_GetWeaponDef(unsigned int weaponIndex) {
+	return bg_weaponDefs[weaponIndex];
+}
+
+bool __cdecl BG_IsOverheatingWeapon(unsigned int weapIndex)
+{
+	return BG_GetWeaponDef(weapIndex)->overheatWeapon != 0;
+}
+
+int BG_GetWeaponIndexForName(const char* name) {
+	if (*(bool*)0x018F6DB8);
+	return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
+
+	return ((int(__cdecl*)(const char*))0x41D470)(name);
+}
 
 int __cdecl Scr_GetNumParam(scriptInstance_t inst);
 
@@ -191,6 +210,38 @@ void __declspec(naked) Scr_GetMethod_Hook(int *type, const char **pName)
 	}
 }
 
+static uintptr_t Scr_GetString_addr = 0x69A0D0;
+uintptr_t __declspec(naked) Scr_GetString_asm(uint32_t index, scriptInstance_t instance)
+{
+	__asm 
+	{
+		push ebp
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
+
+
+		push eax
+		push esi
+
+		mov eax, index
+		mov esi, instance
+
+		call Scr_GetString_addr
+
+		pop esi
+		pop eax
+
+		mov esp, ebp
+		pop ebp
+		ret
+	}
+}
+
+const char* Scr_GetString(uint32_t index, scriptInstance_t instance) {
+	return (const char*)Scr_GetString_asm(index, instance);
+}
+
+
 void(__cdecl *__cdecl CScr_GetFunction_Hook(const char **pName, int *type))()
 {
 	// this is aids and I don't care #2
@@ -219,6 +270,17 @@ void(__cdecl *__cdecl CScr_GetMethod_Hook(const char **pName, int *type))()
 }
 #pragma endregion engineHKFunctions
 
+void PlayerWeaponOverheatUpdate(gentity_s* ent, uint32_t weapon_index, float amount) {
+	if (!BG_IsOverheatingWeapon(weapon_index))
+		return;
+	auto weapon = BG_GetWeaponDef(weapon_index);
+	float &current_heat = ent->client->ps.heatpercent[weapon->iHeatIndex];
+	bool &current_overheat  = ent->client->ps.overheating[weapon->iHeatIndex];
+	current_heat = amount;
+	if (amount == 0.f)
+		current_overheat = false;
+}
+gentity_s* g_entities = (gentity_s*)0x0176C6F0;
 #pragma region customFunctions
 void GScr_PrintLnConsole(scr_entref_t entity)
 {
@@ -246,10 +308,19 @@ void PatchT4_Script()
 
 	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
 
+	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets 'overheating' weapon types when GiveMaxAmmo is called");
+
 	// [GSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((PBYTE)0x00683043, (PBYTE)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 	Scr_DeclareFunction("printlnconsole", GScr_PrintLnConsole);
+
+	// i hate asm and safetyhook midhook ftw -clippy95
+	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(0x4EE157, [](SafetyHookContext& ctx) {
+		if (gsc_OverheatMaxAmmo && gsc_OverheatMaxAmmo->current.boolean) {
+			PlayerWeaponOverheatUpdate((gentity_s*)ctx.ebx, ctx.eax, 0.f);
+		}
+		});
 
 	// [CSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DC0, (PBYTE)&CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
