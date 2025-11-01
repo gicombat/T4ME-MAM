@@ -52,14 +52,20 @@ union dvar_maxmin_t {
 	float f;
 };
 
-typedef struct dvar_t
+
+
+
+
+
+typedef struct __declspec(align(4)) dvar_t
 {
 	//startbyte:endbyte
 	const char*		name; //0:3
 	const char*		description; //4:7
-	unsigned int	flags; //8:11
+	unsigned __int16	flags; //8:11
 	char			type; //12:12
-	char			pad2[3]; //13:15
+	char			modified;
+	char			pad2[4]; //13:15
 	dvar_value_t	current; //16:31
 	dvar_value_t	latched; //32:47
 	dvar_value_t	defaulta; //48:64
@@ -254,6 +260,8 @@ extern "C"
 	extern dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description);
 
 	extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
+
+	extern dvar_t* Dvar_RegisterInt(int default_value, const char* name, int min, int max, int flags, const char* description);
 
 	typedef void(__cdecl * EmitMethod_t)(scriptInstance_t inst, sval_u expr, sval_u func_name, sval_u params, sval_u methodSourcePos, bool bStatement, scr_block_s *block);
 	extern EmitMethod_t EmitMethod;

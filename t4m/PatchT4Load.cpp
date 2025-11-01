@@ -9,6 +9,7 @@
 // ==========================================================
 
 #include "StdInc.h"
+
 #include "T4.h"
 
 dvar_t** fs_localAppData = (dvar_t**)0x2122AF0;

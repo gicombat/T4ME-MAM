@@ -101,6 +101,70 @@ dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, 
 	return ret;
 }
 
+// void* returns are always in eax
+uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
+
+
+uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* name, int min, int max, int flags, const char* description) {
+	
+	__asm {
+		push ebp
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
+
+		push eax
+		push edi
+
+		mov eax, default_value
+		mov edi, name
+
+		push description
+		push flags
+		push max
+		push min
+
+
+		call Dvar_RegisterInt_addr
+
+
+		pop edi
+		pop eax
+
+		mov esp, ebp
+		pop ebp
+		ret
+	}
+}
+
+dvar_t* Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description) {
+	//return (dvar_t*)Dvar_RegisterInt_asm(default_value, name, min, max, flags, description);
+	__asm pushad
+
+	DWORD func = 0x5EEEA0;
+	dvar_t* rete;
+	__asm
+	{
+		push description
+		push flags
+		push max
+		push mina
+
+		mov eax, default_value
+		mov edi, name
+
+		call func
+		add esp, 16
+		mov rete, eax
+	}
+	__asm popad
+	return rete;
+
+
+	
+
+
+}
+
 //int __usercall CBuf_AddText@<eax>(int a1@<eax>, int a2@<ecx>), a1 = text, a2 = localClientNum
 void Cbuf_AddText(const char* text, int localClientNum)
 {

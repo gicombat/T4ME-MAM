@@ -63,6 +63,7 @@ Installing the T4M mod is extremely simple:
 - Guy
 - JB Shady
 - Clippy95
+- Parallellines0451
 - [re4_tweaks](https://github.com/nipkownix/re4_tweaks)
 
 
