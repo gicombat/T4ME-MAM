@@ -7,6 +7,7 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 > CD versions of World at War may require the [LanFixed .exe](http://bit.ly/1nqdKEF)
 
 ## New Features/Fixes
+- Restored safearea dvars/functionality
 - Automatically patches game .exe with 4GB/LAA flag which fixes vertex corruption/texture issues due to not enough memory (r48)
 - Added support for ReShade (rename ReShade's .dll to "d3d9r.dll") (r47+)
 - Unlocked model LOD dvars: `r_lodBiasSkinned` and `r_lodBiasRigid` (r47+)
