@@ -68,6 +68,6 @@ void* fclose_hook(FILE* f)
 
 void PatchT4_FileDebug()
 {
-	call(0x7AC7B1, fopen_hook, PATCH_JUMP);
-	call(0x7AD03A, fclose_hook, PATCH_CALL);
+	callp(0x7AC7B1, fopen_hook, PATCH_JUMP);
+	callp(0x7AD03A, fclose_hook, PATCH_CALL);
 }

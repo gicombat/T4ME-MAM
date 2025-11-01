@@ -26,7 +26,8 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -76,6 +77,8 @@ deps/lastrev.txt
 *.id2
 *.nam
 *.til
+/.vs/T4M-Enhanced/FileContentIndex/0b921282-0da4-4dce-bdff-e76324247ae4.vsidx
+/t4m/.vs/t4m/FileContentIndex
+/t4m/.vs/t4m/v17
 /.vs/T4M-Enhanced/v17
-/t4m/.vs/t4m
 /.vs
