@@ -194,7 +194,11 @@ dvar_t* r_gamma_windowed;
 
 SafetyHookInline EndFrame_hook{};
 
+
+
 void __cdecl EndFrame() {
+#define force_gamma_update false
+
 	float whatever[4]{ 0.f,0.f,0.f,0.f };
 	if (r_gamma_x360) {
 		whatever[0] = r_gamma_x360->current.boolean ? 100.f : 0.f;
@@ -206,7 +210,15 @@ void __cdecl EndFrame() {
 		whatever[1] = r_gamma->current.value;
 	}
 
-	SetPSConstF(187, whatever);
+	if (force_gamma_update ||
+		(r_gamma_windowed && r_gamma_windowed->modified) ||
+		(r_gamma && r_gamma->modified) ||
+		(r_gamma_x360 && r_gamma_x360->modified)) {
+		SetPSConstF(187, whatever);
+		if (r_gamma_x360) {
+			r_gamma_x360->modified = false;
+		}
+	}
 
 	if (r_gamma_windowed && r_gamma) {
 		if (r_gamma_windowed->modified) {
