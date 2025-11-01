@@ -1,3 +1,7 @@
+#pragma once
+#include "d3d9.h"
+
+
 #pragma pack(push, 8)
 // Forward declarations
 struct gentity_s;
@@ -8,7 +12,179 @@ struct game_hudelem_s;
 struct WeaponDef;
 struct snapshot_s;
 struct XModel;
-struct Material;
+
+
+
+struct GfxDrawSurfFields
+{
+	unsigned __int64 objectId : 16;
+	unsigned __int64 reflectionProbeIndex : 8;
+	unsigned __int64 customIndex : 5;
+	unsigned __int64 materialSortedIndex : 11;
+	unsigned __int64 prepass : 2;
+	unsigned __int64 primaryLightIndex : 8;
+	unsigned __int64 surfType : 4;
+	unsigned __int64 primarySortKey : 6;
+	unsigned __int64 unused : 4;
+};
+
+
+union __declspec(align(8)) GfxDrawSurf
+{
+	GfxDrawSurfFields fields;
+	unsigned __int64 packed;
+};
+
+
+struct __declspec(align(4)) MaterialInfo
+{
+	const char* name;
+	char gameFlags;
+	char sortKey;
+	char textureAtlasRowCount;
+	char textureAtlasColumnCount;
+	GfxDrawSurf drawSurf;
+	unsigned int surfaceTypeBits;
+	unsigned __int16 hashIndex;
+};
+
+struct GfxVertexShaderLoadDef
+{
+	unsigned int* program;
+	unsigned __int16 programSize;
+	unsigned __int16 loadForRenderer;
+};
+
+
+struct MaterialVertexShaderProgram
+{
+	IDirect3DVertexShader9* vs;
+	GfxVertexShaderLoadDef loadDef;
+};
+
+
+struct MaterialVertexShader
+{
+	const char* name;
+	MaterialVertexShaderProgram prog;
+};
+
+struct MaterialStreamRouting
+{
+	char source;
+	char dest;
+};
+
+
+struct __declspec(align(4)) MaterialVertexStreamRouting
+{
+	MaterialStreamRouting data[16];
+	void* decl[17];
+};
+
+
+struct MaterialVertexDeclaration
+{
+	char streamCount;
+	bool hasOptionalSource;
+	bool isLoaded;
+	MaterialVertexStreamRouting routing;
+};
+
+struct GfxPixelShaderLoadDef
+{
+	unsigned int* program;
+	unsigned __int16 programSize;
+	unsigned __int16 loadForRenderer;
+};
+
+
+struct MaterialPixelShaderProgram
+{
+	IDirect3DPixelShader9* ps;
+	GfxPixelShaderLoadDef loadDef;
+};
+
+
+struct MaterialPixelShader
+{
+	const char* name;
+	MaterialPixelShaderProgram prog;
+};
+
+struct MaterialArgumentCodeConst
+{
+	unsigned __int16 index;
+	char firstRow;
+	char rowCount;
+};
+
+
+union MaterialArgumentDef
+{
+	const float* literalConst;
+	MaterialArgumentCodeConst codeConst;
+	unsigned int codeSampler;
+	unsigned int nameHash;
+};
+
+
+struct MaterialShaderArgument
+{
+	unsigned __int16 type;
+	unsigned __int16 dest;
+	MaterialArgumentDef u;
+};
+
+
+struct __declspec(align(4)) MaterialPass
+{
+	MaterialVertexDeclaration* vertexDecl;
+	MaterialVertexShader* vertexShader;
+	MaterialPixelShader* pixelShader;
+	char perPrimArgCount;
+	char perObjArgCount;
+	char stableArgCount;
+	char customSamplerFlags;
+	MaterialShaderArgument* args;
+};
+
+
+struct MaterialTechnique
+{
+	const char* name;
+	unsigned __int16 flags;
+	unsigned __int16 passCount;
+	MaterialPass passArray[1];
+};
+
+
+struct MaterialTechniqueSet
+{
+	const char* name;
+	char worldVertFormat;
+	bool hasBeenUploaded;
+	char unused[1];
+	MaterialTechniqueSet* remappedTechniqueSet;
+	MaterialTechnique* techniques[59];
+};
+
+
+struct Material
+{
+	MaterialInfo info;
+	char stateBitsEntry[67];
+	char textureCount;
+	char constantCount;
+	char stateBitsCount;
+	char stateFlags;
+	char cameraRegion;
+	MaterialTechniqueSet* techniqueSet;
+	void* textureTable;
+	void* constantTable;
+	void* stateBitsTable;
+};
+
 
 typedef int EntHandle;
 

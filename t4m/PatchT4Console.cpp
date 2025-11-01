@@ -8,9 +8,10 @@
 // Started: 2015-07-12
 // ==========================================================
 
+#include "t4_headers.h"
 #include "StdInc.h"
 #include "T4.h"
-#include "t4_headers.h"
+
 
 dvar_t* con_external;
 

@@ -11,9 +11,10 @@
 // Started: 2011-12-19
 // ==========================================================
 
+#include "t4_headers.h"
 #include "StdInc.h"
 #include "T4.h"
-#include "t4_headers.h"
+
 #include "safetyhook.hpp"
 
 WeaponDef** bg_weaponDefs = (WeaponDef**)0x8F6770;
