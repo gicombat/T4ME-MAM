@@ -56,9 +56,12 @@ Installing the T4M mod is extremely simple:
 - HitmanVere
 - Ray1235
 - ProGamerzFTW
+- JezuzLizard
+- Guy
 - JB Shady
 - Clippy95
 - [re4_tweaks](https://github.com/nipkownix/re4_tweaks)
+
 
 ## Notes
 - Fullscreen Borderless: Enter this into console -> `r_fullscreen 0;vid_xpos 0;vid_ypos 0;r_noborder 1;vid_restart`

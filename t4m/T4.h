@@ -62,7 +62,7 @@ typedef struct dvar_t
 	char			pad2[3]; //13:15
 	dvar_value_t	current; //16:31
 	dvar_value_t	latched; //32:47
-	dvar_value_t	default; //48:64
+	dvar_value_t	defaulta; //48:64
 	dvar_maxmin_t min; //65:67
 	dvar_maxmin_t max; //68:72 woooo
 } dvar_t;
@@ -205,11 +205,7 @@ struct XZoneName
 	BYTE pad[2];
 };
 
-struct gentity_s
-{
-	char padding[876]; // because fuck everything else
-	int nextFree;
-};
+
 
 #include "xasset.h"
 
@@ -299,7 +295,13 @@ extern "C"
 	extern RemoveRefToValue_t RemoveRefToValue;
 }
 
-typedef int scr_entref_t;
+struct scr_entref_t
+{
+	unsigned __int16 entnum;
+	unsigned __int16 classnum;
+	unsigned __int16 client;
+};
+
 typedef void(__cdecl * scr_function_t)(scr_entref_t);
 
 // inline cmd functions
@@ -315,7 +317,7 @@ inline int Cmd_Argc(void)
 inline char *Cmd_Argv(int arg)
 {
 	if ((unsigned)arg >= cmd_argc[*cmd_id]) {
-		return "";
+		return (char*)"";
 	}
 	return (char*)(cmd_argv[*cmd_id][arg]);
 }

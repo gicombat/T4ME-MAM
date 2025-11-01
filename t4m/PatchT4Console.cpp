@@ -10,6 +10,7 @@
 
 #include "StdInc.h"
 #include "T4.h"
+#include "t4_headers.h"
 
 dvar_t* con_external;
 
@@ -110,7 +111,7 @@ void PatchT4_ExternalConsole()
 void PatchT4_ConsoleBox()
 {
 	// call our functionality to draw another line
-	call(0x47294C, drawDetailedDvarMatchStub, PATCH_CALL);
+	callp(0x47294C, drawDetailedDvarMatchStub, PATCH_CALL);
 	*(BYTE*)0x4727DD = 3; // increase line number for box
 }
 
