@@ -213,8 +213,8 @@ void __cdecl EndFrame() {
 void PatchT4E_Shaders() {
 	EndFrame_hook = safetyhook::create_inline(0x6FBF30, EndFrame);
 
-	r_gamma_x360 = Dvar_RegisterBool(true, "r_gamma_x360", 0, "Xbox 360 Gamma Correction");
-	r_gamma_windowed = Dvar_RegisterBool(false, "r_gamma_windowed", 0, "Applies r_gamma in post-fx, works only when in Windowed mode");
+	r_gamma_x360 = Dvar_RegisterBool(true, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
+	r_gamma_windowed = Dvar_RegisterBool(false, "r_gamma_windowed", DVAR_FLAG_ARCHIVE, "Applies r_gamma in post-fx, works only when in Windowed mode");
 
 	Material_Register_FastFileD = safetyhook::create_inline(0x6E9C00, &Material_Register_FastFile);
 
