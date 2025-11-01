@@ -306,9 +306,9 @@ void PatchT4_Script()
 	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)");
 	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)");
 
-	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
+	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)");
 
-	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets 'overheating' weapon types when GiveMaxAmmo is called");
+	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 
 	// [GSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
