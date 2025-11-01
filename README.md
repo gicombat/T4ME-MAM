@@ -7,8 +7,10 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 > CD versions of World at War may require the [LanFixed .exe](http://bit.ly/1nqdKEF)
 
 ## New Features/Fixes
-- Restored safearea dvars/functionality
-- Automatically patches game .exe with 4GB/LAA flag which fixes vertex corruption/texture issues due to not enough memory (r48)
+- Restored safearea dvars/functionality: `safeArea_horizontal` and `safeArea_horizontal` (r49)
+- Added new dvar that approximates the gamma correction seen in the Xbox 360 version of the game : 'r_gamma_x360' (r49)
+- Added new dvar that patches GiveMaxAmmo() to reset cooldown of overheat weapon types when called: 'gsc_OverheatMaxAmmo' (r49)
+- Automatically patches game .exe with 4GB/LAA flag which fixes vertex corruption/texture issues due to not enough memory (r48+)
 - Added support for ReShade (rename ReShade's .dll to "d3d9r.dll") (r47+)
 - Unlocked model LOD dvars: `r_lodBiasSkinned` and `r_lodBiasRigid` (r47+)
 - Added a description and default value for custom bools added to my COD5-Remastered mod primarily related to the HUD (Only useful if using this mod) (r47+)
