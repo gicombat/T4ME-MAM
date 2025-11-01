@@ -308,6 +308,8 @@ void PatchT4_Script()
 
 	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
 
+	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets 'overheating' weapon types when GiveMaxAmmo is called");
+
 	// [GSC]
 	Detours::X86::DetourFunction((PBYTE)0x00682DAF, (PBYTE)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((PBYTE)0x00683043, (PBYTE)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
@@ -315,7 +317,9 @@ void PatchT4_Script()
 
 	// i hate asm and safetyhook midhook ftw -clippy95
 	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(0x4EE157, [](SafetyHookContext& ctx) {
-		PlayerWeaponOverheatUpdate((gentity_s*)ctx.ebx, ctx.eax, 1.f);
+		if (gsc_OverheatMaxAmmo && gsc_OverheatMaxAmmo->current.boolean) {
+			PlayerWeaponOverheatUpdate((gentity_s*)ctx.ebx, ctx.eax, 0.f);
+		}
 		});
 
 	// [CSC]
