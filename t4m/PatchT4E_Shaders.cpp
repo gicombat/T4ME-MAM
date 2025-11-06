@@ -243,7 +243,7 @@ void PatchT4E_Shaders() {
 
 		});
 
-	r_gamma_x360 = Dvar_RegisterBool(true, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
+	r_gamma_x360 = Dvar_RegisterBool(false, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
 	r_gamma_windowed = Dvar_RegisterInt(0, "r_gamma_alt",0,2, DVAR_FLAG_ARCHIVE,"Applies r_gamma in post-fx, 1 is for Windowed mode only, 2 is for both Windowed and Fullscreen and ignores old DX9 Gamma");
 
 	Material_Register_FastFileD = safetyhook::create_inline(0x6E9C00, &Material_Register_FastFile);
