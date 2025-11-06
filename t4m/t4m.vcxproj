@@ -117,6 +117,7 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
+    <ClInclude Include="include\MemoryMgr.h" />
     <ClInclude Include="include\safetyhook.hpp" />
     <ClInclude Include="include\Zydis.h" />
     <ClInclude Include="resource.h" />
@@ -143,6 +144,7 @@ popd</Command>
     <ClCompile Include="PatchT4Console.cpp" />
     <ClCompile Include="PatchT4Dvars.cpp" />
     <ClCompile Include="PatchT4EWindow.cpp" />
+    <ClCompile Include="PatchT4E_Render.cpp" />
     <ClCompile Include="PatchT4E_Shaders.cpp" />
     <ClCompile Include="PatchT4FileDebug.cpp" />
     <ClCompile Include="PatchT4Load.cpp" />

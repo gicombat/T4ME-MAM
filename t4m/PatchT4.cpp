@@ -26,6 +26,7 @@ void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
+void PatchT4E_Render();
 
 void Sys_RunInit()
 {
@@ -48,6 +49,7 @@ void PatchT4()
 	PatchT4_Load();
 	PatchT4E_Window();
 	PatchT4E_Shaders();
+	PatchT4E_Render();
 	
 	// check if game got started using steam
 	if (!GetModuleHandle("gameoverlayrenderer.dll"))
