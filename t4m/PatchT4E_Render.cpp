@@ -65,9 +65,9 @@ void PatchT4E_Render() {
 
 	r_buf_skinnedCacheVb = Dvar_RegisterInt(120, "r_buf_skinnedCacheVb", 60, 512, DVAR_FLAG_ARCHIVE);
 	r_buf_tempSkin = Dvar_RegisterInt(120, "r_buf_tempSkin", 60, 512, DVAR_FLAG_ARCHIVE);
-	r_buf_dynamicVertexBuffer = Dvar_RegisterInt(3, "r_buf_dynamicVertexBuffer", 1, 512, DVAR_FLAG_ARCHIVE);
-	r_buf_dynamicIndexBuffer = Dvar_RegisterInt(4, "r_buf_dynamicIndexBuffer", 2, 512, DVAR_FLAG_ARCHIVE);
-	r_buf_preTessIndexBuffer = Dvar_RegisterInt(4, "r_buf_preTessIndexBuffer", 2, 512, DVAR_FLAG_ARCHIVE);
+	r_buf_dynamicVertexBuffer = Dvar_RegisterInt(3, "r_buf_dynamicVertexBuffer", 1, 16, DVAR_FLAG_ARCHIVE);
+	r_buf_dynamicIndexBuffer = Dvar_RegisterInt(4, "r_buf_dynamicIndexBuffer", 2, 16, DVAR_FLAG_ARCHIVE);
+	r_buf_preTessIndexBuffer = Dvar_RegisterInt(4, "r_buf_preTessIndexBuffer", 2, 16, DVAR_FLAG_ARCHIVE);
 
 	r_increase_render_buffers = Dvar_RegisterBool(true, "r_increase_render_buffers", DVAR_FLAG_ARCHIVE, "increasing rendering buffers");
 
