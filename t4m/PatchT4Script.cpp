@@ -49,6 +49,8 @@ dvar_t* cg_drawGamepadHUD;
 dvar_t* cg_drawDpadLogos;
 dvar_t* cg_SoloScoreColorWhite;
 dvar_t* cg_consoleFont;
+dvar_t* cg_drawTimers;
+dvar_t* cg_drawTrapTimers;
 
 dvar_t* cg_lowerGun; // lower gun 1st person
 dvar_t* zombiemode_dev; // experimental COD5R features
@@ -308,6 +310,8 @@ void PatchT4_Script()
 	cg_consoleFont = Dvar_RegisterBool(0, "cg_consoleFont", 0, "Draw console style font for ingame hints"); // requires NZ remastererd mod
 	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
 	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTrapTimers = Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
 	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
 
 	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
