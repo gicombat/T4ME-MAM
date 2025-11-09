@@ -48,7 +48,6 @@ dvar_t* cg_drawHealthCountCoop;
 dvar_t* cg_drawGamepadHUD;
 dvar_t* cg_drawDpadLogos;
 dvar_t* cg_SoloScoreColorWhite;
-dvar_t* cg_consoleFont;
 dvar_t* cg_drawTimers;
 dvar_t* cg_drawTrapTimers;
 
@@ -307,7 +306,6 @@ void PatchT4_Script()
 	cg_drawHealthCountCoop = Dvar_RegisterBool(0, "cg_drawHealthCountCoop", 0, "Draw developer health counter in co-op (requires map restart)"); // requires NZ remastererd mod 
 	cg_drawGamepadHUD = Dvar_RegisterBool(0, "cg_drawGamepadHUD", 0, "Draw gamepad style HUD optimized for controller use"); // requires NZ remastererd mod
 	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad background textures"); // requires NZ remastererd mod
-	cg_consoleFont = Dvar_RegisterBool(0, "cg_consoleFont", 0, "Draw console style font for ingame hints"); // requires NZ remastererd mod
 	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
 	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
 	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
