@@ -9,7 +9,8 @@
 // ==========================================================
 
 #include "StdInc.h"
-
+#include "MemoryMgr.h"
+#include "IniReader.h"
 void loadGameOverlay();
 void LAACheck();
 void PatchT4();
@@ -68,6 +69,16 @@ void PatchT4_PreLoad()
 	nop(0x005FF743, 5); // disable Sys_CreateSplash
 	//nop(0x005FF698, 5); // disable Sys_CheckCrashOrRerun
 	//nop(0x005FE685, 5); // disable Sys_HasConfigureChecksumChanged
+	CIniReader ini;
+
+	// as done in Juiced Patch https://github.com/kobraworksmodding/Saints-Row-2-Juiced-Patch/blob/main/Monkey%20Patch/Audio/XACT.cpp , although SR2 uses XACT and XACT's version is supposed to be inline with XAudio,
+	// in SR2 this might cause a rare crash to occur that I've fixed there, hopefully this doesn't raise much issues - Clippy95
+
+	if (ini.ReadInteger("Fixes", "UseFixedXAudio", 1) != 0){
+		GUID xaudio = { 0x4c5e637a, 0x16c7, 0x4de3, 0x9c, 0x46, 0x5e, 0xd2, 0x21, 0x81, 0x96, 0x2d }; // XAudio 2.3
+		Memory::VP::Patch(0x0089DA98, xaudio);
+	}
+
 }
 
 void PatchT4_SteamDRM()

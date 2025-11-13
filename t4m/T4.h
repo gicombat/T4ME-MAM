@@ -17,7 +17,7 @@ typedef enum
 	DVAR_FLAG_AUTOEXEC = 1 << 15,			// 0x8000
 } dvar_flag;
 
-enum dvarType_t
+enum dvarType_t : __int8
 {
 	DVAR_TYPE_BOOL = 0x0,
 	DVAR_TYPE_FLOAT = 0x1,
@@ -63,7 +63,7 @@ typedef struct __declspec(align(4)) dvar_t
 	const char*		name; //0:3
 	const char*		description; //4:7
 	unsigned __int16	flags; //8:11
-	char			type; //12:12
+	dvarType_t			type; //12:12
 	char			modified;
 	char			pad2[4]; //13:15
 	dvar_value_t	current; //16:31

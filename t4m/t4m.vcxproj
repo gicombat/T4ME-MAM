@@ -117,7 +117,9 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
+    <ClInclude Include="include\IniReader.h" />
     <ClInclude Include="include\MemoryMgr.h" />
+    <ClInclude Include="include\mini\ini.h" />
     <ClInclude Include="include\safetyhook.hpp" />
     <ClInclude Include="include\Zydis.h" />
     <ClInclude Include="resource.h" />
