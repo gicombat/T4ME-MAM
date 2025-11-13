@@ -44,9 +44,12 @@ dvar_t* developer_funcdump;
 
 // COD5R HUD stuff
 dvar_t* cg_drawHealthCount;
-dvar_t* cg_drawDpadHUD;
+dvar_t* cg_drawHealthCountCoop;
+dvar_t* cg_drawGamepadHUD;
 dvar_t* cg_drawDpadLogos;
 dvar_t* cg_SoloScoreColorWhite;
+dvar_t* cg_drawTimers;
+dvar_t* cg_drawTrapTimers;
 
 dvar_t* cg_lowerGun; // lower gun 1st person
 dvar_t* zombiemode_dev; // experimental COD5R features
@@ -299,15 +302,15 @@ void PatchT4_Script()
 {
 	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
 
-	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)");
-
-	cg_drawDpadHUD = Dvar_RegisterBool(0, "cg_drawDpadHUD", 0, "Draw D-pad arrows and other gamepad HUD features optimized for controller use");
-	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad console-style background textures");
-
-	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)");
-	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)");
-
-	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)");
+	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawHealthCountCoop = Dvar_RegisterBool(0, "cg_drawHealthCountCoop", 0, "Draw developer health counter in co-op (requires map restart)"); // requires NZ remastererd mod 
+	cg_drawGamepadHUD = Dvar_RegisterBool(0, "cg_drawGamepadHUD", 0, "Draw gamepad style HUD optimized for controller use"); // requires NZ remastererd mod
+	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad background textures"); // requires NZ remastererd mod
+	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTrapTimers = Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
+	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
 
 	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 
