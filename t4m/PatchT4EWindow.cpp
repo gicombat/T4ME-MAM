@@ -2,15 +2,15 @@
 // T4M-Enhanced project
 // 
 //
-// Purpose: Re-implement safe area from console version
+// Initial Purpose: Re-implement safe area from console version
 //
 // Initial author: Clippy95 / JerryALT (copied from 
-//                 Window.cpp) (iw3sp_mod project)
+//                 Window.cpp for safearea) (iw3sp_mod project)
 // Adapted: 2025-01-13
 // Started: 2025-01-13
 // ==========================================================
 
-
+#include <safetyhook.hpp>
 #include "StdInc.h"
 dvar_t* safeArea_horizontal;
 dvar_t* safeArea_vertical;
@@ -190,7 +190,17 @@ void UpdateSafeAreaLive() {
 
 }
 
+
 void PatchT4E_Window() {
+
+	static auto AspectRatioFix = safetyhook::create_mid(0x006D4FA0, [](SafetyHookContext& ctx) {
+		// lazy af for proper hook so this will just work for now
+
+
+		*(float*)0x008AFAC0 = (float)ctx.edx / (float)ctx.ecx;
+
+		});
+
 	safeArea_updateLive = Dvar_RegisterBool(true, "safeArea_updateLive", DVAR_FLAG_ARCHIVE, "Automatically updates the viewport when safearea is updated");
 	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, 0x1, "Horizontal safe area as a fraction of the screen width");
 	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, 0x1, "Vertical safe area as a fraction of the screen height");
