@@ -173,7 +173,25 @@ __declspec(naked) void ScrPlace_SetupFloatViewportDetour() {
 	}
 }
 
+void CL_ResetViewport() {
+
+	ScrPlace_SetupViewport((ScreenPlacement*)0x009573A8, 0, 0, 0, 0);
+	ScrPlace_SetupViewport((ScreenPlacement*)0x00957360, 0, 0, 0, 0);
+	ScrPlace_SetupViewport((ScreenPlacement*)0x00957318, 0, 0, 0, 0);
+}
+dvar_t* safeArea_updateLive;
+void UpdateSafeAreaLive() {
+
+	if (safeArea_updateLive && safeArea_updateLive->current.boolean && (safeArea_horizontal->modified || safeArea_vertical->modified)) {
+		safeArea_vertical->modified = false;
+		safeArea_horizontal->modified = false;
+		CL_ResetViewport();
+	}
+
+}
+
 void PatchT4E_Window() {
+	safeArea_updateLive = Dvar_RegisterBool(true, "safeArea_updateLive", DVAR_FLAG_ARCHIVE, "Automatically updates the viewport when safearea is updated");
 	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, 0x1, "Horizontal safe area as a fraction of the screen width");
 	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, 0x1, "Vertical safe area as a fraction of the screen height");
 

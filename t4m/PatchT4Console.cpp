@@ -157,6 +157,8 @@ void DB_ListAssetCounts_f()
 	}
 }
 
+void CL_ResetViewport();
+
 void Cmd_Init_T4()
 {
 	DWORD Cmd_Init_T4 = 0x00595200;
@@ -166,6 +168,7 @@ void Cmd_Init_T4()
 	//Cmd_AddCommand("testcmd", testCmd_f);
 	Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
 	Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
+	Cmd_AddCommand("resetviewport", CL_ResetViewport);
 }
 
 void ShitTest()

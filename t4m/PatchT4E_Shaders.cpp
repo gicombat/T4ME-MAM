@@ -194,7 +194,7 @@ dvar_t* r_gamma_windowed;
 
 SafetyHookInline EndFrame_hook{};
 
-
+void UpdateSafeAreaLive();
 
 void __cdecl EndFrame() {
 #define force_gamma_update false
@@ -228,7 +228,7 @@ void __cdecl EndFrame() {
 
 		}
 	}
-
+	UpdateSafeAreaLive();
 	EndFrame_hook.unsafe_ccall();
 }
 
