@@ -71,6 +71,11 @@ typedef struct __declspec(align(4)) dvar_t
 	dvar_value_t	defaulta; //48:64
 	dvar_maxmin_t min; //65:67
 	dvar_maxmin_t max; //68:72 woooo
+
+	inline bool isEnabled() {
+		return (this && this->current.boolean);
+	}
+
 } dvar_t;
 
 enum scriptInstance_t
