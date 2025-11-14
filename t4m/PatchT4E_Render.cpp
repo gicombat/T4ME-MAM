@@ -73,6 +73,8 @@ dvar_t* cg_fovCompMax;
 
 dvar_t* cg_fovComp_enable;
 
+dvar_t* cg_fovComp_fovscale;
+
 void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* origin)
 {
 	float v2;
@@ -93,10 +95,14 @@ void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* orig
 
 	dvar_t* cg_gun_z = *(dvar_t**)0x03466074;
 
-	v6 = (float)(cg_fov->current.value - cg_fov_default->current.value)
+	dvar_t* cg_fovscale = *(dvar_t**)0x03688A04;
+
+	float fovscale = cg_fovComp_fovscale->isEnabled() ? cg_fovscale->current.value : 1.f;
+
+	v6 = (float)((cg_fov->current.value * fovscale) - cg_fov_default->current.value)
 		* (float)(1.0 / (float)(cg_fovCompMax->current.value - cg_fov_default->current.value));
 	if ((float)(v6 - 1.0) < 0.0)
-		v7 = (float)(cg_fov->current.value - cg_fov_default->current.value)
+		v7 = (float)((cg_fov->current.value * fovscale) - cg_fov_default->current.value)
 		* (float)(1.0 / (float)(cg_fovCompMax->current.value - cg_fov_default->current.value));
 	else
 		v7 = 1.f;
@@ -133,6 +139,8 @@ void PatchT4E_Render() {
 			ctx.eip = 0x00469CE8;
 		}
 		});
+
+	cg_fovComp_fovscale = Dvar_RegisterBool(false, "cg_fovComp_fovscale", DVAR_FLAG_ARCHIVE, "Takes into account fovscale for cg_fovComp");
 
 	cg_fovComp_enable = Dvar_RegisterBool(false, "cg_fovComp_enable", DVAR_FLAG_ARCHIVE, "Enables backported fovComp behaviour from Black Ops 1");
 
