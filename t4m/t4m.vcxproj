@@ -148,6 +148,7 @@ popd</Command>
     <ClCompile Include="PatchT4EWindow.cpp" />
     <ClCompile Include="PatchT4E_Render.cpp" />
     <ClCompile Include="PatchT4E_Shaders.cpp" />
+    <ClCompile Include="PatchT4E_Weapons.cpp" />
     <ClCompile Include="PatchT4FileDebug.cpp" />
     <ClCompile Include="PatchT4Load.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />

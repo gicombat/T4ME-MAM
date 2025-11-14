@@ -314,3 +314,11 @@ int __cdecl DB_GetXAssetTypeSize(int type)
 {
 	return DB_GetXAssetSizeHandler[type]();
 }
+
+bool isZombieMode() {
+	return (*(dvar_t**)0x030520E4)->isEnabled();
+}
+
+bool Com_SessionMode_IsZombiesGame() {
+	return isZombieMode();
+}
