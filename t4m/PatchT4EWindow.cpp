@@ -15,6 +15,9 @@
 dvar_t* safeArea_horizontal;
 dvar_t* safeArea_vertical;
 
+dvar_t* safeArea_horizontal_player;
+dvar_t* safeArea_vertical_player;
+
 struct ScreenPlacement
 {
 	float scaleVirtualToReal[2];
@@ -181,13 +184,39 @@ void CL_ResetViewport() {
 }
 dvar_t* safeArea_updateLive;
 void UpdateSafeAreaLive() {
+	dvar_t* cl_paused = *(dvar_t**)0x01F552C4;
+	if (safeArea_updateLive->current.integer == 1) {
+		if (cl_paused->modified || (safeArea_horizontal_player->modified || safeArea_vertical_player->modified)) {
+			safeArea_horizontal_player->modified = false;
+			safeArea_vertical_player->modified = false;
 
-	if (safeArea_updateLive && safeArea_updateLive->current.boolean && (safeArea_horizontal->modified || safeArea_vertical->modified)) {
-		safeArea_vertical->modified = false;
-		safeArea_horizontal->modified = false;
+			if (cl_paused->current.integer == 0) {
+
+				safeArea_horizontal->current.value = safeArea_horizontal_player->current.value;
+				safeArea_vertical->current.value = safeArea_vertical_player->current.value;
+
+
+			}
+			else if (cl_paused->current.integer) {
+
+				safeArea_horizontal->current.value = 1.f;
+				safeArea_vertical->current.value = 1.f;
+
+
+			}
+
+			cl_paused->modified = false;
+			CL_ResetViewport();
+		}
+	}
+	else if (safeArea_updateLive->current.integer >= 2 && (safeArea_horizontal_player->modified || safeArea_vertical_player->modified)) {
+		safeArea_horizontal_player->modified = false;
+		safeArea_vertical_player->modified = false;
+
+		safeArea_horizontal->current.value = safeArea_horizontal_player->current.value;
+		safeArea_vertical->current.value = safeArea_vertical_player->current.value;
 		CL_ResetViewport();
 	}
-
 }
 
 
@@ -201,9 +230,37 @@ void PatchT4E_Window() {
 
 		});
 
-	safeArea_updateLive = Dvar_RegisterBool(true, "safeArea_updateLive", DVAR_FLAG_ARCHIVE, "Automatically updates the viewport when safearea is updated");
-	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, 0x1, "Horizontal safe area as a fraction of the screen width");
-	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, 0x1, "Vertical safe area as a fraction of the screen height");
+	safeArea_updateLive = Dvar_RegisterInt(1, "safeArea_updateLive", 0,2,DVAR_FLAG_ARCHIVE, "Automatically updates the viewport when safearea is updated\n1 = applies safearea only when cl_paused == 0\n2 = applies safearea always");
+	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Horizontal safe area as a fraction of the screen width");
+	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Vertical safe area as a fraction of the screen height");
+
+	safeArea_horizontal_player = Dvar_RegisterFloat("safeArea_horizontal_player", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Horizontal safe area as a fraction of the screen width");
+	safeArea_vertical_player = Dvar_RegisterFloat("safeArea_vertical_player", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Vertical safe area as a fraction of the screen height");
+
+	//static auto whatever = safetyhook::create_mid(0x005EF938, [](SafetyHookContext& ctx) {
+	//	const char* name = (const char*)(ctx.ebx);
+
+	//	if (strcmp(name, "cl_paused") == 0) {
+	//		auto& value = ctx.eax;
+	//		if (value == 0) {
+
+	//			safeArea_horizontal->current.value = safeArea_horizontal_player->current.value;
+	//			safeArea_vertical->current.value = safeArea_vertical_player->current.value;
+	//			safeArea_horizontal->modified = true;
+	//			safeArea_vertical->modified = true;
+
+	//		}
+	//		else if (value == 1) {
+
+	//			safeArea_horizontal->current.value = 1.f;
+	//			safeArea_vertical->current.value = 1.f;
+	//			safeArea_horizontal->modified = true;
+	//			safeArea_vertical->modified = true;
+
+	//		}
+
+	//	}
+	//	});
 
 	Detours::X86::DetourFunction((PBYTE)0x00644CCB, (PBYTE)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((PBYTE)0x00644CEE, (PBYTE)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
