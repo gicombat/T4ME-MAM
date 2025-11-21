@@ -158,8 +158,6 @@ dvar_t* Dvar_RegisterInt(int default_value, const char* name, int mina, int max,
 	}
 	__asm popad
 	return rete;
-
-
 	
 
 
@@ -176,6 +174,27 @@ void Cbuf_AddText(const char* text, int localClientNum)
 		mov ecx, localClientNum
 		call func
 	}
+}
+
+double CG_CornerDebugPrint(const char* text, float x, float y,float label_width, char* label, float* color)
+{
+	DWORD func = 0x00439160;
+	float result;
+	__asm
+	{
+		mov eax, text
+		
+		push color
+		push label
+		push label_width
+		push y
+		push x
+
+		call func
+		add esp, 20
+		movss result, xmm0
+	}
+	return result;
 }
 
 /*

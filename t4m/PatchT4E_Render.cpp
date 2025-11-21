@@ -128,6 +128,55 @@ void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* orig
 }
 
 
+struct ScreenPlacement
+{
+	float scaleVirtualToReal[2];
+	float scaleVirtualToFull[2];
+	float scaleRealToVirtual[2];
+	float virtualViewableMin[2];
+	float virtualViewableMax[2];
+	float realViewportSize[2];
+	float realViewableMin[2];
+	float realViewableMax[2];
+	float subScreen[2];
+};
+
+constexpr auto MEGABYTE = 1048576.0;
+
+void CG_DrawMemoryfunc(float* y) {
+	//char buffer[200]{};
+	ScreenPlacement& scrPlaceView = *(ScreenPlacement*)(0x00957360);
+
+	MEMORYSTATUSEX status{};
+	dvar_t* cg_debugInfoCornerOffset = *(dvar_t**)0x03688B44;
+	status.dwLength = sizeof(MEMORYSTATUSEX);
+	if (GlobalMemoryStatusEx(&status)) {
+		double v_total = status.ullTotalVirtual / MEGABYTE;
+		double v_free = status.ullAvailVirtual / MEGABYTE;
+		double p_total = status.ullTotalPhys / MEGABYTE;
+		double p_free = status.ullAvailPhys / MEGABYTE;
+
+		char buffer[128]{};
+		sprintf_s(buffer,"Physical Memory: %5.2f / %5.2f (%5.2f free)",
+			p_total - p_free, p_total, p_free);
+
+
+
+		float x = scrPlaceView.virtualViewableMax[0]
+			- scrPlaceView.virtualViewableMin[0]
+			+ cg_debugInfoCornerOffset->current.value;
+		//			- 50.0;
+
+
+		*y += CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
+
+		sprintf_s(buffer,"Virtual Memory: %5.2f / %5.2f (%5.2f free)",
+			v_total - v_free, v_total, v_free);
+		*y += CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
+	}
+
+}
+
 
 void PatchT4E_Render() {
 
@@ -186,5 +235,13 @@ void PatchT4E_Render() {
 
 	InterceptCall(0x6D594D, R_CreateDynamicBuffers, R_CreateDynamicBuffers_hook);
 
+	static dvar_t* CG_DrawMemory = Dvar_RegisterBool(false, "cg_drawMemory", DVAR_FLAG_ARCHIVE);
 
+
+	Dvar_RegisterInt(0, "debug_show_viewpos", 0, 1, DVAR_FLAG_ARCHIVE);
+
+	static auto debug_print = safetyhook::create_mid(0x00439613, [](SafetyHookContext& ctx) {
+		if(CG_DrawMemory->isEnabled())
+		CG_DrawMemoryfunc((float*)(ctx.esp + 0x4));
+		});
 }

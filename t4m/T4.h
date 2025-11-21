@@ -235,6 +235,8 @@ extern "C"
 
 	extern void Cbuf_AddText(const char* text, int localClientNum);
 
+	extern double CG_CornerDebugPrint(const char* text, float x, float y, float label_width, char* label, float* color);
+
 	//typedef void(__cdecl * Cmd_AddCommand_t)(const char* name, CommandCB_t callback, cmd_function_s* data, char);
 	//extern Cmd_AddCommand_t Cmd_AddCommand;
 
