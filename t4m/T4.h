@@ -364,3 +364,5 @@ int __cdecl DB_GetXAssetTypeSize(int type);
 bool isZombieMode();
 
 bool Com_SessionMode_IsZombiesGame();
+
+bool IsReflectionMode();

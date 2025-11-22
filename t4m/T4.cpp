@@ -341,3 +341,37 @@ bool isZombieMode() {
 bool Com_SessionMode_IsZombiesGame() {
 	return isZombieMode();
 }
+
+#include "shellapi.h"
+
+// from linkermod
+bool IsReflectionMode()
+{
+	static bool hasChecked = false;
+	static bool isReflectionMode = false;
+
+	if (!hasChecked)
+	{
+		int argc = 0;
+		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+		int flags = 0;
+		for (int i = 0; i < argc - 1; i++)
+		{
+			if (wcscmp(argv[i], L"+devmap") == 0 && flags ^ 1)
+			{
+				flags |= 1;
+			}
+			else if (wcscmp(argv[i], L"r_reflectionProbeGenerate") == 0 && wcscmp(argv[i + 1], L"0") != 0 && flags ^ 2)
+			{
+				isReflectionMode = true;
+				flags |= 2;
+			}
+			else if (flags == 3)
+			{
+				return isReflectionMode;
+			}
+		}
+	}
+	return isReflectionMode;
+}

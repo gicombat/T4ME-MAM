@@ -47,7 +47,7 @@ const char* SDLLP::DetermineLibrary()
 
 	CIniReader ini;
 
-	if (ini.ReadInteger("Graphics", "DXVK", 0) != 0)
+	if ((ini.ReadInteger("Graphics", "DXVK", 0) != 0) && !IsReflectionMode())
 	{
 		Log("[SDLLP] DXVK enabled in configuration.");
 
