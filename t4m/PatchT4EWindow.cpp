@@ -15,8 +15,19 @@
 dvar_t* safeArea_horizontal;
 dvar_t* safeArea_vertical;
 
-dvar_t* safeArea_horizontal_player;
-dvar_t* safeArea_vertical_player;
+//dvar_t* safeArea_horizontal_player;
+//dvar_t* safeArea_vertical_player;
+
+float safeArea_horizontal_set = 1.f;
+float safeArea_vertical_set = 1.f;
+
+//#define safeArea_horz safeArea_horizontal_player->current.value
+
+//#define safeArea_vert safeArea_vertical_player->current.value
+
+#define safeArea_horz safeArea_horizontal_set
+
+#define safeArea_vert safeArea_vertical_set
 
 struct ScreenPlacement
 {
@@ -132,8 +143,8 @@ float* ScrPlace_SetupViewport(ScreenPlacement *scrPlace, float viewportX, float 
 		viewportWidth,
 		viewportHeight,
 		viewportWidth / adjustedRealWidth,
-		safeArea_horizontal_player->current.value,
-		safeArea_vertical_player->current.value,
+		safeArea_horz,
+		safeArea_vert,
 		scrPlace->virtualViewableMin,
 		scrPlace->virtualViewableMax,
 		viewportWidth,
@@ -192,15 +203,15 @@ void UpdateSafeAreaLive() {
 
 			if (cl_paused->current.integer == 0) {
 
-				safeArea_horizontal_player->current.value = safeArea_horizontal->current.value;
-				safeArea_vertical_player->current.value = safeArea_vertical->current.value;
+				safeArea_horz = safeArea_horizontal->current.value;
+				safeArea_vert = safeArea_vertical->current.value;
 
 
 			}
 			else if (cl_paused->current.integer) {
 
-				safeArea_horizontal_player->current.value = 1.f;
-				safeArea_vertical_player->current.value = 1.f;
+				safeArea_horz = 1.f;
+				safeArea_vert = 1.f;
 
 
 			}
@@ -213,8 +224,8 @@ void UpdateSafeAreaLive() {
 		safeArea_horizontal->modified = false;
 		safeArea_vertical->modified = false;
 
-		safeArea_horizontal_player->current.value = safeArea_horizontal->current.value;
-		safeArea_vertical_player->current.value = safeArea_vertical->current.value;
+		safeArea_horz = safeArea_horizontal->current.value;
+		safeArea_vert = safeArea_vertical->current.value;
 		CL_ResetViewport();
 	}
 }
@@ -234,8 +245,11 @@ void PatchT4E_Window() {
 	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Horizontal safe area as a fraction of the screen width");
 	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Vertical safe area as a fraction of the screen height");
 
-	safeArea_horizontal_player = Dvar_RegisterFloat("safeArea_horizontal_applied", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Horizontal safe area as a fraction of the screen width");
-	safeArea_vertical_player = Dvar_RegisterFloat("safeArea_vertical_applied", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Vertical safe area as a fraction of the screen height");
+	safeArea_vertical->modified = true;
+	safeArea_horizontal->modified = true;
+
+	//safeArea_horizontal_player = Dvar_RegisterFloat("safeArea_horizontal_applied", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Horizontal safe area as a fraction of the screen width");
+	//safeArea_vertical_player = Dvar_RegisterFloat("safeArea_vertical_applied", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE | DVAR_FLAG_ROM, "Vertical safe area as a fraction of the screen height");
 
 	//static auto whatever = safetyhook::create_mid(0x005EF938, [](SafetyHookContext& ctx) {
 	//	const char* name = (const char*)(ctx.ebx);
