@@ -198,7 +198,47 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoRockets(
     R_AddCmdDrawStretchPic_HUD_fix(x, y, width, height, s0, t0, s1, t1, color, material);
 }
 
+
+dvar_t* cg_scoreboardTextOffset_player_0;
+
+dvar_t* cg_scoreboardTextOffset_player_1;
+
+dvar_t* cg_scoreboardTextOffset_player_2;
+
+dvar_t* cg_scoreboardTextOffset_player_3;
+
+inline float cg_scoreboardTextOffset_og_multiplier() {
+    dvar_t* scoreboard = *(dvar_t**)(0x0368FC14);
+
+    return scoreboard->current.value / scoreboard->defaulta.value;
+}
+
+float get_cg_scoreboardTextOffset_per_player(int client) {
+    dvar_t* which = cg_scoreboardTextOffset_player_0;
+    switch (client) {
+    case 0:
+        which = cg_scoreboardTextOffset_player_0;
+        break;
+    case 1:
+        which = cg_scoreboardTextOffset_player_1;
+        break;
+    case 2:
+        which = cg_scoreboardTextOffset_player_2;
+        break;
+    case 3:
+        which = cg_scoreboardTextOffset_player_3;
+        break;
+    }
+    return which->current.value * cg_scoreboardTextOffset_og_multiplier();
+
+}
+
 void PatchT4E_UI() {
+
+    cg_scoreboardTextOffset_player_0 = Dvar_RegisterFloat("cg_scoreboardTextOffset_player_0", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_1 = Dvar_RegisterFloat("cg_scoreboardTextOffset_player_1", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_2 = Dvar_RegisterFloat("cg_scoreboardTextOffset_player_2", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_3 = Dvar_RegisterFloat("cg_scoreboardTextOffset_player_3", 0.64f, 0, FLT_MAX, 0);
 
     Memory::VP::InjectHook(0x0042B814, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoMagazine);
     Memory::VP::InjectHook(0x0042B954, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShortMagazine);
@@ -260,5 +300,71 @@ void PatchT4E_UI() {
     //    base[0] += r_drawclipammo_x->current.value;
     //    base[1] += r_drawclipammo_y->current.value;
     //    });
+
+    static auto cg_scoreboard_w = Dvar_RegisterFloat("cg_scoreboard_w", 100.f, 1.f, FLT_MAX,DVAR_FLAG_ARCHIVE);
+
+    static auto cg_scoreboard_h = Dvar_RegisterFloat("cg_scoreboard_h", 21.f, 1.f, FLT_MAX, DVAR_FLAG_ARCHIVE);
+
+    static auto cg_scoreboard_textscale = Dvar_RegisterFloat("cg_scoreboard_textscale", 1.f, 0.1f, FLT_MAX, DVAR_FLAG_ARCHIVE);
+
+    static auto cg_scoreboard_zombie_console_hud = Dvar_RegisterBool(false, "cg_scoreboard_zombie_console_hud", DVAR_FLAG_ARCHIVE);
+
+    static auto playerSpectatingHide = Dvar_RegisterBool(false, "playerSpectatingHide", 0);
+
+    static auto ForJB = safetyhook::create_mid(0x00668A87, [](SafetyHookContext& ctx) {
+
+        if (!isZombieMode())
+            return;
+
+        float w_scale = cg_scoreboard_w->current.value / cg_scoreboard_w->defaulta.value;
+
+        float h_scale = cg_scoreboard_h->current.value / cg_scoreboard_h->defaulta.value;
+
+        if (cg_scoreboard_zombie_console_hud->isEnabled()) {
+            w_scale = 1.f;
+            h_scale = 1.28571428571;
+        }
+
+        float& w = *(float*)(ctx.esp + 0x70);
+
+        float& h = ctx.xmm0.f32[0];
+
+        w *= w_scale;
+
+        h *= h_scale;
+
+        });
+
+
+    static auto forJB_textScale = safetyhook::create_mid(0x668800, [](SafetyHookContext& ctx) {
+        if (!isZombieMode())
+            return;
+        float& text_scale = *(float*)(ctx.esp + 0x18);
+
+        int client = *(int*)(ctx.esp + 0x14);
+
+        //Com_Printf(0, "rendering client %d\n", client);
+
+        float muliplier = cg_scoreboard_zombie_console_hud->isEnabled() ? 1.5f : cg_scoreboard_textscale->current.value;
+
+
+        text_scale *= muliplier;
+
+        });
+    static int current_zombie_client_text = 0;
+    static auto saveClientNumber = safetyhook::create_mid(0x668CC0, [](SafetyHookContext& ctx) {
+        current_zombie_client_text = ctx.ecx;
+        });
+
+    Memory::VP::Nop(0x6689F8, 5);
+
+    static auto per_player_text_offset = safetyhook::create_mid(0x6689F8, [](SafetyHookContext& ctx) {
+        ctx.xmm0.f32[0] *= get_cg_scoreboardTextOffset_per_player(current_zombie_client_text);
+        });
+
+    static auto hide_spectate_text = safetyhook::create_mid(0x438706, [](SafetyHookContext& ctx) {
+        if (playerSpectatingHide->current.boolean)
+            ctx.eip = 0x43873C;
+        });
 
 }
