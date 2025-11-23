@@ -157,6 +157,7 @@ popd</Command>
     <ClCompile Include="SDLLP.cpp" />
     <ClCompile Include="PatchT4.cpp" />
     <ClCompile Include="T4.cpp" />
+    <ClCompile Include="T4E_UI.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

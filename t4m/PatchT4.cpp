@@ -31,6 +31,8 @@ void PatchT4E_Render();
 
 void PatchT4E_Weapons();
 
+void PatchT4E_UI();
+
 void Sys_RunInit()
 {
 	LAACheck();
@@ -53,6 +55,8 @@ void PatchT4()
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();
+
+	PatchT4E_UI();
 
 	PatchT4E_Weapons();
 	
