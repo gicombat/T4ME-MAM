@@ -146,6 +146,7 @@ popd</Command>
     <ClCompile Include="PatchT4Console.cpp" />
     <ClCompile Include="PatchT4Dvars.cpp" />
     <ClCompile Include="PatchT4EWindow.cpp" />
+    <ClCompile Include="PatchT4E_Pathing.cpp" />
     <ClCompile Include="PatchT4E_Render.cpp" />
     <ClCompile Include="PatchT4E_Shaders.cpp" />
     <ClCompile Include="PatchT4E_Weapons.cpp" />

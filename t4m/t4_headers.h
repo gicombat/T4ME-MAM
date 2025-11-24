@@ -2197,5 +2197,151 @@ struct __declspec(align(8)) gentity_s
 	int birthTime;
 };
 
+enum nodeType : __int32
+{
+	NODE_BADNODE = 0x0,
+	NODE_PATHNODE = 0x1,
+	NODE_COVER_STAND = 0x2,
+	NODE_COVER_CROUCH = 0x3,
+	NODE_COVER_CROUCH_WINDOW = 0x4,
+	NODE_COVER_PRONE = 0x5,
+	NODE_COVER_RIGHT = 0x6,
+	NODE_COVER_LEFT = 0x7,
+	NODE_COVER_WIDE_RIGHT = 0x8,
+	NODE_COVER_WIDE_LEFT = 0x9,
+	NODE_CONCEALMENT_STAND = 0xA,
+	NODE_CONCEALMENT_CROUCH = 0xB,
+	NODE_CONCEALMENT_PRONE = 0xC,
+	NODE_REACQUIRE = 0xD,
+	NODE_BALCONY = 0xE,
+	NODE_SCRIPTED = 0xF,
+	NODE_NEGOTIATION_BEGIN = 0x10,
+	NODE_NEGOTIATION_END = 0x11,
+	NODE_TURRET = 0x12,
+	NODE_GUARD = 0x13,
+	NODE_NUMTYPES = 0x14,
+	NODE_DONTLINK = 0x14,
+};
+
+struct __declspec(align(4)) pathnode_t;
+
+struct pathlink_s
+{
+	float fDist;
+	unsigned __int16 nodeNum;
+	unsigned __int8 disconnectCount;
+	unsigned __int8 negotiationLink;
+	unsigned __int8 ubBadPlaceCount[4];
+};
+
+
+struct pathnode_constant_t
+{
+	nodeType type;
+	unsigned __int16 spawnflags;
+	unsigned __int16 targetname;
+	unsigned __int16 script_linkName;
+	unsigned __int16 script_noteworthy;
+	unsigned __int16 target;
+	unsigned __int16 animscript;
+	int animscriptfunc;
+	float vOrigin[3];
+	float fAngle;
+	float forward[2];
+	float fRadius;
+	float minUseDistSq;
+	__int16 wOverlapNode[2];
+	__int16 wChainId;
+	__int16 wChainDepth;
+	__int16 wChainParent;
+	unsigned __int16 totalLinkCount;
+	pathlink_s* Links;
+};
+
+struct pathnode_transient_t
+{
+	int iSearchFrame;
+	pathnode_t* pNextOpen;
+	pathnode_t* pPrevOpen;
+	pathnode_t* pParent;
+	float fCost;
+	float fHeuristic;
+	float costFactor;
+};
+
+struct SentientHandle
+{
+	unsigned __int16 number;
+	unsigned __int16 infoIndex;
+};
+
+
+struct __declspec(align(4)) pathnode_dynamic_t
+{
+	SentientHandle pOwner;
+	int iFreeTime;
+	int iValidTime[3];
+	int inPlayerLOSTime;
+	__int16 wLinkCount;
+	__int16 wOverlapCount;
+	__int16 turretEntNumber;
+	__int16 userCount;
+};
+
+
+struct __declspec(align(4)) pathnode_t
+{
+	pathnode_constant_t constant;
+	pathnode_dynamic_t dynamic;
+	pathnode_transient_t transient;
+};
+
+struct pathsort_t
+{
+	pathnode_t* node;
+	float metric;
+	float distMetric;
+};
+
+enum contents_e : __int32
+{
+	CONTENTS_SOLID = 0x1,
+	CONTENTS_FOLIAGE = 0x2,
+	CONTENTS_NONCOLLIDING = 0x4,
+	CONTENTS_GLASS = 0x10,
+	CONTENTS_WATER = 0x20,
+	CONTENTS_CANSHOOTCLIP = 0x40,
+	CONTENTS_MISSILECLIP = 0x80,
+	CONTENTS_ITEM = 0x100,
+	CONTENTS_VEHICLECLIP = 0x200,
+	CONTENTS_ITEMCLIP = 0x400,
+	CONTENTS_SKY = 0x800,
+	CONTENTS_AI_NOSIGHT = 0x1000,
+	CONTENTS_CLIPSHOT = 0x2000,
+	CONTENTS_CORPSE_CLIPSHOT = 0x4000,
+	CONTENTS_ACTOR = 0x8000,
+	CONTENTS_FAKE_ACTOR = 0x8000,
+	CONTENTS_PLAYERCLIP = 0x10000,
+	CONTENTS_MONSTERCLIP = 0x20000,
+	CONTENTS_PLAYERVEHICLECLIP = 0x40000,
+	CONTENTS_USE = 0x200000,
+	CONTENTS_UTILITYCLIP = 0x400000,
+	CONTENTS_VEHICLE = 0x800000,
+	CONTENTS_MANTLE = 0x1000000,
+	CONTENTS_PLAYER = 0x2000000,
+	CONTENTS_CORPSE = 0x4000000,
+	CONTENTS_DETAIL = 0x8000000,
+	CONTENTS_STRUCTURAL = 0x10000000,
+	CONTENTS_LOOKAT = 0x10000000,
+	CONTENTS_TRIGGER = 0x40000000,
+	CONTENTS_NODROP = 0x80000000,
+};
+
+enum nearestNodeHeightCheck : __int32
+{
+	NEAREST_NODE_DO_HEIGHT_CHECK = 0x0,
+	NEAREST_NODE_DONT_DO_HEIGHT_CHECK = 0x1,
+};
+
 
 #pragma pack(pop)
