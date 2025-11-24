@@ -17,6 +17,8 @@
 
 #include "safetyhook.hpp"
 
+#include "MemoryMgr.h"
+
 WeaponDef** bg_weaponDefs = (WeaponDef**)0x8F6770;
 const WeaponDef* __cdecl BG_GetWeaponDef(unsigned int weaponIndex) {
 	return bg_weaponDefs[weaponIndex];
@@ -53,6 +55,15 @@ dvar_t* cg_drawTrapTimers;
 
 dvar_t* cg_lowerGun; // lower gun 1st person
 dvar_t* zombiemode_dev; // experimental COD5R features
+
+// these below are all fixable within gsc, but i'll add them in for whoever wants to use them, same names as Pluto but im not sure if this implementation is 1:1 with pluto
+dvar_t* g_disable_zombie_grab;
+
+dvar_t* g_fix_tesla_bug;
+
+dvar_t* g_fix_health_sets_max;
+
+
 
 // custom functions
 typedef struct
@@ -298,6 +309,32 @@ void GScr_PrintLnConsole(scr_entref_t entity)
 }
 #pragma endregion customFunctions
 
+
+int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
+{
+	static DWORD func = 0x00699C50;
+	int result;
+	__asm
+	{
+		mov eax, inst
+		mov ecx, index
+		call func
+		mov result, eax
+	}
+	return result;
+}
+
+// for zombies this is applied on each zombie spawn in _spawner
+int __stdcall DisablePushPlayer() {
+
+	if ((isZombieMode() && g_disable_zombie_grab->current.integer == 1) || g_disable_zombie_grab->current.integer >= 2) {
+		return 0;
+	}
+	else
+		return Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
+
+}
+
 void PatchT4_Script()
 {
 	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
@@ -311,6 +348,26 @@ void PatchT4_Script()
 	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
 	cg_drawTrapTimers = Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
 	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
+
+	g_disable_zombie_grab = Dvar_RegisterInt(0, "g_disable_zombie_grab", 0, 2, DVAR_FLAG_CHEAT, "Disables pushPlayer() from executing\n1 = Disable when playing zombies\n2 = always disabled");
+
+	g_fix_tesla_bug = Dvar_RegisterBool(0, "g_fix_tesla_bug",DVAR_FLAG_CHEAT, "Applies same wunderwaffe's 'fix' as seen in Black Ops 1");
+
+	Memory::VP::InjectHook(0x4DDA72, DisablePushPlayer);
+
+	static auto fix_tesla_bug = safetyhook::create_mid(0x4F5EE2, [](SafetyHookContext& ctx) {
+		if (g_fix_tesla_bug->current.boolean)
+			ctx.eip = 0x4F5F44;
+		});
+
+
+
+	g_fix_health_sets_max = Dvar_RegisterBool(0, "g_fix_health_sets_max", DVAR_FLAG_CHEAT, "Stops health also changing maxhealth");
+
+	static auto fix_health_sets_max = safetyhook::create_mid(0x005309C0, [](SafetyHookContext& ctx) {
+		if (g_fix_health_sets_max->current.boolean)
+			ctx.eip = 0x5309C6;
+		});
 
 	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 

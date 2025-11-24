@@ -318,17 +318,6 @@ const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header)
 	return name;
 }
 
-void __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
-{
-	static DWORD func = 0x00699C50;
-	__asm
-	{
-		push inst
-		push index
-		call func
-	}
-}
-
 int __cdecl DB_GetXAssetTypeSize(int type)
 {
 	return DB_GetXAssetSizeHandler[type]();
