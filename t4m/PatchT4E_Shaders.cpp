@@ -197,7 +197,7 @@ SafetyHookInline EndFrame_hook{};
 void UpdateSafeAreaLive();
 
 void __cdecl EndFrame() {
-#define force_gamma_update false
+#define force_gamma_update true
 
 	float whatever[4]{ 0.f,0.f,0.f,0.f };
 	if (r_gamma_x360) {
