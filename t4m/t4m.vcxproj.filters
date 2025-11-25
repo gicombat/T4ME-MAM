@@ -81,6 +81,12 @@
     <ClCompile Include="PatchT4E_Pathing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="T4E_UI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4E_Input.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdInc.h">
