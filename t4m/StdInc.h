@@ -35,3 +35,5 @@
 #define LONGVERSION_STR SHORTVERSION_STR " CL " DATE " " TIME
 #define VERSION COMMIT
 #define VERSION_T4ME 49
+
+#define force_gamma_update true
