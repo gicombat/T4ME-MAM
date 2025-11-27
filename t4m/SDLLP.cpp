@@ -2,8 +2,10 @@
 // System Dynamic Link Library Proxy
 // by momo5502
 // --------------------------------------+
-#include "StdInc.h"
+//#include "StdInc.h"
 #include "IniReader.h"
+#include <map>
+#include "T4.h"
 
 // Static class
 // --------------------------------------+

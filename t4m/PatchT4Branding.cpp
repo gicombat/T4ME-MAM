@@ -29,7 +29,7 @@ void PatchT4_Branding()
 
 const char* SetConsoleVersion()
 {
-	return va("Call of Duty %s", va("T4-SP (r%d) (built " DATE " " TIME " by Clippy95 and Nazi Zombies remastered developer JB)", VERSION_T4ME));
+	return va("Call of Duty %s", va("T4-SP (r%d) (built " DATE_T4 " " TIME " by Clippy95 and Nazi Zombies remastered developer JB)", VERSION_T4ME));
 }
 
 const char* SetShortVersion()

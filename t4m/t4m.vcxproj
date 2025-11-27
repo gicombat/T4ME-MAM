@@ -56,7 +56,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;T4M_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;$(SolutionDir)\include;$(SolutionDir)include\dxsdk;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;$(SolutionDir)\include;$(SolutionDir)include\dxsdk;%(AdditionalIncludeDirectories);$(SolutionDir)include\cod;$(SolutionDir)include\</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -90,7 +90,7 @@ if "$(SolutionDir)" == "C:\dev\COD Archive\t4\T4M\t4m\" (
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;T4M_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;%(AdditionalIncludeDirectories);$(SolutionDir)include\cod;$(SolutionDir)include\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -117,10 +117,29 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
+    <ClInclude Include="include\cod\clientscript\clientscript_public.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_animtree.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_compiler.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_main.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_memorytree.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_parser.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_parsetree.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_readwrite.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_stringlist.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_tempmemory.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_variable.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_vm.hpp" />
+    <ClInclude Include="include\cod\clientscript\cscr_yacc.hpp" />
+    <ClInclude Include="include\cod\enums.hpp" />
+    <ClInclude Include="include\cod\game.hpp" />
+    <ClInclude Include="include\cod\structs.hpp" />
+    <ClInclude Include="include\cod\xasset.hpp" />
+    <ClInclude Include="include\hexrays_defs.h" />
     <ClInclude Include="include\IniReader.h" />
     <ClInclude Include="include\MemoryMgr.h" />
     <ClInclude Include="include\mini\ini.h" />
     <ClInclude Include="include\safetyhook.hpp" />
+    <ClInclude Include="include\Stdinc.hpp" />
     <ClInclude Include="include\Zydis.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Script.h" />
@@ -130,6 +149,20 @@ popd</Command>
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="include\cod\clientscript\clientscript_public_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_animtree_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_compiler_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_main_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_memorytree_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_parser_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_parsetree_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_readwrite_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_stringlist_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_tempmemory_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_variable_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_vm_w.cpp" />
+    <ClCompile Include="include\cod\clientscript\cscr_yacc_w.cpp" />
+    <ClCompile Include="include\cod\game.cpp" />
     <ClCompile Include="include\safetyhook.cpp" />
     <ClCompile Include="include\Zydis.c" />
     <ClCompile Include="LAAPatch.cpp" />
@@ -159,6 +192,7 @@ popd</Command>
     <ClCompile Include="SDLLP.cpp" />
     <ClCompile Include="PatchT4.cpp" />
     <ClCompile Include="T4.cpp" />
+    <ClCompile Include="T4E_items.ixx" />
     <ClCompile Include="T4E_UI.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>

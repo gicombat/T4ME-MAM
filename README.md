@@ -49,22 +49,29 @@ Installing the T4M mod is extremely simple:
 - If playing with ReShade, re-name the ReShade "d3d9.dll" to "d3d9r.dll" and also keep it in the same root directory
 - For usage with WINE/Proton, simply add `WINEDLLOVERRIDES="d3d9=n,b" %command%` to World At War's launch options in Steam
 
-## Developers
+## T4Me contributors
+- Clippy95
+- JB Shady
+
+
+## T4Me credits
+- [JezuzLizard](https://github.com/JezuzLizard/T4SP-Server-Plugin)
+- Guy
+- ineedbots
+- JerryALT for [iw3sp_mod](https://gitea.com/JerryALT/iw3sp_mod)
+- Parallellines0451 (Rec 709 shader for Xbox 360 gamma approximation)
+
+
+## Original T4M Developers
 - DidUknowiPwn
 - momo5502
 - SE2Dev
 - TheApadayo
 
-## Contributions
+## Original T4M Contributions
 - HitmanVere
 - Ray1235
 - ProGamerzFTW
-- JezuzLizard
-- Guy
-- JB Shady
-- Clippy95
-- Parallellines0451
-- [re4_tweaks](https://github.com/nipkownix/re4_tweaks)
 
 
 ## Notes

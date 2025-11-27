@@ -40,6 +40,7 @@ union dvar_value_t {
 	int		integer;
 	float	value;
 	bool	boolean;
+	bool    enabled;
 	float	vec2[2];
 	float	vec3[3];
 	float	vec4[4];
@@ -282,6 +283,9 @@ extern "C"
 	typedef void* (*CScr_GetMethod_t)(const char **pName, int *type);
 	extern CScr_GetMethod_t CScr_GetMethod;
 
+	typedef dvar_t* (__cdecl*Dvar_FindMalleableVarT)(const char* name);
+	extern Dvar_FindMalleableVarT Dvar_FindMalleableVar;
+
 	//typedef void* (*Scr_GetMethod_t)(const char **pName, int *type);
 	extern int Scr_GetMethod(int *type, const char **pName);
 
@@ -366,3 +370,9 @@ bool isZombieMode();
 bool Com_SessionMode_IsZombiesGame();
 
 bool IsReflectionMode();
+
+namespace Dvars {
+	namespace Functions {
+		dvar_t* Dvar_FindVar(const char* name);
+	}
+}

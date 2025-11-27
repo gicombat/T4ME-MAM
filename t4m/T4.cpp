@@ -28,6 +28,8 @@ extern "C"
 	CScr_GetFunction_t CScr_GetFunction = (CScr_GetFunction_t)0x0066EA30;
 	CScr_GetMethod_t CScr_GetMethod = (CScr_GetMethod_t)0x00671110;
 
+	Dvar_FindMalleableVarT Dvar_FindMalleableVar = (Dvar_FindMalleableVarT)0x5EDE30;
+
 	DB_EnumXAssets_t DB_EnumXAssets = (DB_EnumXAssets_t)0x006DA180;
 	DB_EnumXAssets_FastFile_t DB_EnumXAssets_FastFile = (DB_EnumXAssets_FastFile_t)0x0048DEA0;
 	DB_FindXAssetHeader_t DB_FindXAssetHeader = (DB_FindXAssetHeader_t)0x48DA30;
@@ -54,6 +56,26 @@ extern "C"
 	unsigned __int16 * db_hashTable = (unsigned __int16 *)0x00987088;
 
 	DB_XAssetGetNameHandler * DB_XAssetGetNameHandlers = (DB_XAssetGetNameHandler *)0x008DCAF8;
+}
+
+dvar_t emptydvar{};
+
+dvar_t* Dvar_FindVars(const char* name) {
+	auto dvar = Dvar_FindMalleableVar(name);
+	if (dvar)
+		return dvar;
+
+
+		return &emptydvar;
+
+}
+
+namespace Dvars {
+	namespace Functions {
+			dvar_t* Dvar_FindVar(const char* name) {
+			return Dvar_FindVars(name);
+		}
+	}
 }
 
 // fucking __usercall
