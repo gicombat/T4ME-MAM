@@ -126,6 +126,9 @@ dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, 
 // void* returns are always in eax
 uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
 
+void __declspec(naked) DoReturn() {
+	__asm retn
+}
 
 uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* name, int min, int max, int flags, const char* description) {
 	

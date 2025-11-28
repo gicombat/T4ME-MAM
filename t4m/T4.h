@@ -376,3 +376,7 @@ namespace Dvars {
 		dvar_t* Dvar_FindVar(const char* name);
 	}
 }
+
+void DoReturn();
+
+#define retptr (uintptr_t)&DoReturn

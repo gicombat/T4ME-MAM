@@ -1,4 +1,4 @@
-																																																											// ==========================================================
+// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -11,6 +11,7 @@
 #include "StdInc.h"
 #include "MemoryMgr.h"
 #include "IniReader.h"
+#include <safetyhook.hpp>
 void loadGameOverlay();
 void LAACheck();
 void PatchT4();
@@ -116,8 +117,18 @@ void PatchT4_SteamDRM()
 
 void PatchT4_Menus()
 {
-	nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
-	nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(0x004379D0, [](SafetyHookContext& ctx) {
+		if (isZombieMode())
+			ctx.eip = retptr;
+		});
+	//nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
+	//nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+	static auto onlinegame_dvar_check = safetyhook::create_mid(0x006680CE, [](SafetyHookContext& ctx) {
+		if (isZombieMode())
+			ctx.eip = 0x006680D4;
+		});
+
+
 }
 
 // code from https://github.com/momo5502/cod-mod/
