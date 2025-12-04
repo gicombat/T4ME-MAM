@@ -95,6 +95,10 @@ void PatchT4_PreLoad()
 	}
 	// Increase hunk total
 	Memory::VP::Patch<uint32_t>((0x005E3CD1 + 6), 15728640);
+
+	// Remove duplicate calls in serverthread
+	Memory::VP::Nop(0x00636686, 0x2D);
+
 }
 
 void PatchT4_SteamDRM()
