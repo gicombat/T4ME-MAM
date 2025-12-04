@@ -13351,6 +13351,261 @@ namespace game
 		char UsageIndex;
 	};
 
+	struct GfxWindowTarget
+	{
+		HWND__* hwnd;
+		IDirect3DSwapChain9* swapChain;
+		int width;
+		int height;
+	};
+
+	// obv. not complete
+	struct __declspec(align(8)) DxGlobals
+	{
+		IDirect3D9* d3d9;
+		IDirect3DDevice9* device;
+		unsigned int adapterIndex;
+		bool adapterNativeIsValid;
+		int adapterNativeWidth;
+		int adapterNativeHeight;
+		int adapterFullscreenWidth;
+		int adapterFullscreenHeight;
+		int depthStencilFormat;
+		unsigned int displayModeCount;
+		_D3DDISPLAYMODE displayModes[256];
+		const char* resolutionNameTable[257];
+		const char* refreshRateNameTable[257];
+		char modeText[5120];
+		IDirect3DQuery9* fencePool[8];
+		unsigned int nextFence;
+		int gpuSync;
+		int multiSampleType;
+		unsigned int multiSampleQuality;
+		int sunSpriteSamples;
+		IDirect3DSurface9* singleSampleDepthStencilSurface;
+		int pad;
+		bool deviceLost;
+		bool inScene;
+		int targetWindowIndex;
+		int windowCount;
+		GfxWindowTarget windows[1];
+		// ....
+	};
+
+
+	struct GfxMatrix
+	{
+		float m[4][4];
+	};
+
+	struct GfxViewParms
+	{
+		GfxMatrix viewMatrix;
+		GfxMatrix projectionMatrix;
+		GfxMatrix viewProjectionMatrix;
+		GfxMatrix inverseViewProjectionMatrix;
+		float origin[4];
+		float axis[3][3];
+		float depthHackNearClip;
+		float zNear;
+		int pad;
+	};
+
+
+	struct GfxSceneDef
+	{
+		int time;
+		float floatTime;
+		float viewOffset[3];
+	};
+
+	struct GfxCodeMatrices
+	{
+		GfxMatrix matrix[32];
+	};
+
+
+	struct GfxReadCmdBuf
+	{
+		const unsigned int* primDrawSurfPos;
+	};
+
+	struct GfxBspPreTessDrawSurf
+	{
+		unsigned __int16 baseSurfIndex;
+		unsigned __int16 totalTriCount;
+	};
+
+	struct GfxViewInfo
+	{
+		GfxViewParms viewParms;
+		GfxSceneDef sceneDef;
+		// ....
+	}; // size = 0x6D80
+
+	struct FxCodeMeshData
+	{
+		unsigned int triCount;
+		unsigned __int16* indices;
+		unsigned __int16 argOffset;
+		unsigned __int16 argCount;
+		unsigned int pad;
+	};
+
+	struct GfxVertexBufferState
+	{
+		volatile int used;
+		int total;
+		IDirect3DVertexBuffer9* buffer;
+		char* verts;
+	};
+
+	struct GfxMeshData
+	{
+		unsigned int indexCount;
+		unsigned int totalIndexCount;
+		unsigned __int16* indices;
+		GfxVertexBufferState vb;
+		unsigned int vertSize;
+	};
+
+	struct GfxDebugPoly
+	{
+		float color[4];
+		int firstVert;
+		int vertCount;
+	};
+
+
+
+
+
+	struct GfxDebugPlume
+	{
+		float origin[3];
+		float color[4];
+		int score;
+		int startTime;
+		int duration;
+	};
+
+
+	struct DebugGlobals
+	{
+		float(*verts)[3];
+		int vertCount;
+		int vertLimit;
+		GfxDebugPoly* polys;
+		int polyCount;
+		int polyLimit;
+		trDebugString_t* strings;
+		int stringCount;
+		int stringLimit;
+		trDebugString_t* externStrings;
+		int externStringCount;
+		int externMaxStringCount;
+		trDebugLine_t* lines;
+		int lineCount;
+		int lineLimit;
+		trDebugLine_t* externLines;
+		int externLineCount;
+		int externMaxLineCount;
+		GfxDebugPlume* plumes;
+		int plumeCount;
+		int plumeLimit;
+	};
+
+	struct __declspec(align(4)) GfxBackEndData
+	{
+		char surfsBuffer[262144];
+		FxCodeMeshData codeMeshes[2048];
+		char pad0[569088];
+		GfxMeshData codeMesh;
+		char pad[466512];
+		GfxMeshData markMesh;
+		char pad1[58];
+		unsigned int viewInfoIndex;
+		unsigned int viewInfoCount;
+		GfxViewInfo* viewInfo;
+		char pad2[78];
+		DebugGlobals debugGlobals;
+		unsigned int drawType;
+	};
+
+
+
+
+
+
+
+
+	struct __declspec(align(4)) GfxModelSurfaceInfo
+	{
+		void* baseMat;
+		char boneIndex;
+		char boneCount;
+		unsigned __int16 gfxEntIndex;
+		unsigned __int16 lightingHandle;
+		char dobjModelIndex;
+	};
+
+	union $178D1D161B34F636C03EBC0CA3007D75
+	{
+		GfxPackedVertex* skinnedVert;
+		int oldSkinnedCachedOffset;
+	};
+
+	struct GfxModelSkinnedSurface
+	{
+		int skinnedCachedOffset;
+		XSurface* xsurf;
+		GfxModelSurfaceInfo info;
+		$178D1D161B34F636C03EBC0CA3007D75 u;
+	};
+
+
+
+	struct GfxScaledPlacement
+	{
+		GfxPlacement base;
+		float scale;
+	};
+
+	struct GfxModelRigidSurface
+	{
+		GfxModelSkinnedSurface surf;
+		GfxScaledPlacement placement;
+	};
+
+	struct __declspec(align(8)) GfxCmdBufInput
+	{
+		float consts[132][4];
+		//GfxImage* codeImages[27];
+		//char codeImageSamplerStates[27];
+		//GfxBackEndData* data;
+	};
+
+	struct GfxCmdBufSourceState
+	{
+		GfxCodeMatrices matrices;
+		GfxCmdBufInput input;
+		//char pad0[2116];
+		GfxBackEndData* data;
+		char padx0[8];
+		GfxViewParms viewParms;
+		char pad00[364];
+		float eyeOffset[4];
+		unsigned int shadowableLightForShadowLookupMatrix;
+		GfxScaledPlacement* objectPlacement;
+		GfxViewParms* viewParms3D;
+		bool depthHack;
+		GfxScaledPlacement skinnedPlacement;
+		int cameraView;
+		GfxViewMode viewMode;
+		int sceneDef;
+	}; // size == 0x1390
+
+
 #ifdef __cplusplus
 }
 #endif
