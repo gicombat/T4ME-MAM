@@ -563,11 +563,10 @@ void __cdecl AimAssist_ApplyAutoMelee_4_ApplyAutoAim(game::AimInput* a1, game::A
 void PatchT4E_Input() {
 	gpad_lastinput = Dvar_RegisterInt(1, "gpad_lastinput", 1, 2, DVAR_FLAG_ROM, "Returns what was last input by player\n1 = Mouse\n2 = Gamepad");
 
-	gpad_autoaim_enabled = Dvar_RegisterBool(true, "gpad_autoaim_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
+	gpad_autoaim_enabled = Dvar_RegisterBool(false, "gpad_autoaim_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
 
 	gpad_lockon_enabled = Dvar_RegisterBool(true, "gpad_lockon_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
 
-	gpad_lockon_enabled = Dvar_RegisterBool(true, "gpad_lockon_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
 
 	aim_autoAimRangeScale = Dvar_RegisterFloat("aim_autoAimRangeScale", 1.f, 0.f, 2.f,0);
 
