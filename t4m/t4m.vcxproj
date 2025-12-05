@@ -149,19 +149,6 @@ popd</Command>
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="include\cod\clientscript\clientscript_public_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_animtree_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_compiler_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_main_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_memorytree_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_parser_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_parsetree_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_readwrite_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_stringlist_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_tempmemory_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_variable_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_vm_w.cpp" />
-    <ClCompile Include="include\cod\clientscript\cscr_yacc_w.cpp" />
     <ClCompile Include="include\cod\game.cpp" />
     <ClCompile Include="include\safetyhook.cpp" />
     <ClCompile Include="include\Zydis.c" />
