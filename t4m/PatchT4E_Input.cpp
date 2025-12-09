@@ -243,6 +243,8 @@ bool AimAssist_DoBoundsIntersectCenterBox(const float* clipMins, const float* cl
 	return clipHalfWidth >= clipMins[0] && clipMaxs[0] >= -clipHalfWidth && clipHalfHeight >= clipMins[1] && clipMaxs[1] >= -clipHalfHeight;
 }
 
+
+
 void AimAssist_ClearAutoAimTarget(Game::AimAssistGlobals* aaGlob)
 {
 	aaGlob->autoAimTargetEnt = Game::AIM_TARGET_INVALID;
@@ -254,6 +256,12 @@ void AimAssist_ClearAutoAimTarget(Game::AimAssistGlobals* aaGlob)
 	aaGlob->autoAimJustGotTarget = 0;
 	aaGlob->autoAimHasRealTarget = 0;
 	aaGlob->autoAimPressed = 0;
+}
+
+void AimAssist_ClearAutoAimTarget(const game::AimInput* input) {
+
+	auto& aaGlob = game::aaGlobArray[input->localClientNum];
+	AimAssist_ClearAutoAimTarget(&aaGlob);
 }
 
 const Game::AimScreenTarget* AimAssist_GetTargetFromEntity(const Game::AimAssistGlobals* aaGlob, const int entIndex)
@@ -357,80 +365,90 @@ void AimAssist_ApplyAutoAim(const game::AimInput* input, game::AimOutput* output
 	assert(input);
 	assert(output);
 
-
 	auto& aaGlob = game::aaGlobArray[input->localClientNum];
-	const auto* weaponDef = game::bg_weaponDefs[game::CG_GetPlayerWeapon(input->ps,input->localClientNum)];
+	const auto* weaponDef = game::bg_weaponDefs[game::CG_GetPlayerWeapon(input->ps, input->localClientNum)];
 
 	if (!input->ps->weapon)
 	{
-		//Com_Printf(0, "^1[DEBUG] EXIT: No weapon\n");
 		return;
 	}
 
 	if ((input->ps->weaponstate >= game::WEAPON_RELOADING && input->ps->weaponstate <= game::WEAPON_RELOAD_END))
 	{
-		//Com_Printf(0, "^1[DEBUG] EXIT: Weapon reloading (state: %d)\n", input->ps->weaponstate);
 		return;
 	}
 
 	if (!weaponDef->aimDownSight)
 	{
-		//Com_Printf(0, "^1[DEBUG] EXIT: Weapon doesn't support ADS\n");
 		return;
 	}
 
-	//Com_Printf(0, "^3[DEBUG] Passed initial checks, checking if active...\n");
 	if (AimAssist_IsAutoAimActive(input->localClientNum, input))
 	{
-		//Com_Printf(0, "^2[DEBUG] AutoAim IS ACTIVE!\n");
 		if (!aaGlob.autoAimPressed)
 		{
-			//Com_Printf(0, "^3[DEBUG] First activation - screenTargetCount: %d\n", aaGlob.screenTargetCount);
-			const auto screenTarget = AimAssist_GetBestTarget(&aaGlob, weaponDef->autoAimRange * aim_autoAimRangeScale->current.value, aaGlob.tweakables.autoAimRegionWidth, aaGlob.tweakables.autoAimRegionHeight);
-			if (screenTarget)
+			if (input->ps->weaponstate != game::WEAPON_RELOADING
+				&& input->ps->weaponstate != game::WEAPON_RELOADING_INTERUPT
+				&& input->ps->weaponstate != game::WEAPON_RELOAD_START
+				&& input->ps->weaponstate != game::WEAPON_RELOAD_START_INTERUPT
+				&& input->ps->weaponstate != game::WEAPON_RELOAD_END)
 			{
-				//Com_Printf(0, "^2[DEBUG] TARGET FOUND! EntIndex: %d\n", screenTarget->entIndex);
-				AimAssist_SetAutoAimTarget(&aaGlob, screenTarget);
-			}
-			else
-			{
-				//Com_Printf(0, "^1[DEBUG] NO TARGET in range\n");
+				if (weaponDef->aimDownSight)
+				{
+					const auto screenTarget = AimAssist_GetBestTarget(&aaGlob, weaponDef->autoAimRange * aim_autoAimRangeScale->current.value, aaGlob.tweakables.autoAimRegionWidth, aaGlob.tweakables.autoAimRegionHeight);
+					if (screenTarget)
+					{
+						AimAssist_ClearAutoAimTarget(&aaGlob);
+						aaGlob.autoAimTargetEnt = screenTarget->entIndex;
+						aaGlob.autoAimActive = 1;
+						aaGlob.autoAimPitch = aaGlob.viewAngles[0];
+						aaGlob.autoAimYaw = aaGlob.viewAngles[1];
+						aaGlob.autoAimHasRealTarget = 1;
+						AimAssist_UpdateAutoAimTarget(&aaGlob);
+						aaGlob.autoAimJustGotTarget = 1;
+					}
+				}
 			}
 			aaGlob.autoAimPressed = 1;
 		}
 
 		if (aaGlob.autoAimActive)
 		{
-			//Com_Printf(0, "^2[DEBUG] autoAimActive flag = TRUE\n");
-			if (AimAssist_UpdateAutoAimTarget(&aaGlob) && aaGlob.adsLerp > 0.0f)
+			if ((input->ps->eFlags & 0x300) == 0
+				&& aaGlob.adsLerp < 1.0f
+				&& !AimAssist_UpdateAutoAimTarget(&aaGlob)
+				&& !aaGlob.autoAimJustGotTarget)
 			{
-				//Game::Com_Printf(0, "^2auto aim enabled!\n");
-				const auto newPitch = Game::DiffTrackAngle(aaGlob.autoAimPitchTarget, aaGlob.autoAimPitch, Dvars::Functions::Dvar_FindVar("aim_autoaim_lerp")->current.value, input->deltaTime);
-				const auto newYaw = Game::DiffTrackAngle(aaGlob.autoAimYawTarget, aaGlob.autoAimYaw, Dvars::Functions::Dvar_FindVar("aim_autoaim_lerp")->current.value, input->deltaTime);
-				const auto pitchDelta = Game::AngleSubtract(newPitch, aaGlob.autoAimPitch);
-				const auto yawDelta = Game::AngleSubtract(newYaw, aaGlob.autoAimYaw);
-				aaGlob.autoAimPitch = newPitch;
-				aaGlob.autoAimYaw = newYaw;
-				output->pitch = output->pitch + pitchDelta;
-				output->yaw = output->yaw + yawDelta;
-			}
-			else
-			{
-				//Game::Com_Printf(0, "1 jump!\n");
 				AimAssist_ClearAutoAimTarget(&aaGlob);
+				return;
 			}
-		}
-		else
-		{
-			//Com_Printf(0, "^1[DEBUG] autoAimActive flag = FALSE\n");
+
+			// Apply tracking
+			const auto newPitch = Game::DiffTrackAngle(aaGlob.autoAimPitchTarget, aaGlob.autoAimPitch, Dvars::Functions::Dvar_FindVar("aim_autoaim_lerp")->current.value, input->deltaTime);
+			const auto newYaw = Game::DiffTrackAngle(aaGlob.autoAimYawTarget, aaGlob.autoAimYaw, Dvars::Functions::Dvar_FindVar("aim_autoaim_lerp")->current.value, input->deltaTime);
+			const auto pitchDelta = Game::AngleSubtract(newPitch, aaGlob.autoAimPitch);
+			const auto yawDelta = Game::AngleSubtract(newYaw, aaGlob.autoAimYaw);
+
+			aaGlob.autoAimPitch = newPitch;
+			aaGlob.autoAimYaw = newYaw;
+			output->pitch += pitchDelta;
+			output->yaw += yawDelta;
+
+			aaGlob.autoAimJustGotTarget = 0;
+
+			if (fabs(pitchDelta) < 0.001f && fabs(yawDelta) <= 0.001f)
+			{
+				if (input->ps->fWeaponPosFrac == 0.0f)
+				{
+					AimAssist_ClearAutoAimTarget(&aaGlob);
+				}
+			}
 		}
 	}
 	else
 	{
-		//Com_Printf(0, "^1[DEBUG] AutoAim NOT active\n");
 		AimAssist_ClearAutoAimTarget(&aaGlob);
 		aaGlob.autoAimPressed = 0;
-	
 	}
 }
 
@@ -496,7 +514,7 @@ const Game::AimScreenTarget* AimAssist_GetPrevOrBestTarget(const Game::AimAssist
 
 void AimAssist_ApplyLockOn(const Game::AimInput* input, Game::AimOutput* output)
 {
-	if (gpad_lastinput->current.integer == 2)
+	if (gpad_lastinput->current.integer == 1)
 		return;
 	assert(input);
 	assert(output);
@@ -555,7 +573,12 @@ void AimAssist_ApplyLockOn(const Game::AimInput* input, Game::AimOutput* output)
 
 void __cdecl AimAssist_ApplyAutoMelee_4_ApplyAutoAim(game::AimInput* a1, game::AimOutput* a2) {
 
-	AimAssist_ApplyAutoAim(a1, a2);
+	if (gpad_lastinput->current.integer != 1) {
+		AimAssist_ApplyAutoAim(a1, a2);
+	}
+	else {
+		AimAssist_ClearAutoAimTarget(a1);
+	}
 	cdecl_call<void>(0x4032C0, a1, a2);
 
 }
@@ -563,7 +586,7 @@ void __cdecl AimAssist_ApplyAutoMelee_4_ApplyAutoAim(game::AimInput* a1, game::A
 void PatchT4E_Input() {
 	gpad_lastinput = Dvar_RegisterInt(1, "gpad_lastinput", 1, 2, DVAR_FLAG_ROM, "Returns what was last input by player\n1 = Mouse\n2 = Gamepad");
 
-	gpad_autoaim_enabled = Dvar_RegisterBool(false, "gpad_autoaim_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
+	gpad_autoaim_enabled = Dvar_RegisterBool(true, "gpad_autoaim_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
 
 	gpad_lockon_enabled = Dvar_RegisterBool(true, "gpad_lockon_enabled", DVAR_FLAG_SAVED | DVAR_FLAG_ARCHIVE);
 
