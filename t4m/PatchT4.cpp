@@ -133,6 +133,23 @@ void PatchT4_Menus()
 		});
 
 
+
+	//static auto MapRestart1 = safetyhook::create_mid(0x0062B7C0, [](SafetyHookContext& ctx) {
+	//	cdecl_call<int>(0x435D80);
+	//	});
+
+	Memory::VP::Nop(0x00438875, 10);
+
+	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) {
+		game::cg_s* cgArray = (game::cg_s*)0x034732B8;
+
+		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == game::pmtype_t::PM_INTERMISSION) {
+			ctx.eip = 0x006680DD;
+			return;
+		}
+
+		});
+
 }
 
 // code from https://github.com/momo5502/cod-mod/
