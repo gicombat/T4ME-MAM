@@ -75,6 +75,28 @@ dvar_t* cg_fovComp_enable;
 
 dvar_t* cg_fovComp_fovscale;
 
+
+game::dvar_s* cg_fov_user;
+game::dvar_s* cg_fovscale_user;
+
+
+void Update_cg_fov_user(float* cg_fov_value) {
+	game::dvar_s* cg_fov_min = *(game::dvar_s**)0x0339CBE0;
+
+	game::dvar_s* cg_fov = *(game::dvar_s**)0x0368EB70;
+
+	float mult = cg_fov_user->current.value / 65.f;
+	*cg_fov_value = std::clamp(*cg_fov_value * mult, cg_fov_min->current.value, cg_fov_user->domain.value.max);
+
+}
+
+void Update_cg_fovscale_user(float* cg_fovscale_value) {
+	game::dvar_s* cg_fovscale = *(game::dvar_s**)0x03688A04;
+	float mult = cg_fovscale_user->current.value / 1.f;
+	*cg_fovscale_value = std::clamp(*cg_fovscale_value * mult, cg_fovscale->domain.value.min, cg_fovscale->domain.value.max);
+
+}
+
 void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* origin)
 {
 	float v2;
@@ -99,10 +121,16 @@ void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* orig
 
 	float fovscale = cg_fovComp_fovscale->isEnabled() ? cg_fovscale->current.value : 1.f;
 
-	v6 = (float)((cg_fov->current.value * fovscale) - cg_fov_default->current.value)
+	float cg_fov_current = cg_fov->current.value;
+
+	Update_cg_fovscale_user(&fovscale);
+
+	Update_cg_fov_user(&cg_fov_current);
+
+	v6 = (float)((cg_fov_current * fovscale) - cg_fov_default->current.value)
 		* (float)(1.0 / (float)(cg_fovCompMax->current.value - cg_fov_default->current.value));
 	if ((float)(v6 - 1.0) < 0.0)
-		v7 = (float)((cg_fov->current.value * fovscale) - cg_fov_default->current.value)
+		v7 = (float)((cg_fov_current * fovscale) - cg_fov_default->current.value)
 		* (float)(1.0 / (float)(cg_fovCompMax->current.value - cg_fov_default->current.value));
 	else
 		v7 = 1.f;
@@ -178,8 +206,32 @@ void CG_DrawMemoryfunc(float* y) {
 }
 
 
-void PatchT4E_Render() {
+inline void Add_User_Fov() {
 
+	cg_fov_user = (game::dvar_s*)Dvar_RegisterFloat("cg_fov_user", 65.f, 1.f, 160.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890514);
+	cg_fovscale_user = (game::dvar_s*)Dvar_RegisterFloat("cg_fovscale_user", 1.f, 0.2f, 2.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890540);
+
+	static auto cg_fovscale_hook = safetyhook::create_mid(0x0042DF29, [](SafetyHookContext& ctx) {
+		Update_cg_fovscale_user(&ctx.xmm0.f32[0]);
+		});
+
+	static auto cg_fov_hook1 = safetyhook::create_mid(0x00402345, [](SafetyHookContext& ctx) {
+		Update_cg_fov_user(&ctx.xmm0.f32[0]);
+		});
+
+	static auto cg_fov_hook2 = safetyhook::create_mid(0x42DD6E, [](SafetyHookContext& ctx) {
+		Update_cg_fov_user(&ctx.xmm3.f32[0]);
+		});
+
+	static auto cg_fov_hook3 = safetyhook::create_mid(0x42E013, [](SafetyHookContext& ctx) {
+		Update_cg_fov_user(&ctx.xmm0.f32[0]);
+		});
+
+
+}
+
+void PatchT4E_Render() {
+	Add_User_Fov();
 	static auto fovcomp_backport = safetyhook::create_mid(0x00469CD6, [](SafetyHookContext& ctx) {
 		if (cg_fovComp_enable && cg_fovComp_enable->isEnabled()) {
 			float* origin = (float*)(ctx.esp + 0x28);
