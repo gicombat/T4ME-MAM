@@ -67,10 +67,13 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix(
 
 
         float* TEST_bullet_wh_3 = (float*)0x008E4580;
+        float* AmmoRocketsPos = (float*)0x8E4570;
         drawclipammo_scale[0] = 4.f * scale;
         ClipAmmoShortMagazine_scale[0] = 40.f * scale;
         ClipAmmoShotgunShells_scale[0] = 20.f * scale;
         DrawClipAmmoRockets_scale[0] = 64.f * scale;
+        AmmoRocketsPos[0] = 72.f * scale;
+
 
 
         TEST_bullet_wh_3[0] = 8.f * scale;
