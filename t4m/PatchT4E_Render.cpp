@@ -258,21 +258,21 @@ void PatchT4E_Render() {
 	cg_gun_fovcomp_x = Dvar_RegisterFloat(
 		"cg_gun_fovcomp_x",
 		-2.0,
-		FLT_MIN,
+		-FLT_MAX,
 		FLT_MAX,
 		0,
 		"x position FOV offset compensation of the viewmodel");
 	cg_gun_fovcomp_y = Dvar_RegisterFloat(
 		"cg_gun_fovcomp_y",
 		0.0,
-		FLT_MIN,
+		-FLT_MAX,
 		FLT_MAX,
 		0,
 		"y position FOV offset compensation of the viewmodel");
 	cg_gun_fovcomp_z = Dvar_RegisterFloat(
 		"cg_gun_fovcomp_z",
 		0.0,
-		FLT_MIN,
+		-FLT_MAX,
 		FLT_MAX,
 		0,
 		"z position FOV offset compensation of the viewmodel");
