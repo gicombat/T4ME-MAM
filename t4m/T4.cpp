@@ -123,6 +123,57 @@ dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, 
 	return ret;
 }
 
+dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
+{
+	DWORD func = 0x5EF150;
+	dvar_t* ret;
+
+	__asm
+	{
+		push description;
+		push flags;
+		push dvarName;
+		mov eax, defaultIndex;
+		mov ecx, valueList;
+		call func;
+		add esp, 0xC;
+		mov ret, eax;
+	}
+
+	return ret;
+}
+
+int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
+{
+	int result;
+	static uintptr_t textwidth_addr = 0x6E8DA0;
+	__asm
+	{
+		push font;
+		push maxChars;
+		mov eax, text;
+		call textwidth_addr;
+		add esp, 0x8;
+		mov result, eax;
+	}
+
+	return result;
+}
+
+inline float R_NormalizedTextScale(game::Font_s* font, float scale) {
+	return scale * 48.0 / (double)font->pixelHeight;
+}
+
+int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale)
+{
+	float v4; // xmm0_4
+	float actualScale; // [esp+10h] [ebp-4h]
+
+	actualScale = R_NormalizedTextScale(font, scale);
+	v4 = (float)((float)R_TextWidth(text, maxChars, font) * actualScale) + 0.5;
+	return (int)(float)floor(v4);
+}
+
 // void* returns are always in eax
 uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
 

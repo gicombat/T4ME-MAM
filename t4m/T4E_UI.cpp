@@ -236,6 +236,54 @@ float get_cg_scoreboardTextOffset_per_player(int client) {
 
 }
 
+int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale);
+
+dvar_t* cg_drawAmmoClipOffset{};
+
+dvar_t* cg_drawAmmoDivider{};
+
+dvar_t* cg_drawAmmoReserveOffset;
+
+dvar_t* cg_drawAmmoMod;
+
+const char* cg_drawAmmoModStrings[] = { "off","offset only","better anchor & offsets",NULL };
+
+void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) {
+    float* x = (float*)ctx.esp;
+    float* scale = (float*)(ctx.esp + 0x8);
+    game::Font_s* current_font = (game::Font_s*)ctx.ebp;
+    game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+    const char* current_text = lowclip ? (const char*)ctx.edx : (const char*)ctx.eax;
+
+    //// Skip leading spaces
+    //while (*current_text == ' ') {
+    //    current_text++;
+    //}
+    if (cg_drawAmmoMod->current.integer == 2) {
+        // Calculate separator position
+        float separator_pos = ((rect->w - (float)UI_TextWidth((const char*)&cg_drawAmmoDivider->current.integer, 0, current_font, *scale)) * 0.5f) + rect->x - 5.0f;
+
+        // Right-align clip to separator with a gap
+        float clip_width = (float)UI_TextWidth(current_text, 0, current_font, *scale);
+        *x = separator_pos - clip_width - cg_drawAmmoClipOffset->current.value; // Adjust the 3.0f for desired gap
+    }
+    else if (cg_drawAmmoMod->current.integer == 1) {
+        *x += cg_drawAmmoClipOffset->current.value;
+    }
+}
+
+void CG_DrawPlayerAmmoValueClip_lowclip(SafetyHookContext& ctx) {
+
+    CG_DrawPlayerAmmoValueClip(ctx, true);
+
+}
+
+void CG_DrawPlayerAmmoValueClip_normal(SafetyHookContext& ctx) {
+
+    CG_DrawPlayerAmmoValueClip(ctx, false);
+
+}
+
 void PatchT4E_UI() {
 
     cg_scoreboardTextOffset_player_0 = Dvar_RegisterFloat("cg_scoreboardTextOffset_player_0", 0.64f, 0, FLT_MAX, 0);
@@ -368,6 +416,48 @@ void PatchT4E_UI() {
     static auto hide_spectate_text = safetyhook::create_mid(0x438706, [](SafetyHookContext& ctx) {
         if (playerSpectatingHide->current.boolean)
             ctx.eip = 0x43873C;
+        });
+
+    cg_drawAmmoDivider = Dvar_RegisterInt('|', "cg_drawAmmoDivider", 0, CHAR_MAX, 0);
+
+    Memory::VP::Patch<void*>(0x0044F3CC + 1, &cg_drawAmmoDivider->current.integer);
+    Memory::VP::Patch<void*>(0x44F418 + 1, &cg_drawAmmoDivider->current.integer);
+
+    cg_drawAmmoClipOffset = Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, 0);
+
+    cg_drawAmmoReserveOffset = Dvar_RegisterFloat("cg_drawAmmoReserveOffset", 0.f, -FLT_MAX, FLT_MAX, 0);
+
+    cg_drawAmmoMod = Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", 0," ");
+
+    static auto cg_draw_ammo_clip = safetyhook::create_mid(0x0044F2FA, CG_DrawPlayerAmmoValueClip_normal);
+
+
+    static auto cg_draw_ammo_clip1 = safetyhook::create_mid(0x44F33E, CG_DrawPlayerAmmoValueClip_lowclip);
+
+
+    static auto cg_draw_ammo_reserve = safetyhook::create_mid(0x0044F3AA, [](SafetyHookContext& ctx) {
+        float* x = (float*)ctx.esp;
+        float* scale = (float*)(ctx.esp + 0x8);
+        game::Font_s* current_font = (game::Font_s*)ctx.ebp;
+        game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+        const char* current_text = (const char*)(ctx.esp + 0x154);
+
+        if (cg_drawAmmoMod->current.integer == 2) {
+            float separator_pos = ((rect->w - (float)UI_TextWidth((const char*)&cg_drawAmmoDivider->current.integer, 0, current_font, *scale)) * 0.5f) + rect->x - 5.0f;
+            float separator_width = (float)UI_TextWidth((const char*)&cg_drawAmmoDivider->current.integer, 0, current_font, *scale);
+
+            int space_count = 0;
+            while (current_text[space_count] == ' ') {
+                space_count++;
+            }
+
+            float space_offset = space_count * UI_TextWidth(" ", 0, current_font, *scale);
+
+            *x = separator_pos + separator_width + cg_drawAmmoReserveOffset->current.value - space_offset;
+        }
+        else if (cg_drawAmmoMod->current.integer == 1) {
+            *x += cg_drawAmmoReserveOffset->current.value;
+        }
         });
 
 }
