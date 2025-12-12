@@ -116,4 +116,14 @@ void vectoangles(const float* vec, float* angles)
     }
 }
 
+game::dvar_s* __cdecl Dvar_RegisterVariant(
+    const char* name,
+    game::dvarType32_t type,
+    game::DvarFlags32 flags,
+    game::DvarValue dval,
+    game::DvarLimits dom,
+    const char* desc) {
+    return cdecl_call<game::dvar_s*>(0x5EED90, name, type, flags, dval, dom, desc);
+}
+
 }
