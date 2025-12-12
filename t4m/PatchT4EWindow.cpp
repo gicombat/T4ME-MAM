@@ -196,39 +196,59 @@ void CL_ResetViewport() {
 dvar_t* safeArea_updateLive;
 void UpdateSafeAreaLive() {
 	dvar_t* cl_paused = *(dvar_t**)0x01F552C4;
+	dvar_t* sv_running = *(dvar_t**)0x01F552DC;
+
 	if (safeArea_updateLive->current.integer == 1) {
-		if (cl_paused->modified || (safeArea_horizontal->modified || safeArea_vertical->modified)) {
+		if ((cl_paused->modified || sv_running->modified || safeArea_updateLive->modified) || (safeArea_horizontal->modified || safeArea_vertical->modified)) {
 			safeArea_horizontal->modified = false;
 			safeArea_vertical->modified = false;
 
-			if (cl_paused->current.integer == 0) {
-
+			if (cl_paused->current.integer == 0 && sv_running->current.enabled) {
 				safeArea_horz = safeArea_horizontal->current.value;
 				safeArea_vert = safeArea_vertical->current.value;
-
-
 			}
-			else if (cl_paused->current.integer) {
-
-				safeArea_horz = 1.f;
+			else if (cl_paused->current.integer || sv_running->current.enabled == 0) {
+				safeArea_horz = 1.f;  // Both to 1.f for mode 1
 				safeArea_vert = 1.f;
-
-
 			}
 
 			cl_paused->modified = false;
+			sv_running->modified = false;
+			safeArea_updateLive->modified = false;
 			CL_ResetViewport();
 		}
 	}
-	else if (safeArea_updateLive->current.integer >= 2 && (safeArea_horizontal->modified || safeArea_vertical->modified)) {
+	else if (safeArea_updateLive->current.integer == 2) {
+		if ((cl_paused->modified ||  sv_running->modified) || safeArea_updateLive->modified || (safeArea_horizontal->modified || safeArea_vertical->modified)) {
+			safeArea_horizontal->modified = false;
+			safeArea_vertical->modified = false;
+
+			if (cl_paused->current.integer == 0 && sv_running->current.enabled) {
+				safeArea_horz = safeArea_horizontal->current.value;
+				safeArea_vert = safeArea_vertical->current.value;
+			}
+			else if (cl_paused->current.integer || sv_running->current.enabled == 0) {
+				safeArea_horz = safeArea_horizontal->current.value;  // Keep user's horz for mode 2
+				safeArea_vert = 1.f;  // Only vert to 1.f
+			}
+
+			cl_paused->modified = false;
+			sv_running->modified = false;
+			safeArea_updateLive->modified = false;
+			CL_ResetViewport();
+		}
+	}
+	else if (safeArea_updateLive->current.integer >= 3 && (safeArea_horizontal->modified || safeArea_vertical->modified) || safeArea_updateLive->modified) {
 		safeArea_horizontal->modified = false;
 		safeArea_vertical->modified = false;
-
 		safeArea_horz = safeArea_horizontal->current.value;
 		safeArea_vert = safeArea_vertical->current.value;
+		safeArea_updateLive->modified = false;
 		CL_ResetViewport();
 	}
 }
+
+
 
 
 void PatchT4E_Window() {
@@ -241,7 +261,11 @@ void PatchT4E_Window() {
 
 		});
 
-	safeArea_updateLive = Dvar_RegisterInt(1, "safeArea_updateLive", 0,2,DVAR_FLAG_ARCHIVE, "Automatically updates the viewport when safearea is updated\n1 = applies safearea only when cl_paused == 0\n2 = applies safearea always");
+	safeArea_updateLive = Dvar_RegisterInt(2, "safeArea_updateLive", 0, 3, DVAR_FLAG_ARCHIVE,
+		"Automatically updates the viewport when safearea is updated\n"
+		"1 = applies safearea only when cl_paused == 0 && sv_running == 0, otherwise both = 1.f\n"
+		"2 = same as 1 but only sets vertical = 1.f when paused/running\n"
+		"3 = applies safearea always");
 	safeArea_horizontal = Dvar_RegisterFloat("safeArea_horizontal", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Horizontal safe area as a fraction of the screen width");
 	safeArea_vertical = Dvar_RegisterFloat("safeArea_vertical", 1.0f, 0.15f, 1.0f, DVAR_FLAG_ARCHIVE, "Vertical safe area as a fraction of the screen height");
 
