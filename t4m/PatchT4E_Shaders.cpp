@@ -7,6 +7,8 @@
 #include <d3dx9shader.h>
 #pragma comment(lib, "d3dx9.lib")
 
+#include "MemoryMgr.h"
+
 SafetyHookInline Material_Register_FastFileD;
 std::unordered_set<std::string> materials_found;
 
@@ -227,12 +229,22 @@ void __cdecl EndFrame() {
 
 		}
 	}
-	UpdateSafeAreaLive();
+
 	EndFrame_hook.unsafe_ccall();
+}
+
+uintptr_t SCR_UpdateFrame_addr;
+
+void __cdecl SCR_UpdateFrame() {
+
+	UpdateSafeAreaLive();
+	cdecl_call<void>(SCR_UpdateFrame_addr);
 }
 
 void PatchT4E_Shaders() {
 	EndFrame_hook = safetyhook::create_inline(0x6FBF30, EndFrame);
+	
+	Memory::VP::InterceptCall(0x4793E0, SCR_UpdateFrame_addr,SCR_UpdateFrame);
 
 	static auto CalcGammaRamp_ignore = safetyhook::create_mid(0x6D550B, [](SafetyHookContext& ctx) {
 
