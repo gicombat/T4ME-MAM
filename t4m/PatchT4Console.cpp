@@ -199,6 +199,7 @@ void SwitchModes()
 		"Test!",
 		MB_OK | MB_ICONEXCLAMATION);
 }
+
 void CL_ResetViewport();
 
 void Cmd_Init_T4()

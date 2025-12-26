@@ -383,3 +383,35 @@ namespace Dvars {
 void DoReturn();
 
 #define retptr (uintptr_t)&DoReturn
+
+
+static bool IsUsingVulkan;
+
+static dvar_t* con_external;
+static dvar_t* enable_scoreboard;
+static dvar_t* disable_intro;
+static dvar_t* vulkan;
+
+
+#define CONFIG_FILE_LOCATION ".\\T4M.conf"
+
+#ifdef IS_BETA
+#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_BETA_STR "  Config File"
+#else
+#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_STR "  Config File"
+#endif
+
+#define DEFAULT_CONFIG_FILE "" DEFAULT_CONFIG_FILE_HEADER "\n\
+// If you experience problem with the game like suttering, crash, vertex corruption etc\n\
+// Its advise to enable Vulkan, however it's only recommand for Windows 10 and bove\n\
+// You can enable it too on older version of Windows but be aware that your graphical card may be not compatible\n\
+// since it need a Vulkan 1.3 capable driver and graphical card\n\
+// Min Driver version need for the version of the vulkan driver bundled :\n\
+// NVIDIA 510.47.03\n\
+// AMD 22.0\n\
+// Intel 22.0\n\
+\n\
+[Version] // Do not modify this, you can lost your custom parameter if modified \n\
+Number = " TO_STRING(INTERNAL_VERSION_NUMBER) "\n\
+[Options]\n\
+EnableVulkan = 0\n"

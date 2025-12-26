@@ -3,8 +3,10 @@
 // by momo5502
 // --------------------------------------+
 
+//#include "StdInc.h"
 #include "SDLLP.h"
-#include "StdInc.h"
+#include <map>
+#include "T4.h"
 
 // Macro to declare an export
 // --------------------------------------+
@@ -155,7 +157,7 @@ extern "C"
 		void D3DPERF_BeginEvent()
 	{
 		static FARPROC function = 0;
-		if (false)
+		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");
@@ -172,7 +174,7 @@ extern "C"
 		void D3DPERF_EndEvent()
 	{
 		static FARPROC function = 0;
-		if (false)
+		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");
@@ -189,7 +191,7 @@ extern "C"
 		void Direct3DCreate9()
 	{
 		static FARPROC function = 0;
-		if (false)
+		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");

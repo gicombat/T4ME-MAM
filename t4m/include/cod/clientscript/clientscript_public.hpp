@@ -2262,6 +2262,7 @@ namespace game
 
 #ifdef __cplusplus
 #pragma region "data"
+#include <setjmp.h>
 	WEAK symbol<scrVmPub_t> gScrVmPub{ 0x0, 0x3BD4700 };
 	WEAK symbol<scrVmGlob_t> gScrVmGlob{ 0x0, 0x3BDDDF8 };
 	WEAK symbol<scrVarPub_t> gScrVarPub{ 0x0, 0x3882B70 };

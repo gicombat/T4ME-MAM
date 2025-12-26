@@ -300,9 +300,9 @@ void PatchT4E_Window() {
 	//	}
 	//	});
 
-	Detours::X86::DetourFunction((PBYTE)0x00644CCB, (PBYTE)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x00644CEE, (PBYTE)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((PBYTE)0x00644D11, (PBYTE)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00644CCB, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00644CEE, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x00644D11, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
 
 }
 

@@ -93,11 +93,17 @@ if "$(SolutionDir)" == "C:\dev\COD Archive\t4\T4M\t4m\" (
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;T4M_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;%(AdditionalIncludeDirectories);$(SolutionDir)include\cod;$(SolutionDir)include\;C:\VulkanSDK\1.3.239.0\Include;C:\VulkanSDK\1.4.321.1\Include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\deps\include\;%(AdditionalIncludeDirectories);$(SolutionDir)include\cod;$(SolutionDir)include\dxsdk;$(SolutionDir)include\;C:\VulkanSDK\1.3.239.0\Include;C:\VulkanSDK\1.4.321.1\Include\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <ConformanceMode>true</ConformanceMode>
+      <WarningVersion>
+      </WarningVersion>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,6 +149,8 @@ popd</Command>
     <ClInclude Include="include\Stdinc.hpp" />
     <ClInclude Include="include\Zydis.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Resource\Detours.h" />
+    <ClInclude Include="Resource\Typedef.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="SDLLP.h" />
     <ClInclude Include="StdInc.h" />
@@ -188,6 +196,12 @@ popd</Command>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\.text" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Resource\detours.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

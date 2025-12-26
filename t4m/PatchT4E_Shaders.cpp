@@ -5,7 +5,7 @@
 #include "safetyhook.hpp"
 #include <unordered_set>
 #include <d3dx9shader.h>
-#pragma comment(lib, "d3dx9.lib")
+#pragma comment(lib, "include/dxsdk/d3dx9.lib")
 
 #include "MemoryMgr.h"
 

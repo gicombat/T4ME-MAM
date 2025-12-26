@@ -1,5 +1,11 @@
 #pragma once
-#include "StdInc.h"
+#include <Windows.h>
+#include <filesystem>
+#include <direct.h>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <map>
 
 class SDLLP
 {

@@ -116,6 +116,7 @@
     </ClInclude>
     <ClInclude Include="SDLLP.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="include\MemoryMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -191,10 +192,26 @@
     <ClInclude Include="include\Stdinc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Resource\Detours.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Typedef.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resource\.text">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Resource\detours.lib">
+      <Filter>Resource Files</Filter>
+    </Library>
   </ItemGroup>
 </Project>
