@@ -90,8 +90,13 @@ void PatchT4_SteamDRM()
 
 void PatchT4_Menus()
 {
-	nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
-	nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+	dvar_t* enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+
+	if (enable_scoreboard->current.value)
+	{
+		nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
+		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+	}
 }
 
 // code from https://github.com/momo5502/cod-mod/

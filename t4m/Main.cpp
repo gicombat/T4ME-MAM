@@ -10,7 +10,9 @@
 // Started: 2011-05-04
 // ==========================================================
 
+#include "SDLLP.h"
 #include "StdInc.h"
+#include <sstream>
 
 void Sys_RunInit();
 
@@ -39,9 +41,47 @@ void Main_DoInit()
 	{
 		Main_UnprotectModule(hModule);
 	}
+	
+	// Check if config file exist
+	if (!FileExists(va(CONFIG_FILE_LOCATION)))
+	{
+		const char* path = CONFIG_FILE_LOCATION;
+		
+		std::ofstream file (path, std::ofstream::out);
+		file << DEFAULT_CONFIG_FILE;
 
+		file.close();
+	}
+	// If it exist, check his version, if revision is < at current, update
+	else
+	{
+		UINT versionNumber = GetPrivateProfileInt("Version", "Number", 0, CONFIG_FILE_LOCATION);
+
+		// Check and retrieve applicable value for next version
+		if (versionNumber < INTERNAL_VERSION_NUMBER)
+		{
+			const char* path = CONFIG_FILE_LOCATION;
+
+			std::ofstream file(path, std::ofstream::out);
+			file << DEFAULT_CONFIG_FILE;
+
+			file.close();
+		}
+		else if (versionNumber > INTERNAL_VERSION_NUMBER)
+		{
+			const char* path = CONFIG_FILE_LOCATION;
+
+			std::ofstream file(path, std::ofstream::out);
+			file << DEFAULT_CONFIG_FILE;
+
+			file.close();
+		}
+	}
+	
 	// load in another dll when attempting to run two d3d9s, such as ReShade (if installed, and must be renamed to d3d9r.dll, otherwise this does nothing)
 	LoadLibrary("d3d9r.dll");
+
+	IsUsingVulkan = SDLLP::UseVulkan();
 
 	Sys_RunInit();
 

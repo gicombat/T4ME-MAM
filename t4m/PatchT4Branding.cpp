@@ -14,8 +14,7 @@
 
 const char* SetConsoleVersion()
 {
-	UINT isVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
-	if (isVulkan == 1)
+	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
 		return va("CoD WaW %s", VERSION_BETA_VULKAN_STR);	
@@ -35,8 +34,7 @@ const char* SetConsoleVersion()
 
 const char* SetShortVersion()
 {
-	UINT isVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
-	if (isVulkan == 1)
+	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
 		return va(SHORTVERSION_BETA_VULKAN_STR);
@@ -57,14 +55,13 @@ const char* SetShortVersion()
 void PatchT4_Branding()
 {
 	// TODO: Replace shortversion DVars and other version related locations
-	UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
-	if (disableIntro == 1)
-	{
-		nop(0x59D68B, 5);	// don't play intro video
-	}
+	//UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
+	//if (disableIntro == 1)
+	//{
+	//	nop(0x59D68B, 5);	// don't play intro video
+	//}
 
-	UINT isVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
-	if (isVulkan == 1)
+	if (IsUsingVulkan == 1)
 	{
 		nop(0x5FD91B, 5);										// disable pc_newversionavailable check
 #ifdef IS_BETA

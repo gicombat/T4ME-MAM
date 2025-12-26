@@ -3,8 +3,8 @@
 // by momo5502
 // --------------------------------------+
 
+#include "SDLLP.h"
 #include "StdInc.h"
-#include <vulkan/vulkan.h>
 
 // Macro to declare an export
 // --------------------------------------+
@@ -12,6 +12,7 @@
 
 // Static class
 // --------------------------------------+
+/*
 class SDLLP
 {
 private:
@@ -19,14 +20,14 @@ private:
 
 	static void	Log(const char* message, ...);
 public:
-	static void	LoadLibrary(const char* library);
-	static void	LoadLibraryLocal(const char* library);
+	static bool	LoadLibrary(const char* library);
+	static bool	LoadLibraryLocal(const char* library);
 	static bool	IsLibraryLoaded(const char* library);
 	static bool UseVulkan();
 
 public:
 	static FARPROC GetExport(const char* function, const char* library);
-};
+};*/
 
 //	Class variable declarations
 // --------------------------------------+
@@ -34,7 +35,7 @@ std::map<std::string, HINSTANCE> SDLLP::mLibraries;
 
 // Load necessary library
 // --------------------------------------+
-void SDLLP::LoadLibrary(const char* library)
+bool SDLLP::LoadLibrary(const char* library)
 {
 	Log("[SDLLP] Loading library '%s'.", library);
 
@@ -47,15 +48,17 @@ void SDLLP::LoadLibrary(const char* library)
 	mLibraries[library] = ::LoadLibraryA(mPath);
 
 	if (!IsLibraryLoaded(library)) Log("[SDLLP] Unable to load library '%s'.", library);
+	return IsLibraryLoaded(library);
 }
 
-void SDLLP::LoadLibraryLocal(const char* library)
+bool SDLLP::LoadLibraryLocal(const char* library)
 {
 	Log("[SDLLP] Loading library '%s'.", library);
 
 	mLibraries[library] = ::LoadLibraryA(library);
 
 	if (!IsLibraryLoaded(library)) Log("[SDLLP] Unable to load library '%s'.", library);
+	return IsLibraryLoaded(library);
 }
 
 // Check if export already loaded
@@ -100,20 +103,28 @@ bool SDLLP::UseVulkan()
 	UINT isVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
 	if (isVulkan == 1)
 	{
+		if (!SDLLP::LoadLibraryLocal("dxvk.dll"))
+		{
+			MessageBoxA(NULL,
+				"Trying to launch the game with vulkan instead of DIrectX9 but it's missing dxvk.dll in the game directory. The game will launch in DirectX9 mode.",
+				"Vulkan missing!",
+				MB_OK | MB_ICONEXCLAMATION);
+			return false;
+		}
+
 		HMODULE vk = ::LoadLibraryA("vulkan-1.dll");
 		if (!vk)
 		{
 			MessageBoxA(NULL,
-		"Trying to launch the game with vulkan instead of DIrectX9 but it's missing vulkan dll. The game will launch in DirectX9 mode.",
-		"Vulkan missing!",
-		MB_OK | MB_ICONEXCLAMATION);
+				"Trying to launch the game with vulkan instead of DIrectX9 but it's missing vulkan dll. The game will launch in DirectX9 mode.",
+				"Vulkan missing!",
+				MB_OK | MB_ICONEXCLAMATION);
 			return false;
 		}
-		else
-		{
-			return true;
-		}
+
+		return true;
 	}
+
 	return false;
 	//PFN_vkCreateInstance vkCreateInstance;
 	//// ...
@@ -143,79 +154,50 @@ extern "C"
 		__declspec(dllexport)
 		void D3DPERF_BeginEvent()
 	{
-		if (SDLLP::UseVulkan())
+		static FARPROC function = 0;
+		if (false)
 		{
-#ifdef VK_EXT_robustness2
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");
-#else
-			if (!SDLLP::IsLibraryLoaded("dxvk_1_10_3.dll"))  SDLLP::LoadLibraryLocal("dxvk_1_10_3.dll");
-			static FARPROC function = 0;
-			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk_1_10_3.dll");
-#endif
-			__asm { jmp function }
 		}
 		else
 		{
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "d3d9.dll");
-			__asm { jmp function }
 		}
+		__asm { jmp function }
 	}
 	
 	__declspec(naked)
 		__declspec(dllexport)
 		void D3DPERF_EndEvent()
 	{
-		if (SDLLP::UseVulkan())
+		static FARPROC function = 0;
+		if (false)
 		{
-#ifdef VK_EXT_robustness2
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");
-#else
-			if (!SDLLP::IsLibraryLoaded("dxvk_1_10_3.dll"))  SDLLP::LoadLibraryLocal("dxvk_1_10_3.dll");
-			static FARPROC function = 0;
-			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk_1_10_3.dll");
-#endif
-			__asm { jmp function }
 		}
 		else
 		{
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "d3d9.dll");
-			__asm { jmp function }
 		}
+		__asm { jmp function }
 	}
 	
 	__declspec(naked)
 		__declspec(dllexport)
 		void Direct3DCreate9()
 	{
-		if (SDLLP::UseVulkan())
+		static FARPROC function = 0;
+		if (false)
 		{
-#ifdef VK_EXT_robustness2
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk.dll");
-#else
-			if (!SDLLP::IsLibraryLoaded("dxvk_1_10_3.dll"))  SDLLP::LoadLibraryLocal("dxvk_1_10_3.dll");
-			static FARPROC function = 0;
-			if (!function) function = SDLLP::GetExport(__FUNCTION__, "dxvk_1_10_3.dll");
-#endif
-			__asm { jmp function }
 		}
 		else
 		{
-			static FARPROC function = 0;
 			if (!function) function = SDLLP::GetExport(__FUNCTION__, "d3d9.dll");
-			__asm { jmp function }
 		}
+		__asm { jmp function }
 	}
 }
-
-
-//EXPORT(D3DPERF_BeginEvent)
-//EXPORT(D3DPERF_EndEvent)
-//EXPORT(Direct3DCreate9)

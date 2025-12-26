@@ -343,3 +343,4 @@ const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header);
 const char *__cdecl DB_GetXAssetName(XAsset *asset);
 
 int __cdecl DB_GetXAssetTypeSize(int type);
+

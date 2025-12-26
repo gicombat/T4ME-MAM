@@ -1,4 +1,4 @@
-// ==========================================================
+﻿// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -10,11 +10,8 @@
 
 #include "StdInc.h"
 #include "T4.h"
+#include <string>  
 
-dvar_t* con_external;
-dvar_t* enable_scoreboard;
-dvar_t* show_intro;
-dvar_t* vulkan;
 
 vec4_t whiteColor = { 8.0f, 8.0f, 8.0f, 1.0f };
 
@@ -79,6 +76,17 @@ void ShowExternalConsole()
 	DWORD sub_5E3CA0 = 0x005E3CA0;
 
 	__asm call sub_5E3CA0
+
+	if (enable_scoreboard->current.value)
+	{
+		nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
+		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+	}
+
+	if (disable_intro->current.value)
+	{
+		nop(0x59D68B, 5);	// don't play intro video
+	}
 
 	if (con_external->current.value)
 		__asm call Sys_ShowConsole_f
@@ -163,19 +171,32 @@ void NullFunction()
 {
 }
 
-static uintptr_t score1;
-static uintptr_t score2;
-
-void ShowScoreboard()
+void EnableVulkan()
 {
-	score1 = Detours::X86::DetourFunction((uintptr_t)0x437ACC, (uintptr_t)&NullFunction);
-	score2 = Detours::X86::DetourFunction((uintptr_t)0x6680D2, (uintptr_t)&NullFunction);
+	LPCSTR Str1;
+	CHAR buf[255];
+	wsprintf(buf, "%u", 1);
+	Str1 = buf;
+
+	WritePrivateProfileString("Options", "EnableVulkan", Str1, CONFIG_FILE_LOCATION);
 }
 
-void HieScoreboard()
+void DisableVulkan()
 {
-	Detours::X86::DetourRemove(score1);
-	Detours::X86::DetourRemove(score2);
+	LPCSTR Str1;
+	CHAR buf[255];
+	wsprintf(buf, "%u", 0);
+	Str1 = buf;
+
+	WritePrivateProfileString("Options", "EnableVulkan", Str1, CONFIG_FILE_LOCATION);
+}
+
+void SwitchModes()
+{
+	MessageBoxA(NULL,
+		"Wesh ma gueule on dirait que ça switch",
+		"Test!",
+		MB_OK | MB_ICONEXCLAMATION);
 }
 
 void Cmd_Init_T4()
@@ -190,22 +211,13 @@ void Cmd_Init_T4()
 	UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
 	if (disableIntro == 1)
 	{
+		nop(0x59D68B, 5);	// don't play intro video
 	}
-	//Cmd_AddCommand("show_scoreboard", ShowScoreboard);
-	//Cmd_AddCommand("hide_scoreboard", HieScoreboard);
-	//Cmd_AddCommand("enablevulkan", enable_vulkan);
-	//Cmd_AddCommand("disablevulkan", disable_vulkan);
+
+	Cmd_AddCommand("enable_vulkan", EnableVulkan);
+	Cmd_AddCommand("disable_vulkan", DisableVulkan);
+	Cmd_AddCommand("switch_modes", SwitchModes);
 	//Cmd_AddCommand("load_t4m", LoadConfig);
-}
-
-void enable_vulkan()
-{
-
-}
-
-void disable_vulkan()
-{
-
 }
 
 void ShitTest()
@@ -254,13 +266,9 @@ void PatchT4_GetGEnts()
 
 void PatchT4_Console()
 {
-	UINT enableVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
 	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
 	enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
-	show_intro = Dvar_RegisterBool(0, "show_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
-	Dvar_RegisterBool(enableVulkan, "vulkan", DVAR_FLAG_ARCHIVE, "Use vulkan instead of DirectX 9.0c");
-
-	//con_external = Dvar_RegisterBool(0, "debug", DVAR_FLAG_ARCHIVE, "Enable custom debug");
+	disable_intro = Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

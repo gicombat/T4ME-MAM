@@ -1,4 +1,4 @@
-// ==========================================================
+﻿// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -37,25 +37,26 @@ void __cdecl ModFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 	int totalZoneCount = zoneCount;
 	std::string locale = "english";
 
+
 	if (FileExists(va("%s\\localization.txt", (*fs_basepath)->current.string)))
 	{
 		const char* path = va("%s\\localization.txt", (*fs_basepath)->current.string);
 
 		std::ifstream file(path);
-		if (!file.is_open()) 
+		if (!file.is_open())
 		{
-			Com_Printf(0, "localization.txt exist but could not be open, please reload mod to try again loading config\n");
+			Com_Printf(0, "localization.txt exist but could not be open, please reload mod to try again loading localization config\n");
 		}
 		else
 		{
 			Com_Printf(0, "Reading localization.txt File\n");
 			std::string line = "";
 			int lineNumber = 0;
-			while (std::getline(file, line)) 
+			while (std::getline(file, line))
 			{
 				if (lineNumber == 0)
 				{
-					locale = line.c_str();
+					locale = line;
 				}
 				lineNumber++;
 			}
@@ -67,6 +68,17 @@ void __cdecl ModFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 				load_localized_mod = true;
 				totalZoneCount = totalZoneCount + 1;
 			}
+		}
+	}
+
+	// try to fallback to localized_english_mod.ff if we haven't didn't succeed reading localization.txt or we haven't found a corresponding localized_mod.ff file
+	if (load_localized_mod == false)
+	{
+		locale = "english";
+		if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*fs_localAppData)->current.string, (*fs_game)->current.string, locale)))
+		{
+			load_localized_mod = true;
+			totalZoneCount = totalZoneCount + 1;
 		}
 	}
  
@@ -139,48 +151,20 @@ void __cdecl ModFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 	}
 }
 
-void __cdecl FFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
+void __cdecl CodePostGFXFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 {
-	static XZoneInfo *ffZoneInfo;
+	// Code Post gfx is loaded after reading player var, so we need to update them with the value of the .conf, we can do this only here, so let's hack this shit
+	UINT enableVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
+	vulkan = Dvar_RegisterBool(0, "vulkan", DVAR_FLAG_ARCHIVE, "Use vulkan instead of DirectX 9.0c (only used for UI, if you want to change please use the change in the options or in the .conf file");
+	vulkan->current.boolean = enableVulkan;
 
-	Com_Printf(0, "FF HOOK READ");
-	for (int i = 0; i < zoneCount; ++i)
-	{
-		Com_Printf(0, zoneInfo[i].name);
-		Com_Printf(0, "\n");
-		Com_Printf(0, std::to_string(zoneInfo[i].allocFlags).c_str());
-		Com_Printf(0, "\n");
-		Com_Printf(0, std::to_string(zoneInfo[i].freeFlags).c_str());
-		Com_Printf(0, "\n");
-	}
-	// in t4 mods are loaded from appdata not base game
-	//if (FileExists(va("%s\\zone\\t4m_patch.ff", (*fs_basepath)->current.string)))
-	//{
-	//	ffZoneInfo = new XZoneInfo[zoneCount];
-	//	memset(ffZoneInfo, 0, sizeof(XZoneInfo) * (zoneCount)); // is needed, causes mod_ex to freeze w/o it 
-	//	for (int i = 0; i < zoneCount; ++i)
-	//	{
-	//		ffZoneInfo[i].name = zoneInfo[i].name;
-	//		ffZoneInfo[i].allocFlags = zoneInfo[i].allocFlags;
-	//		ffZoneInfo[i].freeFlags = zoneInfo[i].freeFlags;
-	//	}
-	//	// if game freezes on startup mod_ex might be bad.
-	//	ffZoneInfo[zoneCount].name = "t4m_patch";
-	//	ffZoneInfo[zoneCount].allocFlags = 2048; // allocFlags indicate what loading method to go through, 2048 matches code_post_gfx/mod from 006D5672
-	//	ffZoneInfo[zoneCount].freeFlags = 0;
-
-	//	DB_LoadXAssets(ffZoneInfo, zoneCount + 1, sync); // +1 to count
-	//}
-	//else
-	//{
-		DB_LoadXAssets(zoneInfo, zoneCount, sync);
-	//}
+	DB_LoadXAssets(zoneInfo, zoneCount, sync);
 }
 
 void PatchT4_Load()
 {
 	// to be used?
-	//Detours::X86::DetourFunction((PBYTE)0x006D5728, (PBYTE)&FFLoadHook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)0x006D5728, (uintptr_t)&CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((uintptr_t)0x006D5672, (uintptr_t)&ModFFLoadHook, Detours::X86Option::USE_CALL);
 	//00644C5D, r_init
 	//if ((*dedicated)->current.integer > 0)

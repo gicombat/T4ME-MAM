@@ -60,6 +60,9 @@
     <ClCompile Include="LAAPatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdInc.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Script.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDLLP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
