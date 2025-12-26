@@ -393,15 +393,15 @@ static dvar_t* disable_intro;
 static dvar_t* vulkan;
 
 
-#define CONFIG_FILE_LOCATION ".\\T4M.conf"
+#define CONFIG_FILE_LOCATION ".\\T4M-MAM.conf"
 
 #ifdef IS_BETA
-#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_BETA_STR "  Config File"
+#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_CONFIG_BETA_STR "  Config File"
 #else
-#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_STR "  Config File"
+#define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_CONFIG_STR "  Config File"
 #endif
 
-#define DEFAULT_CONFIG_FILE "" DEFAULT_CONFIG_FILE_HEADER "\n\
+#define DEFAULT_CONFIG_FILE "// " DEFAULT_CONFIG_FILE_HEADER "\n\
 // If you experience problem with the game like suttering, crash, vertex corruption etc\n\
 // Its advise to enable Vulkan, however it's only recommand for Windows 10 and bove\n\
 // You can enable it too on older version of Windows but be aware that your graphical card may be not compatible\n\
@@ -414,4 +414,6 @@ static dvar_t* vulkan;
 [Version] // Do not modify this, you can lost your custom parameter if modified \n\
 Number = " TO_STRING(INTERNAL_VERSION_NUMBER) "\n\
 [Options]\n\
-EnableVulkan = 0\n"
+EnableVulkan = 0\n\
+[Fixes]\n\
+UseFixedXAudio = 1"

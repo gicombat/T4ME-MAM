@@ -69,7 +69,7 @@ void PatchT4()
 
 	PatchT4E_UI();
 
-	PatchT4E_Weapons();
+//	PatchT4E_Weapons(); No need for MAM
 	PatchT4E_Pathing();
 
 	PatchT4E_Input();
