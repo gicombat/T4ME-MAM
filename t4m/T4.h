@@ -1,4 +1,5 @@
 #pragma once
+
 typedef enum
 {
 	DVAR_FLAG_ARCHIVE = 1 << 0,				// 0x0001
@@ -17,7 +18,7 @@ typedef enum
 	DVAR_FLAG_AUTOEXEC = 1 << 15,			// 0x8000
 } dvar_flag;
 
-enum dvarType_t
+enum dvarType_t : __int8
 {
 	DVAR_TYPE_BOOL = 0x0,
 	DVAR_TYPE_FLOAT = 0x1,
@@ -40,6 +41,7 @@ union dvar_value_t {
 	int		integer;
 	float	value;
 	bool	boolean;
+	bool    enabled;
 	float	vec2[2];
 	float	vec3[3];
 	float	vec4[4];
@@ -52,19 +54,30 @@ union dvar_maxmin_t {
 	float f;
 };
 
-typedef struct dvar_t
+
+
+
+
+
+typedef struct __declspec(align(4)) dvar_t
 {
 	//startbyte:endbyte
 	const char*		name; //0:3
 	const char*		description; //4:7
-	unsigned int	flags; //8:11
-	char			type; //12:12
-	char			pad2[3]; //13:15
+	unsigned __int16	flags; //8:11
+	dvarType_t			type; //12:12
+	char			modified;
+	char			pad2[4]; //13:15
 	dvar_value_t	current; //16:31
 	dvar_value_t	latched; //32:47
-	dvar_value_t	default; //48:64
+	dvar_value_t	defaulta; //48:64
 	dvar_maxmin_t min; //65:67
 	dvar_maxmin_t max; //68:72 woooo
+
+	inline bool isEnabled() {
+		return (this && this->current.boolean);
+	}
+
 } dvar_t;
 
 enum scriptInstance_t
@@ -205,11 +218,7 @@ struct XZoneName
 	BYTE pad[2];
 };
 
-struct gentity_s
-{
-	char padding[876]; // because fuck everything else
-	int nextFree;
-};
+
 
 #include "xasset.h"
 
@@ -227,6 +236,8 @@ extern "C"
 	extern AddFunction_t AddFunction;
 
 	extern void Cbuf_AddText(const char* text, int localClientNum);
+
+	extern double CG_CornerDebugPrint(const char* text, float x, float y, float label_width, char* label, float* color);
 
 	//typedef void(__cdecl * Cmd_AddCommand_t)(const char* name, CommandCB_t callback, cmd_function_s* data, char);
 	//extern Cmd_AddCommand_t Cmd_AddCommand;
@@ -255,9 +266,13 @@ extern "C"
 	//typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
 	//extern DvarRegisterFloatFunc Dvar_RegisterFloat;
 
-	extern dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description);
+	extern dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description = "");
 
-	extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
+	extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description = "");
+
+	extern dvar_t* Dvar_RegisterInt(int default_value, const char* name, int min, int max, int flags, const char* description = "");
+
+	extern dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description);
 
 	typedef void(__cdecl * EmitMethod_t)(scriptInstance_t inst, sval_u expr, sval_u func_name, sval_u params, sval_u methodSourcePos, bool bStatement, scr_block_s *block);
 	extern EmitMethod_t EmitMethod;
@@ -270,6 +285,9 @@ extern "C"
 
 	typedef void* (*CScr_GetMethod_t)(const char **pName, int *type);
 	extern CScr_GetMethod_t CScr_GetMethod;
+
+	typedef dvar_t* (__cdecl*Dvar_FindMalleableVarT)(const char* name);
+	extern Dvar_FindMalleableVarT Dvar_FindMalleableVar;
 
 	//typedef void* (*Scr_GetMethod_t)(const char **pName, int *type);
 	extern int Scr_GetMethod(int *type, const char **pName);
@@ -299,7 +317,13 @@ extern "C"
 	extern RemoveRefToValue_t RemoveRefToValue;
 }
 
-typedef int scr_entref_t;
+struct scr_entref_t
+{
+	unsigned __int16 entnum;
+	unsigned __int16 classnum;
+	unsigned __int16 client;
+};
+
 typedef void(__cdecl * scr_function_t)(scr_entref_t);
 
 // inline cmd functions
@@ -315,7 +339,7 @@ inline int Cmd_Argc(void)
 inline char *Cmd_Argv(int arg)
 {
 	if ((unsigned)arg >= cmd_argc[*cmd_id]) {
-		return "";
+		return (char*)"";
 	}
 	return (char*)(cmd_argv[*cmd_id][arg]);
 }
@@ -344,3 +368,18 @@ const char *__cdecl DB_GetXAssetName(XAsset *asset);
 
 int __cdecl DB_GetXAssetTypeSize(int type);
 
+bool isZombieMode();
+
+bool Com_SessionMode_IsZombiesGame();
+
+bool IsReflectionMode();
+
+namespace Dvars {
+	namespace Functions {
+		dvar_t* Dvar_FindVar(const char* name);
+	}
+}
+
+void DoReturn();
+
+#define retptr (uintptr_t)&DoReturn

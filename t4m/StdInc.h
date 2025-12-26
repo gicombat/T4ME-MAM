@@ -2,6 +2,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 #include <direct.h>
 #include <fstream>
@@ -34,7 +35,7 @@
 #define BETA "b2"
 #define VERSION "1.0"
 #define FS_BASEGAME "data"
-#define DATE __DATE__
+#define DATE_T4 __DATE__
 #define TIME __TIME__
 #define CONSOLEVERSION_BETA_STR "T4Me-MAM " VERSION "" BETA "> "
 #define CONSOLEVERSION_STR "T4Me-MAM " VERSION "> "
@@ -52,6 +53,46 @@
 #define SHORTVERSION_VULKAN_STR "T4MAM\n" VERSION "\ndxvk"
 #define SHORTVERSION_BETA_VULKAN_STR "T4MAM\n" VERSION "" BETA "\ndxvk"
 #define LONGVERSION_STR SHORTVERSION_STR " CL " DATE " " TIME
+
+
+#define VERSION COMMIT
+#define VERSION_T4ME 49
+
+#define force_gamma_update true
+
+#include "hexrays_defs.h"
+#include "game.hpp"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "include\cod\clientscript\clientscript_public.hpp"
+#include <cassert>
+
+
+// cdecl
+template<typename Ret, typename... Args>
+inline Ret cdecl_call(uintptr_t addr, Args... args) {
+    return reinterpret_cast<Ret(__cdecl*)(Args...)>(addr)(args...);
+}
+
+// stdcall
+template<typename Ret, typename... Args>
+inline Ret stdcall_call(uintptr_t addr, Args... args) {
+    return reinterpret_cast<Ret(__stdcall*)(Args...)>(addr)(args...);
+}
+
+// fastcall
+template<typename Ret, typename... Args>
+inline Ret fastcall_call(uintptr_t addr, Args... args) {
+    return reinterpret_cast<Ret(__fastcall*)(Args...)>(addr)(args...);
+}
+
+// thiscall
+template<typename Ret, typename... Args>
+inline Ret thiscall_call(uintptr_t addr, Args... args) {
+    return reinterpret_cast<Ret(__thiscall*)(Args...)>(addr)(args...);
+}
+
+//#include "symbols.hpp"
 
 #define CONFIG_FILE_LOCATION ".\\T4M.conf"
 

@@ -43,4 +43,4 @@ void _call(void* pAddress, DWORD data, eCallPatcher bPatchType);
 
 #define patch(a, v, s) _patch((void*)(a), (DWORD)(v), (s))
 #define nop(a, v) _nop((void*)(a), (v))
-#define call(a, v, bAddCall) _call((void*)(a), (DWORD)(v), (bAddCall))
+#define callp(a, v, bAddCall) _call((void*)(a), (DWORD)(v), (bAddCall))

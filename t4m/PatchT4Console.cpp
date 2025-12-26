@@ -8,6 +8,7 @@
 // Started: 2015-07-12
 // ==========================================================
 
+#include "t4_headers.h"
 #include "StdInc.h"
 #include "T4.h"
 #include <string>  
@@ -122,7 +123,7 @@ void PatchT4_ExternalConsole()
 void PatchT4_ConsoleBox()
 {
 	// call our functionality to draw another line
-	call(0x47294C, drawDetailedDvarMatchStub, PATCH_CALL);
+	callp(0x47294C, drawDetailedDvarMatchStub, PATCH_CALL);
 	*(BYTE*)0x4727DD = 3; // increase line number for box
 }
 
@@ -198,6 +199,7 @@ void SwitchModes()
 		"Test!",
 		MB_OK | MB_ICONEXCLAMATION);
 }
+void CL_ResetViewport();
 
 void Cmd_Init_T4()
 {
@@ -218,6 +220,7 @@ void Cmd_Init_T4()
 	Cmd_AddCommand("disable_vulkan", DisableVulkan);
 	Cmd_AddCommand("switch_modes", SwitchModes);
 	//Cmd_AddCommand("load_t4m", LoadConfig);
+	Cmd_AddCommand("resetviewport", CL_ResetViewport);
 }
 
 void ShitTest()

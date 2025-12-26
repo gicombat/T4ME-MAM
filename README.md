@@ -10,6 +10,7 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 ## New Features/Fixes
 
 - Load a localized_XXX_mod.ff depending on the language of the game (MAM-1.0)
+- Expose vulkan parameter to be able to change in-game the settings of vulkan (MAM-1.0)
 - Console reset times (r49)
 - Gamepad autoaim from console (r49)
 - New dvars `perks_phdflopper_engine` and `perks_phdflopper_engine_enum`, (off by default) does some improvements to help mimic PHD Flopper behaviour when client has whatever perk is equal to `perks_phdflopper_engine_enum` (by default speciality_damageexplosive) (r49)

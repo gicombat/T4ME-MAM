@@ -28,6 +28,8 @@ extern "C"
 	CScr_GetFunction_t CScr_GetFunction = (CScr_GetFunction_t)0x0066EA30;
 	CScr_GetMethod_t CScr_GetMethod = (CScr_GetMethod_t)0x00671110;
 
+	Dvar_FindMalleableVarT Dvar_FindMalleableVar = (Dvar_FindMalleableVarT)0x5EDE30;
+
 	DB_EnumXAssets_t DB_EnumXAssets = (DB_EnumXAssets_t)0x006DA180;
 	DB_EnumXAssets_FastFile_t DB_EnumXAssets_FastFile = (DB_EnumXAssets_FastFile_t)0x0048DEA0;
 	DB_FindXAssetHeader_t DB_FindXAssetHeader = (DB_FindXAssetHeader_t)0x48DA30;
@@ -54,6 +56,26 @@ extern "C"
 	unsigned __int16 * db_hashTable = (unsigned __int16 *)0x00987088;
 
 	DB_XAssetGetNameHandler * DB_XAssetGetNameHandlers = (DB_XAssetGetNameHandler *)0x008DCAF8;
+}
+
+dvar_t emptydvar{};
+
+dvar_t* Dvar_FindVars(const char* name) {
+	auto dvar = Dvar_FindMalleableVar(name);
+	if (dvar)
+		return dvar;
+
+
+		return &emptydvar;
+
+}
+
+namespace Dvars {
+	namespace Functions {
+			dvar_t* Dvar_FindVar(const char* name) {
+			return Dvar_FindVars(name);
+		}
+	}
 }
 
 // fucking __usercall
@@ -101,6 +123,122 @@ dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, 
 	return ret;
 }
 
+dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
+{
+	DWORD func = 0x5EF150;
+	dvar_t* ret;
+
+	__asm
+	{
+		push description;
+		push flags;
+		push dvarName;
+		mov eax, defaultIndex;
+		mov ecx, valueList;
+		call func;
+		add esp, 0xC;
+		mov ret, eax;
+	}
+
+	return ret;
+}
+
+int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
+{
+	int result;
+	static uintptr_t textwidth_addr = 0x6E8DA0;
+	__asm
+	{
+		push font;
+		push maxChars;
+		mov eax, text;
+		call textwidth_addr;
+		add esp, 0x8;
+		mov result, eax;
+	}
+
+	return result;
+}
+
+inline float R_NormalizedTextScale(game::Font_s* font, float scale) {
+	return scale * 48.0 / (double)font->pixelHeight;
+}
+
+int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale)
+{
+	float v4; // xmm0_4
+	float actualScale; // [esp+10h] [ebp-4h]
+
+	actualScale = R_NormalizedTextScale(font, scale);
+	v4 = (float)((float)R_TextWidth(text, maxChars, font) * actualScale) + 0.5;
+	return (int)(float)floor(v4);
+}
+
+// void* returns are always in eax
+uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
+
+void __declspec(naked) DoReturn() {
+	__asm retn
+}
+
+uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* name, int min, int max, int flags, const char* description) {
+	
+	__asm {
+		push ebp
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
+
+		push eax
+		push edi
+
+		mov eax, default_value
+		mov edi, name
+
+		push description
+		push flags
+		push max
+		push min
+
+
+		call Dvar_RegisterInt_addr
+
+
+		pop edi
+		pop eax
+
+		mov esp, ebp
+		pop ebp
+		ret
+	}
+}
+
+dvar_t* Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description) {
+	//return (dvar_t*)Dvar_RegisterInt_asm(default_value, name, min, max, flags, description);
+	__asm pushad
+
+	DWORD func = 0x5EEEA0;
+	dvar_t* rete;
+	__asm
+	{
+		push description
+		push flags
+		push max
+		push mina
+
+		mov eax, default_value
+		mov edi, name
+
+		call func
+		add esp, 16
+		mov rete, eax
+	}
+	__asm popad
+	return rete;
+	
+
+
+}
+
 //int __usercall CBuf_AddText@<eax>(int a1@<eax>, int a2@<ecx>), a1 = text, a2 = localClientNum
 void Cbuf_AddText(const char* text, int localClientNum)
 {
@@ -112,6 +250,27 @@ void Cbuf_AddText(const char* text, int localClientNum)
 		mov ecx, localClientNum
 		call func
 	}
+}
+
+double CG_CornerDebugPrint(const char* text, float x, float y,float label_width, char* label, float* color)
+{
+	DWORD func = 0x00439160;
+	float result;
+	__asm
+	{
+		mov eax, text
+		
+		push color
+		push label
+		push label_width
+		push y
+		push x
+
+		call func
+		add esp, 20
+		movss result, xmm0
+	}
+	return result;
 }
 
 /*
@@ -235,18 +394,49 @@ const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header)
 	return name;
 }
 
-void __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
-{
-	static DWORD func = 0x00699C50;
-	__asm
-	{
-		push inst
-		push index
-		call func
-	}
-}
-
 int __cdecl DB_GetXAssetTypeSize(int type)
 {
 	return DB_GetXAssetSizeHandler[type]();
+}
+
+bool isZombieMode() {
+	return (*(dvar_t**)0x030520E4)->isEnabled();
+}
+
+bool Com_SessionMode_IsZombiesGame() {
+	return isZombieMode();
+}
+
+#include "shellapi.h"
+
+// from linkermod
+bool IsReflectionMode()
+{
+	static bool hasChecked = false;
+	static bool isReflectionMode = false;
+
+	if (!hasChecked)
+	{
+		int argc = 0;
+		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+
+		int flags = 0;
+		for (int i = 0; i < argc - 1; i++)
+		{
+			if (wcscmp(argv[i], L"+devmap") == 0 && flags ^ 1)
+			{
+				flags |= 1;
+			}
+			else if (wcscmp(argv[i], L"r_reflectionProbeGenerate") == 0 && wcscmp(argv[i + 1], L"0") != 0 && flags ^ 2)
+			{
+				isReflectionMode = true;
+				flags |= 2;
+			}
+			else if (flags == 3)
+			{
+				return isReflectionMode;
+			}
+		}
+	}
+	return isReflectionMode;
 }

@@ -11,8 +11,30 @@
 // Started: 2011-12-19
 // ==========================================================
 
+#include "t4_headers.h"
 #include "StdInc.h"
 #include "T4.h"
+
+#include "safetyhook.hpp"
+
+#include "MemoryMgr.h"
+
+WeaponDef** bg_weaponDefs = (WeaponDef**)0x8F6770;
+const WeaponDef* __cdecl BG_GetWeaponDef(unsigned int weaponIndex) {
+	return bg_weaponDefs[weaponIndex];
+}
+
+bool __cdecl BG_IsOverheatingWeapon(unsigned int weapIndex)
+{
+	return BG_GetWeaponDef(weapIndex)->overheatWeapon != 0;
+}
+
+int BG_GetWeaponIndexForName(const char* name) {
+	if (*(bool*)0x018F6DB8);
+	return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
+
+	return ((int(__cdecl*)(const char*))0x41D470)(name);
+}
 
 int __cdecl Scr_GetNumParam(scriptInstance_t inst);
 
@@ -24,12 +46,24 @@ dvar_t* developer_funcdump;
 
 // COD5R HUD stuff
 dvar_t* cg_drawHealthCount;
-dvar_t* cg_drawDpadHUD;
+dvar_t* cg_drawHealthCountCoop;
+dvar_t* cg_drawGamepadHUD;
 dvar_t* cg_drawDpadLogos;
 dvar_t* cg_SoloScoreColorWhite;
+dvar_t* cg_drawTimers;
+dvar_t* cg_drawTrapTimers;
 
 dvar_t* cg_lowerGun; // lower gun 1st person
 dvar_t* zombiemode_dev; // experimental COD5R features
+
+// these below are all fixable within gsc, but i'll add them in for whoever wants to use them, same names as Pluto but im not sure if this implementation is 1:1 with pluto
+dvar_t* g_disable_zombie_grab;
+
+dvar_t* g_fix_tesla_bug;
+
+dvar_t* g_fix_health_sets_max;
+
+
 
 // custom functions
 typedef struct
@@ -191,6 +225,38 @@ void __declspec(naked) Scr_GetMethod_Hook(int *type, const char **pName)
 	}
 }
 
+static uintptr_t Scr_GetString_addr = 0x69A0D0;
+uintptr_t __declspec(naked) Scr_GetString_asm(uint32_t index, scriptInstance_t instance)
+{
+	__asm 
+	{
+		push ebp
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
+
+
+		push eax
+		push esi
+
+		mov eax, index
+		mov esi, instance
+
+		call Scr_GetString_addr
+
+		pop esi
+		pop eax
+
+		mov esp, ebp
+		pop ebp
+		ret
+	}
+}
+
+const char* Scr_GetString(uint32_t index, scriptInstance_t instance) {
+	return (const char*)Scr_GetString_asm(index, instance);
+}
+
+
 void(__cdecl *__cdecl CScr_GetFunction_Hook(const char **pName, int *type))()
 {
 	// this is aids and I don't care #2
@@ -219,6 +285,17 @@ void(__cdecl *__cdecl CScr_GetMethod_Hook(const char **pName, int *type))()
 }
 #pragma endregion engineHKFunctions
 
+void PlayerWeaponOverheatUpdate(gentity_s* ent, uint32_t weapon_index, float amount) {
+	if (!BG_IsOverheatingWeapon(weapon_index))
+		return;
+	auto weapon = BG_GetWeaponDef(weapon_index);
+	float &current_heat = ent->client->ps.heatpercent[weapon->iHeatIndex];
+	bool &current_overheat  = ent->client->ps.overheating[weapon->iHeatIndex];
+	current_heat = amount;
+	if (amount == 0.f)
+		current_overheat = false;
+}
+gentity_s* g_entities = (gentity_s*)0x0176C6F0;
 #pragma region customFunctions
 void GScr_PrintLnConsole(scr_entref_t entity)
 {
@@ -232,24 +309,79 @@ void GScr_PrintLnConsole(scr_entref_t entity)
 }
 #pragma endregion customFunctions
 
+
+int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
+{
+	static DWORD func = 0x00699C50;
+	int result;
+	__asm
+	{
+		mov eax, inst
+		mov ecx, index
+		call func
+		mov result, eax
+	}
+	return result;
+}
+
+// for zombies this is applied on each zombie spawn in _spawner
+int __stdcall DisablePushPlayer() {
+
+	if ((isZombieMode() && g_disable_zombie_grab->current.integer == 1) || g_disable_zombie_grab->current.integer >= 2) {
+		return 0;
+	}
+	else
+		return Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
+
+}
+
 void PatchT4_Script()
 {
 	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
 
-	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)");
+	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawHealthCountCoop = Dvar_RegisterBool(0, "cg_drawHealthCountCoop", 0, "Draw developer health counter in co-op (requires map restart)"); // requires NZ remastererd mod 
+	cg_drawGamepadHUD = Dvar_RegisterBool(0, "cg_drawGamepadHUD", 0, "Draw gamepad style HUD optimized for controller use"); // requires NZ remastererd mod
+	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad background textures"); // requires NZ remastererd mod
+	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTrapTimers = Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
+	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
 
-	cg_drawDpadHUD = Dvar_RegisterBool(0, "cg_drawDpadHUD", 0, "Draw D-pad arrows and other gamepad HUD features optimized for controller use");
-	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad console-style background textures");
+	g_disable_zombie_grab = Dvar_RegisterInt(0, "g_disable_zombie_grab", 0, 2, DVAR_FLAG_CHEAT, "Disables pushPlayer() from executing\n1 = Disable when playing zombies\n2 = always disabled");
 
-	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)");
-	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)");
+	g_fix_tesla_bug = Dvar_RegisterBool(0, "g_fix_tesla_bug",DVAR_FLAG_CHEAT, "Applies same wunderwaffe's 'fix' as seen in Black Ops 1");
 
-	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features (requires map restart)");
+	Memory::VP::InjectHook(0x4DDA72, DisablePushPlayer);
+
+	static auto fix_tesla_bug = safetyhook::create_mid(0x4F5EE2, [](SafetyHookContext& ctx) {
+		if (g_fix_tesla_bug->current.boolean)
+			ctx.eip = 0x4F5F44;
+		});
+
+
+
+	g_fix_health_sets_max = Dvar_RegisterBool(0, "g_fix_health_sets_max", DVAR_FLAG_CHEAT, "Stops health also changing maxhealth");
+
+	static auto fix_health_sets_max = safetyhook::create_mid(0x005309C0, [](SafetyHookContext& ctx) {
+		if (g_fix_health_sets_max->current.boolean)
+			ctx.eip = 0x5309C6;
+		});
+
+	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 
 	// [GSC]
 	Detours::X86::DetourFunction((uintptr_t)0x00682DAF, (uintptr_t)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((uintptr_t)0x00683043, (uintptr_t)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 	Scr_DeclareFunction("printlnconsole", GScr_PrintLnConsole);
+
+	// i hate asm and safetyhook midhook ftw -clippy95
+	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(0x4EE157, [](SafetyHookContext& ctx) {
+		if (gsc_OverheatMaxAmmo && gsc_OverheatMaxAmmo->current.boolean) {
+			PlayerWeaponOverheatUpdate((gentity_s*)ctx.ebx, ctx.eax, 0.f);
+		}
+		});
 
 	// [CSC]
 	Detours::X86::DetourFunction((uintptr_t)0x00682DC0, (uintptr_t)&CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
