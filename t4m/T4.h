@@ -391,10 +391,13 @@ static dvar_t* con_external;
 static dvar_t* enable_scoreboard;
 static dvar_t* disable_intro;
 static dvar_t* vulkan;
+// Tweak switch Mode
+static dvar_t* is_watching_for_switch_mode_input;
+static dvar_t* switch_mode_input_pressed;
 
 
 #define CONFIG_FILE_LOCATION ".\\T4M-MAM.conf"
-
+#define IS_BETA
 #ifdef IS_BETA
 #define DEFAULT_CONFIG_FILE_HEADER "// " SHORTVERSION_CONFIG_BETA_STR "  Config File"
 #else

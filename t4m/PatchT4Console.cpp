@@ -194,10 +194,10 @@ void DisableVulkan()
 
 void SwitchModes()
 {
-	MessageBoxA(NULL,
-		"Wesh ma gueule on dirait que ça switch",
-		"Test!",
-		MB_OK | MB_ICONEXCLAMATION);
+	if (is_watching_for_switch_mode_input->current.boolean == true)
+	{
+		switch_mode_input_pressed->current.boolean = true;
+	}
 }
 
 void CL_ResetViewport();
@@ -211,11 +211,11 @@ void Cmd_Init_T4()
 	//Cmd_AddCommand("testcmd", testCmd_f);
 	Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
 	Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
-	UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
-	if (disableIntro == 1)
-	{
-		nop(0x59D68B, 5);	// don't play intro video
-	}
+	// UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
+	// if (disableIntro == 1)
+	// {
+	// 	nop(0x59D68B, 5);	// don't play intro video
+	// }
 
 	Cmd_AddCommand("enable_vulkan", EnableVulkan);
 	Cmd_AddCommand("disable_vulkan", DisableVulkan);
@@ -273,6 +273,8 @@ void PatchT4_Console()
 	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
 	enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
 	disable_intro = Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
+	is_watching_for_switch_mode_input = Dvar_RegisterBool(0, "i_watching_sm_input", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	switch_mode_input_pressed = Dvar_RegisterBool(0, "i_sm_pressed", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

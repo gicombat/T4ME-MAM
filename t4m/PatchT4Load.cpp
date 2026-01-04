@@ -76,7 +76,7 @@ void __cdecl ModFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 	if (load_localized_mod == false)
 	{
 		locale = "english";
-		if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*fs_localAppData)->current.string, (*fs_game)->current.string, locale)))
+		if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*fs_localAppData)->current.string, (*fs_game)->current.string, locale.c_str())))
 		{
 			load_localized_mod = true;
 			totalZoneCount = totalZoneCount + 1;
