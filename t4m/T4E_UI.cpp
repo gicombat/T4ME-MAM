@@ -423,11 +423,11 @@ void PatchT4E_UI() {
     Memory::VP::Patch<void*>(0x0044F3CC + 1, &cg_drawAmmoDivider->current.integer);
     Memory::VP::Patch<void*>(0x44F418 + 1, &cg_drawAmmoDivider->current.integer);
 
-    cg_drawAmmoClipOffset = Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, 0);
+    cg_drawAmmoClipOffset = Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    cg_drawAmmoReserveOffset = Dvar_RegisterFloat("cg_drawAmmoReserveOffset", 0.f, -FLT_MAX, FLT_MAX, 0);
+    cg_drawAmmoReserveOffset = Dvar_RegisterFloat("cg_drawAmmoReserveOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    cg_drawAmmoMod = Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", 0," ");
+    cg_drawAmmoMod = Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", DVAR_FLAG_ARCHIVE," ");
 
     static auto cg_draw_ammo_clip = safetyhook::create_mid(0x0044F2FA, CG_DrawPlayerAmmoValueClip_normal);
 
