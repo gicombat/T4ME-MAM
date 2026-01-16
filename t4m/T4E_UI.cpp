@@ -33,6 +33,17 @@ float hud_x_fix(float original) {
 
 }
 
+float hud_scale_fix(float original) {
+    auto Height = (float)*(int*)0x03BED834;
+    if (Height <= 720.f || !is_hud_scale_fix())
+        return original;
+
+
+    float scale = Height / 720.0f;
+
+    return original * scale;
+
+}
 
 float drawclipammo_scale[2] = { 4.f,4.f };
 
@@ -298,14 +309,13 @@ void PatchT4E_UI() {
     Memory::VP::InjectHook(0x0042BE13, R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoBeltfed);
 
     r_hud_scale_fix = Dvar_RegisterBool(true, "r_hud_scale_fix", DVAR_FLAG_ARCHIVE);
-    //r_addcmd_x = Dvar_RegisterFloat("r_addcmd_x", 0.f, -10000.f, FLT_MAX, 0);
-    //r_addcmd_y = Dvar_RegisterFloat("r_addcmd_y", 0.f, -10000.f, FLT_MAX, 0);
-    //r_addcmd_width = Dvar_RegisterFloat("r_addcmd_width", 1.f, 0.f, FLT_MAX, 0);
-    //r_addcmd_height = Dvar_RegisterFloat("r_addcmd_height", 1.f, 0.f, FLT_MAX, 0);
-    //r_addcmd_s0 = Dvar_RegisterFloat("r_addcmd_s0", 1.f, 0.f, FLT_MAX, 0);
-    //r_addcmd_t0 = Dvar_RegisterFloat("r_addcmd_t0", 1.f, 0.f, FLT_MAX, 0);
-    //r_addcmd_s1 = Dvar_RegisterFloat("r_addcmd_s1", 1.f, 0.f, FLT_MAX, 0);
-    //r_addcmd_t1 = Dvar_RegisterFloat("r_addcmd_t1", 1.f, 0.f, FLT_MAX, 0);
+
+    static auto CG_DrawOverheadNames_scale_fix = safetyhook::create_mid(0x43C0C9, [](SafetyHookContext& ctx) {
+
+        ctx.xmm0.f32[0] = hud_scale_fix(ctx.xmm0.f32[0]);
+
+        });
+
 
     //static auto r_drawclipammo_x = Dvar_RegisterFloat("r_drawclipammo_x", 4.f, FLT_MIN, FLT_MAX, 0); 
     //static auto r_ClipAmmoShortMagazine_x = Dvar_RegisterFloat("r_ClipAmmoShortMagazine_x", 40.f, FLT_MIN, FLT_MAX, 0);
