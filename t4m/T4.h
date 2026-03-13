@@ -387,6 +387,8 @@ void DoReturn();
 
 static bool IsUsingVulkan;
 
+static dvar_t* loadout_preset_usa;
+static dvar_t* loadout_preset_rus;
 static dvar_t* con_external;
 static dvar_t* enable_scoreboard;
 static dvar_t* disable_intro;

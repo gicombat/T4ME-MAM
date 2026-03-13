@@ -275,6 +275,8 @@ void PatchT4_Console()
 	disable_intro = Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
 	is_watching_for_switch_mode_input = Dvar_RegisterBool(0, "i_watching_sm_input", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
 	switch_mode_input_pressed = Dvar_RegisterBool(0, "i_sm_pressed", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	loadout_preset_usa = Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	loadout_preset_rus = Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 
