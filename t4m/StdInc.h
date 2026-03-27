@@ -32,7 +32,7 @@
 #define TO_STRING(x) STRINGIFY(x)
 
 #define IS_BETA
-#define BETA "b3"
+#define BETA "b4"
 #define VERSION "1.0"
 #define FS_BASEGAME "data"
 #define DATE_T4 __DATE__
