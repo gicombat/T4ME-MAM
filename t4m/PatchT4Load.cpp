@@ -162,11 +162,59 @@ void __cdecl CodePostGFXFFLoadHook(XZoneInfo *zoneInfo, int zoneCount, int sync)
 	DB_LoadXAssets(zoneInfo, zoneCount, sync);
 }
 
+void __cdecl LoadMapPatchZoneHook(XZoneInfo* zoneInfo, int zoneCount, int sync)
+{
+	static XZoneInfo* modZoneInfo;
+
+	int totalZoneCount = zoneCount + 1;
+
+	modZoneInfo = new XZoneInfo[totalZoneCount];
+	memset(modZoneInfo, 0, sizeof(XZoneInfo) * (totalZoneCount)); // is needed
+
+
+	const char* sufix = "_ex";
+
+	size_t fullSize;
+
+	/* The last +1 is for the last nul ASCII code for the string */
+	fullSize = strlen(zoneInfo[0].name) + 1 + strlen(sufix) + 1;
+
+	/* Memory allocation and copy */
+	char* fullName = (char*)malloc(fullSize);
+	strcpy(fullName, zoneInfo[0].name);
+	strcat(fullName, sufix);
+
+	modZoneInfo[0].name = fullName;
+	modZoneInfo[0].allocFlags = zoneInfo[0].allocFlags;
+	modZoneInfo[0].freeFlags = zoneInfo[0].freeFlags;
+
+	modZoneInfo[1].name = zoneInfo[0].name;
+	modZoneInfo[1].allocFlags = zoneInfo[0].allocFlags;
+	modZoneInfo[1].freeFlags = zoneInfo[0].freeFlags;
+
+	DB_LoadXAssets(modZoneInfo, totalZoneCount, sync);
+}
+
+// TO DO
+void __cdecl LoadLocalizedMapZoneHook(XZoneInfo* zoneInfo, int zoneCount, int sync)
+{
+	DB_LoadXAssets(zoneInfo, zoneCount, sync);
+}
+
 void PatchT4_Load()
 {
 	// to be used?
 	Detours::X86::DetourFunction((uintptr_t)0x006D5728, (uintptr_t)&CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((uintptr_t)0x006D5672, (uintptr_t)&ModFFLoadHook, Detours::X86Option::USE_CALL);
+	//Detours::X86::DetourFunction((uintptr_t)0x0059E0EA, (uintptr_t)&LoadMapPatchZoneHook, Detours::X86Option::USE_CALL);
+	//Detours::X86::DetourFunction((uintptr_t)0x0048FB90, (uintptr_t)&LoadLocalizedMapZoneHook, Detours::X86Option::USE_CALL);
+
+	// Side Note 
+	// 0x0059E10E correspond au chargement du fastfile de la map. ----- On s'en bas les couilles 
+	// 0x0059E0EA correspond au chargement du fastfile _patch de la map ---- Je vais hook ici pour rajouter un patch
+	// 0x0059E0B3 correspond à l'appel de "DB_LoadLocalizedZoneFile" ------ ON S'EN BAS LES COUILLES
+	// 0x0048FB90 correspond au chargement du fastfile localized_ de la map ---- c'est ici qu'il va falloir hook pour des nouvelles loca si on veut faire les malins
+
 	//00644C5D, r_init
 	//if ((*dedicated)->current.integer > 0)
 	//nop(0x00644C5D, 5);
