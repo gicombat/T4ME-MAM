@@ -14,6 +14,7 @@
 
 const char* SetConsoleVersion()
 {
+	IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
@@ -34,6 +35,7 @@ const char* SetConsoleVersion()
 
 const char* SetShortVersion()
 {
+	IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
@@ -61,6 +63,7 @@ void PatchT4_Branding()
 	//	nop(0x59D68B, 5);	// don't play intro video
 	//}
 
+	IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 		nop(0x5FD91B, 5);										// disable pc_newversionavailable check

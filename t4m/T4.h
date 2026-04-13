@@ -386,6 +386,9 @@ void DoReturn();
 
 
 static bool IsUsingVulkan;
+// I don't know what i am doing episode 9999, but there is a problem of order execution and the value of IsUsingVulkan is not correctly saved
+// so for now a dirty fix how i like them as usual (that's false)
+static bool AlreadySaidPopupNoVulkan = false;
 
 static dvar_t* loadout_preset_usa;
 static dvar_t* loadout_preset_rus;

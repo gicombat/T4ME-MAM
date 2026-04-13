@@ -6,7 +6,7 @@
 typedef void*(__cdecl* R_CreateDynamicBuffersT)();
 R_CreateDynamicBuffersT R_CreateDynamicBuffers = nullptr;
 
-constexpr uint32_t MB_SIZE = 104857;
+constexpr uint32_t MB_SIZE = 1048576; // 1 MB
 
 using namespace Memory::VP;
 
@@ -23,38 +23,43 @@ dvar_t* r_buf_preTessIndexBuffer = nullptr;
 void* __cdecl R_CreateDynamicBuffers_hook() {
 	if (r_increase_render_buffers && r_increase_render_buffers->current.boolean) {
 		if (r_buf_dynamicVertexBuffer) {
-			// Default 1 MB
-			Patch<uint32_t>((0x0070EC1A + 3), r_buf_dynamicVertexBuffer->current.integer * MB_SIZE);
-			Patch<uint32_t>((0x0070EC42), r_buf_dynamicVertexBuffer->current.integer * MB_SIZE);
-			Patch<uint32_t>((0x70ED2C + 1), r_buf_dynamicVertexBuffer->current.integer * MB_SIZE);
+			// Original: 1 MB. Patches capacity field + D3D size + error message.
+			const uint32_t vbSize = r_buf_dynamicVertexBuffer->current.integer * MB_SIZE;
+			Patch<uint32_t>((0x0070EC1A + 3), vbSize); // mov [esi-4], size  (capacity field)
+			Patch<uint32_t>((0x0070EC42),      vbSize); // push size          (CreateVertexBuffer)
+			Patch<uint32_t>((0x70ED2C  + 1),   vbSize); // push size          (error message)
 		}
 
 		if (r_buf_skinnedCacheVb) {
-			// default 60 MB?
-			Patch<uint32_t>((0x0070EC77 + 1), r_buf_skinnedCacheVb->current.integer * MB_SIZE);
-
-			Patch<uint32_t>((0x71DD7C + 2), ((uint32_t)((float)(r_buf_skinnedCacheVb->current.integer * MB_SIZE) / 1.44444444f))); // ok this idk f why
-			Patch<uint32_t>((0x71DD95 + 2), r_buf_skinnedCacheVb->current.integer * MB_SIZE);
+			// Original: 6 MB. Two D3D vertex buffers + allocator soft/hard limits.
+			// Soft limit = size * (9/13) ≈ 69.2% — matches the original nullsub_2 address ratio.
+			// FPU soft limit ratio: 5347738.0 / 6291456.0 ≈ 85% of hard limit.
+			const uint32_t skinnedSize = r_buf_skinnedCacheVb->current.integer * MB_SIZE;
+			Patch<uint32_t>((0x0070EC77 + 1), skinnedSize); // mov ebp, size  (CreateVertexBuffer loop)
+			Patch<uint32_t>((0x71DD7C  + 2),  (uint32_t)((float)skinnedSize / 1.44444444f)); // cmp edi, soft_limit (int)
+			Patch<uint32_t>((0x71DD95  + 2),  skinnedSize); // cmp edi, hard_limit
+			Patch<float>   (0x8AF24C,          (float)skinnedSize * (5347738.0f / 6291456.0f)); // flt_8AF24C: FPU soft limit (~85%)
 		}
 
 		if (r_buf_tempSkin) {
-			// default 60 MB?
-			Patch<uint32_t>((0x6F52A7 + 1), r_buf_tempSkin->current.integer * MB_SIZE);
-
+			// Original: 6 MB. VirtualAlloc'd CPU memory for skinned mesh temp storage.
+			Patch<uint32_t>((0x6F52A7 + 1), r_buf_tempSkin->current.integer * MB_SIZE); // push size (VirtualAlloc)
 		}
 
 		if (r_buf_dynamicIndexBuffer) {
-			// default 2 MB
-			Patch<uint32_t>((0x70ECF8 + 3), (r_buf_dynamicIndexBuffer->current.integer * MB_SIZE) / 2); // idk why
-			Patch<uint32_t>((0x70EDA6 + 1), r_buf_dynamicIndexBuffer->current.integer * MB_SIZE);
-			Patch<uint32_t>((0x70EE1E + 1), r_buf_dynamicIndexBuffer->current.integer * MB_SIZE);
+			// Original: 2 MB D3D buffer. Capacity field stores index count (size/2 for D3DFMT_INDEX16).
+			const uint32_t ibSize = r_buf_dynamicIndexBuffer->current.integer * MB_SIZE;
+			Patch<uint32_t>((0x70ECF8 + 3), ibSize / 2); // mov [ebp-4], count (capacity = byte_size/2)
+			Patch<uint32_t>((0x70EDA6 + 1), ibSize);     // push size           (CreateIndexBuffer)
+			Patch<uint32_t>((0x70EE1E + 1), ibSize);     // push size           (error message)
 		}
 
-		//if (r_buf_preTessIndexBuffer) {
-		//	// default 2 MB
-		//	Patch<uint32_t>((0x0070EDEA + 3), (r_buf_preTessIndexBuffer->current.integer * MB_SIZE) / 2); // idk why
-		//	Patch<uint32_t>((0x70EE7D + 1), r_buf_preTessIndexBuffer->current.integer * MB_SIZE);
-		//}
+		if (r_buf_preTessIndexBuffer) {
+			// Original: 2 MB D3D buffer. Same layout as dynamicIndexBuffer.
+			const uint32_t ptibSize = r_buf_preTessIndexBuffer->current.integer * MB_SIZE;
+			Patch<uint32_t>((0x0070EDEA + 3), ptibSize / 2); // mov [ebp-4], count
+			Patch<uint32_t>((0x70EE7D  + 1),  ptibSize);     // push size
+		}
 	}
 	return R_CreateDynamicBuffers();
 }
@@ -275,11 +280,13 @@ void PatchT4E_Render() {
 		0,
 		"z position FOV offset compensation of the viewmodel");
 
-	r_buf_skinnedCacheVb = Dvar_RegisterInt(120, "r_buf_skinnedCacheVb", 60, 512, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH);
-	r_buf_tempSkin = Dvar_RegisterInt(120, "r_buf_tempSkin", 60, 512, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH );
-	r_buf_dynamicVertexBuffer = Dvar_RegisterInt(3, "r_buf_dynamicVertexBuffer", 1, 16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH);
-	r_buf_dynamicIndexBuffer = Dvar_RegisterInt(4, "r_buf_dynamicIndexBuffer", 2, 16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH );
-	r_buf_preTessIndexBuffer = Dvar_RegisterInt(4, "r_buf_preTessIndexBuffer", 2, 16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH );
+	// Units are MB. Minimums correspond to original game buffer sizes.
+	// Defaults are 2x original to provide a meaningful increase.
+	r_buf_skinnedCacheVb        = Dvar_RegisterInt(12, "r_buf_skinnedCacheVb",        6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
+	r_buf_tempSkin              = Dvar_RegisterInt(12, "r_buf_tempSkin",              6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
+	r_buf_dynamicVertexBuffer   = Dvar_RegisterInt(2,  "r_buf_dynamicVertexBuffer",   1,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 1 MB
+	r_buf_dynamicIndexBuffer    = Dvar_RegisterInt(4,  "r_buf_dynamicIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
+	r_buf_preTessIndexBuffer    = Dvar_RegisterInt(4,  "r_buf_preTessIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
 
 	r_increase_render_buffers = Dvar_RegisterBool(true, "r_increase_render_buffers", DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH, "increasing rendering buffers");
 

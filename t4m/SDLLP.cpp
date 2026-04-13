@@ -105,22 +105,31 @@ bool SDLLP::UseVulkan()
 	UINT isVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
 	if (isVulkan == 1)
 	{
+		
 		if (!SDLLP::LoadLibraryLocal("dxvk.dll"))
 		{
-			MessageBoxA(NULL,
-				"Trying to launch the game with vulkan instead of DIrectX9 but it's missing dxvk.dll in the game directory. The game will launch in DirectX9 mode.",
-				"Vulkan missing!",
-				MB_OK | MB_ICONEXCLAMATION);
+			if (!AlreadySaidPopupNoVulkan)
+			{
+				MessageBoxA(NULL,
+					"Trying to launch the game with vulkan instead of DIrectX9 but it's missing dxvk.dll in the game directory. The game will launch in DirectX9 mode.",
+					"Vulkan missing!",
+					MB_OK | MB_ICONEXCLAMATION);
+				AlreadySaidPopupNoVulkan = true;
+			}
 			return false;
 		}
-
+		
 		HMODULE vk = ::LoadLibraryA("vulkan-1.dll");
 		if (!vk)
 		{
-			MessageBoxA(NULL,
-				"Trying to launch the game with vulkan instead of DIrectX9 but it's missing vulkan dll. The game will launch in DirectX9 mode.",
-				"Vulkan missing!",
-				MB_OK | MB_ICONEXCLAMATION);
+			if (!AlreadySaidPopupNoVulkan)
+			{
+				MessageBoxA(NULL,
+					"Trying to launch the game with vulkan instead of DIrectX9 but it's missing vulkan dll installation. The game will launch in DirectX9 mode.",
+					"Vulkan missing!",
+					MB_OK | MB_ICONEXCLAMATION);
+				AlreadySaidPopupNoVulkan = true;
+			}
 			return false;
 		}
 
@@ -157,6 +166,8 @@ extern "C"
 		void D3DPERF_BeginEvent()
 	{
 		static FARPROC function = 0;
+
+		IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -174,6 +185,7 @@ extern "C"
 		void D3DPERF_EndEvent()
 	{
 		static FARPROC function = 0;
+		IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -191,6 +203,7 @@ extern "C"
 		void Direct3DCreate9()
 	{
 		static FARPROC function = 0;
+		IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");

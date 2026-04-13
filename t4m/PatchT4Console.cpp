@@ -251,7 +251,7 @@ const char* Draw_G_Ents()
 		freeEntity = (gentity_s*)freeEntity->nextFree;
 	}
 
-	s = va("%i/1023", entityCount + 1); // current / max (is 1023 as defined by max_ents/numGEntities in G_Spawn
+	s = va("%i/2047", entityCount + 1); // current / max (expanded from 1023 to 2047 by T4M entity pool patch)
 
 	return s;	
 }
