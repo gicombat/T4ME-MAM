@@ -34,10 +34,6 @@ void PatchT4_MemoryLimits()
 	*(DWORD*)0x5F54D1 = 0x40000000; //0x14800000
 	*(DWORD*)0x5F54DB = 0x40000000; //0x14800000
 
-	//*(DWORD*)0x5F5492 = 0x26100000; //0x14800000
-	//*(DWORD*)0x5F54D1 = 0x26100000; //0x14800000
-	//*(DWORD*)0x5F54DB = 0x26100000; //0x14800000
-
 	// change the num of entities available to be spawned in G_Spawn from 1022 to 1500
 	// still a W.I.P. is missing array and hash table(?) changes
 	//PatchMemory(0x0054EAC3, (PBYTE)"\xDC\x05", 2);
