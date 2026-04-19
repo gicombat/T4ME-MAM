@@ -183,6 +183,7 @@ popd</Command>
     <ClCompile Include="PatchT4FileDebug.cpp" />
     <ClCompile Include="PatchT4Load.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
+    <ClCompile Include="PatchT4Override.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
     <ClCompile Include="PatchT4NoBorder.cpp" />
     <ClCompile Include="PatchT4Script.cpp" />

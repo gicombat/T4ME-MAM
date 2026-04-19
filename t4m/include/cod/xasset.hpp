@@ -5441,6 +5441,21 @@ namespace game
 	ASSERT_STRUCT_OFFSET(XZoneInfo, allocFlags, 0x4);
 	ASSERT_STRUCT_OFFSET(XZoneInfo, freeFlags, 0x8);
 
+	struct XZoneLoadedEntry                 // stride 0x44 (68 octets)
+	{
+		unsigned short zoneFileIndex;       // +0x00 : index dans byte_D04CB0 (table des noms de fichiers)
+		unsigned short pad;                 // +0x02
+		int            allocFlags;          // +0x04 : flags d'allocation (copié depuis XZoneInfo)
+		int            memHandle;           // +0x08 : handle mémoire (passé à DB_FreeXZoneMemory)
+		int            runtimeData[14];     // +0x0C–+0x40 : données runtime (cleared à l'unload)
+	};
+	ASSERT_STRUCT_SIZE(XZoneLoadedEntry, 0x44);
+	ASSERT_STRUCT_OFFSET(XZoneLoadedEntry, zoneFileIndex, 0x00);
+	ASSERT_STRUCT_OFFSET(XZoneLoadedEntry, pad, 0x02);
+	ASSERT_STRUCT_OFFSET(XZoneLoadedEntry, allocFlags, 0x04);
+	ASSERT_STRUCT_OFFSET(XZoneLoadedEntry, memHandle, 0x08);
+	ASSERT_STRUCT_OFFSET(XZoneLoadedEntry, runtimeData, 0x0C);
+
 #ifdef __cplusplus
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)>DB_FindXAssetHeader{ 0x0, 0x48DA30 };
 }

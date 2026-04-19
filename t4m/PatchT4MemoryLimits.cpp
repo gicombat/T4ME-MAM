@@ -1,6 +1,6 @@
 ﻿// ==========================================================
 // T4M project
-// 
+//
 // Component: clientdll
 // Purpose: Increasing memory pool sizes
 //
@@ -10,6 +10,107 @@
 // ==========================================================
 
 #include "StdInc.h"
+#include <safetyhook.hpp>
+
+#define NEW_ASSET_ENTRY_POOL_SIZE 65535
+#define NEW_IMAGE_SORT_BUFFER_SIZE 8192
+#define NEW_MAX_GENTITIES   2048
+#define ENTITY_SIZE         0x378        // 888 bytes per gentity_s
+#define OLD_ENTITY_BASE     0x0176C6F0U
+#define GSPAWN_CMP_IMM      0x54EAC3U   // immediate of "cmp ecx, 3FEh" in G_Spawn
+#define ENTITY_BASE_DWORD   0x18F5D8CU  // dword_18F5D8C: runtime entity-base ptr
+#define NEW_MAX_LOCALIZED   4096
+
+// =====================================================================
+// G_Entity pool expansion
+//
+// sub_502020 (entity system init) is called via sub_5AA5F0 from
+// sub_62B7C0+1A1 every map start. It sets:
+//   dword_18F5D8C = 0x176C6F0   (runtime entity-base ptr → old 1024-entry BSS array)
+//
+// We hook at 0x62B969 (first instruction after "call sub_5AA5F0; add esp, 0Ch"
+// in sub_62B7C0). At that point sub_502020 has already initialized the entity
+// system and written 0x176C6F0 to dword_18F5D8C.
+//
+// First invocation: allocate a 2048-entry array, copy the initialized BSS
+// state into it, then scan .text with ONE VirtualProtect call and replace
+// all three reference patterns:
+//   0x0176C6F0  (array base)           → new_base
+//   0x0184A6F0  (array end, sub_62B7C0 loop bound) → new_base + 2048*0x378
+//   0x0184A780  (init loop bound in sub_502020, 0x90 past end) → same new_end
+//
+// Every invocation (including subsequent map loads where sub_502020 resets
+// dword_18F5D8C to 0x176C6F0): redirect dword_18F5D8C to the new array.
+// =====================================================================
+
+static BYTE* g_newEntityPool = nullptr;
+
+static void SetupEntityPool()
+{
+    // Allocate 2048-entry entity array (2048 * 0x378 = ~1.7 MB)
+    g_newEntityPool = (BYTE*)VirtualAlloc(
+        NULL,
+        (SIZE_T)NEW_MAX_GENTITIES * ENTITY_SIZE,
+        MEM_COMMIT | MEM_RESERVE,
+        PAGE_READWRITE);
+
+    if (!g_newEntityPool) {
+        Com_Printf(0, "^1[T4M] FATAL: entity pool VirtualAlloc failed\n");
+        return;
+    }
+
+    // Copy initialized state from old 1024-entry BSS array
+    memcpy(g_newEntityPool, (void*)OLD_ENTITY_BASE, 1024 * ENTITY_SIZE);
+
+    DWORD newBase = (DWORD)g_newEntityPool;
+    // "one past last entity" — upper bound for entity iteration and init loops
+    DWORD newEnd  = newBase + (DWORD)NEW_MAX_GENTITIES * ENTITY_SIZE;
+
+    // Patch all .text references in one VirtualProtect call.
+    // Three patterns:
+    //   0x0176C6F0 (OLD_ENTITY_BASE)  → newBase
+    //   0x0184A6F0 (array end)        → newEnd  (sub_62B7C0 loop bound, line 833611)
+    //   0x0184A780 (init loop bound)  → newEnd  (sub_502020 init loop, line 376007)
+    // Scan is byte-granular to catch any alignment within instructions.
+    const DWORD TEXT_START = 0x00401000U;
+    const DWORD TEXT_END   = 0x00800000U;
+    DWORD oldProt;
+    VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+                   PAGE_EXECUTE_READWRITE, &oldProt);
+
+    int patched = 0;
+    for (BYTE* bp = (BYTE*)TEXT_START; bp < (BYTE*)(TEXT_END - 3); ++bp) {
+        DWORD v = *(DWORD*)bp;
+        if (v == OLD_ENTITY_BASE) {
+            *(DWORD*)bp = newBase;  ++patched;
+        } else if (v == 0x0184A6F0U || v == 0x0184A780U) {
+            *(DWORD*)bp = newEnd;   ++patched;
+        }
+    }
+
+    VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+                   PAGE_EXECUTE_READ, &oldProt);
+
+    Com_Printf(0, "[T4M] Entity pool: base=0x%08X, %d refs patched\n",
+               newBase, patched);
+}
+
+static SafetyHookMid GEntityPool_hook;
+
+static void PatchT4_GEntityPool()
+{
+    // Hook at 0x62B969: first instruction after "call sub_5AA5F0; add esp, 0Ch"
+    // in sub_62B7C0 (sub_62B7C0+1A1 calls sub_5AA5F0, +1A6 is add esp; +1A9 is here).
+    GEntityPool_hook = safetyhook::create_mid(0x62B969, [](SafetyHookContext&) {
+        if (!g_newEntityPool) {
+            SetupEntityPool(); // allocate + patch .text (one-shot)
+        }
+        // Always restore dword_18F5D8C — sub_502020 resets it to 0x176C6F0 each map load.
+        if (g_newEntityPool) {
+            *(DWORD*)ENTITY_BASE_DWORD = (DWORD)g_newEntityPool;
+        }
+    });
+}
 
 void PatchT4_MemoryLimits()
 {
@@ -52,7 +153,6 @@ void PatchT4_MemoryLimits()
 	// Must allocate a new pool and patch all 24 code references.
 	// =====================================================================
 
-	#define NEW_ASSET_ENTRY_POOL_SIZE 65535
 
 	// Allocate new pool (persists for lifetime of process)
 	static XAssetEntryPoolEntry* newPool = (XAssetEntryPoolEntry*)VirtualAlloc(
@@ -182,7 +282,6 @@ void PatchT4_MemoryLimits()
 	// Fix: allocate a larger buffer (8192 entries) and patch all 21 references.
 	// =====================================================================
 
-	#define NEW_IMAGE_SORT_BUFFER_SIZE 8192
 
 	// Allocate new image sort buffer + count variable (contiguous)
 	static DWORD* newImageBuffer = (DWORD*)VirtualAlloc(
@@ -263,4 +362,83 @@ void PatchT4_MemoryLimits()
 	// At 0x70577F: push 800h → change immediate to 8192
 	// At 0x719F4D: push 800h → change immediate to 8192
 	// These are ignored by the function, but patch them for correctness
+
+	// =====================================================================
+	// G_Spawn entity limit increase
+	//
+	// G_Spawn (sub_54EAB0) at loc_54EAF2 allocates new entities as:
+	//   entity_ptr = dword_18F5D8C + numGEntities * 0x378
+	// The check "cmp ecx, 3FEh; jnz" at 0x54EAC1 errors when numGEntities
+	// reaches exactly 1022, capping usable entity indices at 0-1021.
+	//
+	// This patch raises the limit to NEW_MAX_GENTITIES - 2.
+	// The actual entity array relocation (VirtualAlloc + .text scan + dword_18F5D8C
+	// redirect) is handled by PatchT4_GEntityPool() / SetupEntityPool() above,
+	// which fires on the first map load via a hook at 0x62B969.
+	// =====================================================================
+
+	// Mid-hook at 0x54EAC1 replaces the "cmp ecx, 3FEh; jnz loc_54EAF2" pair entirely.
+	// At hook point: ecx = numGEntities (set by "mov ecx, dword_18F5D94" just before).
+	// Original behaviour: error when ecx == 0x3FE (1022), allocate otherwise.
+	// New behaviour: error when ecx >= NEW_MAX_GENTITIES - 2, allocate otherwise.
+	//
+	// Entity array note: dword_18F5D8C (runtime entity-base ptr) currently points to the
+	// 1024-entry BSS array at 0x176C6F0. Entities at index >= 1024 will land past that
+	// array until a full pool relocation (VirtualAlloc + ~498 .text patches) is done.
+	//
+	// Hash table note: dword_18F7910 and dword_18F794C (BSS, 0x18F7910 / 0x18F794C) are
+	// set to 0x3FF (1023) at init by sub_502020. They act as sentinel/comparison values
+	// in sub_54DDC0 and sub_54EDC0 for entity hash-slot tracking. When entity index 1023
+	// is freed those functions compare against 0x3FF and perform a no-op reset — harmless.
+	// These do not need updating for the spawn-limit increase alone.
+	/*
+	static auto GSpawn_limit_hook = safetyhook::create_mid(0x54EAC1, [](SafetyHookContext& ctx) {
+		// ctx.ecx = numGEntities. Redirect eip to skip or enter the error path.
+		if (ctx.ecx < (DWORD)(NEW_MAX_GENTITIES - 2)) {
+			ctx.eip = 0x54EAF2; // allocation path (loc_54EAF2)
+		} else {
+			ctx.eip = 0x54EAC9; // error path ("G_Spawn: no free entities")
+		}
+	});
+	Com_Printf(0, "[T4M] G_Spawn limit patched to %d (mid-hook)\n", NEW_MAX_GENTITIES - 2);
+	PatchT4_GEntityPool();
+	*/
+	// =====================================================================
+	// Localized string hash table limit increase
+	//
+	// sub_54A1A0 (generic asset lookup) uses a 1023-entry WORD hash table
+	// at BSS address 0x2350428. The table address is encoded as a 4-byte
+	// immediate in a single lea instruction at 0x54A20C, and the lookup
+	// bound 0x3FF (1023) appears as push imm32 immediates at 0x54A2F3 and
+	// 0x54A330. Redirecting all three gives the new limit.
+	// =====================================================================
+
+	/*
+	static WORD* newStringTable = (WORD*)VirtualAlloc(
+		NULL,
+		(DWORD)NEW_MAX_LOCALIZED * sizeof(WORD),
+		MEM_COMMIT | MEM_RESERVE,
+		PAGE_READWRITE);
+
+	if (newStringTable) {
+		DWORD newStrBase = (DWORD)newStringTable;
+
+		// Patch "lea ecx, ds:2350428h[ecx*2]" → redirect to new table
+		// Encoding: 8D 0C 4D [imm32] at 0x54A209; address immediate at 0x54A20C
+		*(DWORD*)0x54A20C = newStrBase;
+
+		// Patch first "push 3FFh" (limit arg to sub_54A1A0)
+		// Encoding: 68 [imm32]; immediate at 0x54A2F3
+		*(DWORD*)0x54A2F3 = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
+
+		// Patch second "push 3FFh" (limit arg to sub_54A1A0)
+		// Encoding: 68 [imm32]; immediate at 0x54A330
+		*(DWORD*)0x54A330 = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
+
+		Com_Printf(0, "[T4M] Localized string table expanded: new limit=%d\n",
+		           NEW_MAX_LOCALIZED - 1);
+	} else {
+		Com_Printf(0, "^1ERROR: Failed to allocate expanded localized string table\n");
+	}
+		*/
 }
