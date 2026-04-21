@@ -19,6 +19,7 @@
 
 #include "StdInc.h"
 #include "T4.h"
+#include "MemoryMgr.h"
 
 // =====================================================================
 // Debug utilities — all @new (T4M inventions, no vanilla equivalent)
@@ -36,7 +37,7 @@ void T4M_DB_DumpOverrideChain(int type, const char* name)
 	}
 
 	Com_Printf(0, "[T4M] Override chain for '%s' (type %s):\n",
-		name, DB_GetXAssetTypeName(type));
+		name, T4M_DB_GetXAssetTypeName(type));
 
 	XAssetEntry* cur = head;
 	int depth = 0;
@@ -69,7 +70,7 @@ void T4M_DB_DumpHashBucket(unsigned int bucket)
 		Com_Printf(0, "  [%d] type=%d (%s) name='%s' zone=%u nextHash=%u nextOvr=%u\n",
 			depth,
 			e->asset.type,
-			DB_GetXAssetTypeName(e->asset.type),
+			T4M_DB_GetXAssetTypeName(e->asset.type),
 			T4M_GetName(e),
 			e->zoneIndex,
 			e->nextHash,
@@ -147,6 +148,23 @@ __declspec(naked) void T4M_DB_FindXAssetByName_Wrapper()
 	}
 }
 
+// @wrapper — __usercall→__cdecl convention bridge to T4_DB_LinkXAssetEntry (0x48D860)
+// sub_48D860: eax = type (register), arg_0 (stack) = name
+// On entry: [esp+0] = return addr, [esp+4] = name, eax = type
+// Vanilla exits with `retn` (NO arg cleanup) — callers (sub_48DA30 loc_48DDF2,
+// sub_48DFF0) clean with `add esp, 4`. `retn 4` would double-clean and shift
+// caller ESP by +4, corrupting every frame up the chain.
+__declspec(naked) void T4M_DB_LinkXAssetEntry_Wrapper()
+{
+	__asm {
+		push    dword ptr [esp+4]             ; arg_1 = name (original arg_0)
+		push    eax                           ; arg_0 = type (from register)
+		call    T4_DB_LinkXAssetEntry             ; cdecl, result in eax
+		add     esp, 8                         ; clean our 2 pushes
+		retn                                   ; caller cleans its name arg (vanilla)
+	}
+}
+
 // =====================================================================
 // PatchT4_Override — installation
 // =====================================================================
@@ -158,9 +176,27 @@ void PatchT4_Override()
 	Detours::X86::DetourFunction((uintptr_t)0x0048D7D0, (uintptr_t)&T4M_DB_FindDefaultAsset_Wrapper,       Detours::X86Option::USE_JUMP);
 	Detours::X86::DetourFunction((uintptr_t)0x0048D760, (uintptr_t)&T4M_DB_FindXAssetByName_Wrapper,       Detours::X86Option::USE_JUMP);
 
-	// DISABLED — T4_DB_LinkXAssetEntryOverrideAware has a subtle bug that
-	// causes remote freezes (audio init, map load). Keep commented until
-	// the reconstruction is fully validated. See memory:
-	// feedback_overridelinkaware_complexity.md
+	// TEMPORAIRE — ce détour sera retiré une fois que tous les appelants
+	// de sub_48D860 (sub_48DA30, sub_48DFF0) seront remplacés par des fonctions
+	// T4M full-C++ qui appellent directement T4_DB_LinkXAssetEntry en __cdecl.
+	// À terme le wrapper et ce détour ne seront plus nécessaires.
+	Detours::X86::DetourFunction((uintptr_t)0x0048D860, (uintptr_t)&T4M_DB_LinkXAssetEntry_Wrapper,        Detours::X86Option::USE_JUMP);
+
+	// Re-enabled after adding the loc_48E1FB path (zoneIndex==0 case) which
+	// properly frees newEntry instead of chaining it as a ghost override.
 	// Detours::X86::DetourFunction((uintptr_t)0x0048DFF0, (uintptr_t)&T4_DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
+
+	// Full vanilla-faithful reconstruction of DB_FindXAssetHeader (sub_48DA30).
+	//
+	// DISABLED — startup OK, but hangs during first map load inside vanilla
+	// sub_48E370's hash-chain scan (asset type 9 "ing_small" not found in
+	// chain → infinite loop, no termination on idx==0 in vanilla).
+	//
+	// Confirmed by bisection: with this detour OFF the game loads maps fine.
+	// Something our reconstruction does differs from vanilla in a way that
+	// leaves an asset's hash-chain linkage broken. Needs further investigation
+	// (probable suspects: T4_DB_LinkXAssetEntry fallback ordering, or pump
+	// sequence causing DB worker to promote entries in unexpected order).
+	// Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_DB_FindXAssetHeader,          Detours::X86Option::USE_JUMP);
+
 }

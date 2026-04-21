@@ -145,14 +145,14 @@ void __cdecl DB_ListAssetPool_f()
 	{
 		v1 = Cmd_Argv(1);
 		type = (XAssetType)atoi(v1);
-		DB_ListAssetPool(type, false);
+		T4M_DB_ListAssetPool(type, false);
 	}
 	else
 	{
 		Com_Printf(0, "listassetpool <poolnumber>: lists all the assets in the specified pool\n");
 		for (i = 0; i < ASSET_TYPE_MAX; ++i)
 		{
-			v0 = DB_GetXAssetTypeName(i);
+			v0 = T4M_DB_GetXAssetTypeName(i);
 			Com_Printf(0, "%d %s %i\n", i, v0, g_poolSize[i]);
 		}
 	}
@@ -164,7 +164,7 @@ void DB_ListAssetCounts_f()
 
 	for (int i = 0; i < ASSET_TYPE_MAX; ++i)
 	{
-		DB_ListAssetPool((XAssetType)i, true);
+		T4M_DB_ListAssetPool((XAssetType)i, true);
 	}
 }
 
@@ -228,7 +228,7 @@ void ShitTest()
 {
 	for (int i = 0; i < ASSET_TYPE_MAX; ++i)
 	{
-		DB_ListAssetPool((XAssetType)i, true);
+		T4M_DB_ListAssetPool((XAssetType)i, true);
 	}
 }
 

@@ -81,14 +81,14 @@ void PatchT4()
 		loadGameOverlay();
 }
 
-void *MemCpyFix(void *a1, void **a2, int len)
+void *T4M_Sys_MemCpyFix(void *a1, void **a2, int len)
 {
 	return memcpy(a1, a2, len);
 }
 
 void PatchT4_PreLoad()
 {
-	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&MemCpyFix);
+	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&T4M_Sys_MemCpyFix);
 	nop(0x0059D6F4, 5); // disable Com_DvarDump from Com_Init_Try_Block_Function
 	nop(0x005FF743, 5); // disable Sys_CreateSplash
 	//nop(0x005FF698, 5); // disable Sys_CheckCrashOrRerun

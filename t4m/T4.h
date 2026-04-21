@@ -491,8 +491,10 @@ extern "C"
 	typedef int(__cdecl * StringTable_Find_t)(int arg_0, const char* name, int arg_2, int len);
 	extern StringTable_Find_t       StringTable_Find;         // 0x68DE50
 
-	// String table base — each entry is 12 bytes, name at +4.
-	extern char*                    g_stringTableBase;        // dword_3702390
+	// Pointer to the string table base pointer.
+	// Vanilla: mov ecx, dword_3702390 = *(DWORD*)0x3702390 (dereference).
+	// Use as: *g_stringTableBase + idx*12 + 4.
+	extern char**                   g_stringTableBase;        // &dword_3702390
 
 	// =================================================================
 	// Override-system globals
@@ -592,11 +594,11 @@ int __cdecl Scr_GetNumParam(scriptInstance_t inst);
 /*
 	Source Functions
 */
-void* DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
+void* T4M_DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
 char *__cdecl SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst);
 void Cmd_AddCommand(const char *cmd_name, xcommand_t function);
 
-char *__cdecl DB_GetXAssetTypeName(int type);
+char *__cdecl T4M_DB_GetXAssetTypeName(int type);
 
 extern XAssetEntryPoolEntry* g_assetEntryPool;
 extern XZoneName* g_zoneNames;
@@ -615,11 +617,11 @@ extern unsigned __int16 * db_hashTable;
 
 typedef const char *(__cdecl *DB_XAssetGetNameHandler)(XAssetHeader *);
 extern DB_XAssetGetNameHandler *DB_XAssetGetNameHandlers;
-void __cdecl DB_ListAssetPool(XAssetType type, bool count_only);
-const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header);
-const char *__cdecl DB_GetXAssetName(XAsset *asset);
+void __cdecl T4M_DB_ListAssetPool(XAssetType type, bool count_only);
+const char *__cdecl T4M_DB_GetXAssetHeaderName(int type, XAssetHeader *header);
+const char *__cdecl T4M_DB_GetXAssetName(XAsset *asset);
 
-int __cdecl DB_GetXAssetTypeSize(int type);
+int __cdecl T4M_DB_GetXAssetTypeSize(int type);
 
 
 bool isZombieMode();
@@ -653,9 +655,13 @@ int  T4M_Q_stricmpn(const char* s1, const char* s2, int maxLen);
 // @faithful — sub_48D020 (lock) / (release)
 void T4M_DB_WriterAcquire();
 void T4M_DB_WriterRelease();
-// @faithful — sub_48D560 (lock) / (release)
+// @faithful — sub_48D560 (lock acquire / release)
 void T4M_DB_ReaderAcquire();
 void T4M_DB_ReaderRelease();
+// @faithful — sub_48D560 (full reconstruction)
+void T4M_DB_EnumAssetPool(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
+// @faithful — sub_5E3FC0 (full reconstruction)
+void T4M_DB_EnumAssetPoolB(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
 
 ////////////////////////////////////////////
 ////////  Category 2a: @faithful + hook   //
@@ -672,8 +678,10 @@ XAssetEntry*     T4_DB_AllocXAssetEntry(int type, unsigned char zoneIndex);
 XAssetEntry*     T4_DB_FindXAssetByName(int type, const char* name);
 // @faithful — sub_48D7D0 (via T4M_DB_FindDefaultAsset_Wrapper)
 void*            T4_DB_FindDefaultAsset(int type);
-// @faithful — sub_48D860 (naked __usercall wrapper)
+// @faithful — sub_48D860 (full C++ reconstruction; T4M_DB_LinkXAssetEntry_Wrapper bridges __usercall)
 XAssetEntry*     T4_DB_LinkXAssetEntry(int type, const char* name);
+// @faithful (simplified) — sub_48DA30 (+ zoneIndex==0 bypass for T4M)
+void*            T4_DB_FindXAssetHeader(int type, const char* name, bool useDefault, int timeoutMs);
 // @faithful — sub_48DFF0
 XAssetEntry*     T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyData);
 // @faithful — loc_48F4C3 (helper of T4_DB_UnloadZoneAssets)
@@ -722,6 +730,9 @@ inline int T4M_GetSize(int type)
 ////////  T4M-specific utilities         ///
 ////////////////////////////////////////////
 
+// PatchT4.cpp — detour of vanilla sub_7AFFC0 (optimised memmove → CRT memcpy fix)
+void* T4M_Sys_MemCpyFix(void* dst, void** src, int len);
+
 // Debug utilities (PatchT4Override.cpp) — all @new
 void T4M_DB_DumpOverrideChain(int type, const char* name);
 void T4M_DB_DumpHashBucket(unsigned int bucket);
@@ -731,6 +742,7 @@ int T4M_DB_CountActiveEntries();
 // (naked qualifier only on the definition, not on the declaration)
 void T4M_DB_FindDefaultAsset_Wrapper();   // → T4_DB_FindDefaultAsset
 void T4M_DB_FindXAssetByName_Wrapper();   // → T4_DB_FindXAssetByName
+void T4M_DB_LinkXAssetEntry_Wrapper();    // → T4_DB_LinkXAssetEntry
 
 // Installation (called by Sys_RunInit). Installs the active detours.
 void PatchT4_Override();

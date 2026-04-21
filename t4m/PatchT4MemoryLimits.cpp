@@ -115,16 +115,16 @@ static void PatchT4_GEntityPool()
 void PatchT4_MemoryLimits()
 {
 	// increase pool sizes to similar (or greater) t5 sizes.
-	DB_ReallocXAssetPool(ASSET_TYPE_FX, 2048);
-	DB_ReallocXAssetPool(ASSET_TYPE_IMAGE, 8192);
-	DB_ReallocXAssetPool(ASSET_TYPE_LOADED_SOUND, 4096);
-	DB_ReallocXAssetPool(ASSET_TYPE_MATERIAL, 4096);
-	DB_ReallocXAssetPool(ASSET_TYPE_WEAPON, 512);
-	DB_ReallocXAssetPool(ASSET_TYPE_XMODEL, 4096);
-	DB_ReallocXAssetPool(ASSET_TYPE_RAWFILE, 2048);
-	DB_ReallocXAssetPool(ASSET_TYPE_PHYSCONSTRAINTS, 256);
-	DB_ReallocXAssetPool(ASSET_TYPE_PHYSPRESET, 256);
-	DB_ReallocXAssetPool(ASSET_TYPE_XMODELPIECES, 256);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_FX, 2048);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_IMAGE, 8192);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_LOADED_SOUND, 4096);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_MATERIAL, 4096);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_WEAPON, 512);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_XMODEL, 4096);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_RAWFILE, 2048);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_PHYSCONSTRAINTS, 256);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_PHYSPRESET, 256);
+	T4M_DB_ReallocXAssetPool(ASSET_TYPE_XMODELPIECES, 256);
 
 	// change the size of g_mem from 0x12C00000 to 0x19600000, UGX-Mod v1.1 is pretty fucking huge
 	// had to increase due to it crashing in Com_BeginParseSession

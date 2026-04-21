@@ -94,40 +94,40 @@ float4 main(PS_INPUT input) : COLOR0
 }
     )";
 
-		ID3DXBuffer* shader = NULL;
-		ID3DXBuffer* errors = NULL;
+	ID3DXBuffer* shader = NULL;
+	ID3DXBuffer* errors = NULL;
 
-		HRESULT hr = D3DXCompileShader(
-			hlslCode,
-			strlen(hlslCode),
-			NULL,
-			NULL,
-			"main",
-			"ps_3_0",
-			0,
-			&shader,
-			&errors,
-			NULL
-		);
+	HRESULT hr = D3DXCompileShader(
+		hlslCode,
+		strlen(hlslCode),
+		NULL,
+		NULL,
+		"main",
+		"ps_3_0",
+		0,
+		&shader,
+		&errors,
+		NULL
+	);
 
-		if (FAILED(hr) || !shader)
+	if (FAILED(hr) || !shader)
+	{
+		if (errors)
 		{
-			if (errors)
-			{
-				Com_Printf(0, "HLSL compilation failed:\n%s\n", (char*)errors->GetBufferPointer());
-				errors->Release();
-			}
-			return;
+			Com_Printf(0, "HLSL compilation failed:\n%s\n", (char*)errors->GetBufferPointer());
+			errors->Release();
 		}
+		return;
+	}
 
-		Com_Printf(0, "HLSL shader compiled successfully! Size: %d bytes\n", shader->GetBufferSize());
+	Com_Printf(0, "HLSL shader compiled successfully! Size: %d bytes\n", shader->GetBufferSize());
 
-		g_compiledPostfxSize = shader->GetBufferSize();
-		g_compiledPostfxBytecode = (unsigned int*)malloc(g_compiledPostfxSize);
-		if(g_compiledPostfxSize)
+	g_compiledPostfxSize = shader->GetBufferSize();
+	g_compiledPostfxBytecode = (unsigned int*)malloc(g_compiledPostfxSize);
+	if (g_compiledPostfxSize)
 		memcpy(g_compiledPostfxBytecode, shader->GetBufferPointer(), g_compiledPostfxSize);
 
-		shader->Release();
+	shader->Release();
 	}
 	else
 	{
@@ -173,6 +173,11 @@ float4 main(PS_INPUT input) : COLOR0
 
 Material* __cdecl Material_Register_FastFile(const char* name)
 {
+	if (strcmp(name, "zombie_electric_shock_overlay") == 0)
+	{
+		Com_Printf(0, "d'la merde");
+	}
+	
 	Material* loaded_m = Material_Register_FastFileD.unsafe_ccall<Material*>(name);
 
 	if (strcmp(name, "postfx_color") == 0)

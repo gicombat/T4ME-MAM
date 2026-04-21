@@ -57,7 +57,7 @@
     <ClCompile Include="PatchT4Load.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PatchT4Override.cpp">
+    <ClCompile Include="PatchT4MAM_Override.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LAAPatch.cpp">
@@ -97,6 +97,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="T4E_items.ixx" />
+    <ClCompile Include="PatchT4_Temp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdInc.h">

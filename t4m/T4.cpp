@@ -10,6 +10,9 @@
 
 #include "StdInc.h"
 #include "T4.h"
+// timeGetTime (used by T4_DB_FindXAssetHeader, matches vanilla sub_48DA30).
+#include "Timeapi.h" 
+#pragma comment(lib, "winmm.lib")
 
 // console commands
 DWORD* cmd_id = (DWORD*)0x01F41670;
@@ -99,7 +102,7 @@ extern "C"
 
 	// String table used by T4_DB_LinkXAssetEntry (sub_48D860)
 	StringTable_Find_t       StringTable_Find        = (StringTable_Find_t)       0x0068DE50;
-	char*                    g_stringTableBase       = (char*)                    0x03702390;
+	char**                   g_stringTableBase       = (char**)                   0x03702390;
 
 	// Override-system globals
 	XAssetEntryPoolEntry**   g_freeAssetEntries     = (XAssetEntryPoolEntry**)   0x00957884;
@@ -137,6 +140,20 @@ extern "C"
 	int* g_syncValue = (int*)0xA51C4C;   // dword_A51C4C  — sync value passed to DB_AddZonesToQueue
 	int* g_dbReaderCount = (int*)0xBF0084;  // incremented by readers (sub_48D560)
 	int* g_dbWriterCount = (int*)0xBF0088;  // incremented by writers (sub_48D020)
+	// DB worker sync globals (used by T4_DB_FindXAssetHeader — faithful to sub_48DA30)
+	HANDLE*       g_dbWorkerEvent       = (HANDLE*) 0x01FF5250;   // event signaled when DB worker finishes a zone
+	DWORD*        g_dbWorkerThreadId    = (DWORD*)  0x01FF51F8;   // DB worker thread id (cached)
+	DWORD*        g_waitStartTime       = (DWORD*)  0x022BEC34;   // timeGetTime() at first wait
+	int*          g_waitTimerStarted    = (int*)    0x04DE7054;   // 1 after g_waitStartTime is initialized
+	HANDLE*       g_dbSecondaryEvent    = (HANDLE*) 0x01FF51C4;   // secondary wait event
+	DWORD*        g_dbAltThreadId       = (DWORD*)  0x01FF51C8;   // "ThreadId"
+	DWORD*        g_dbSecondaryThreadId = (DWORD*)  0x01FF51CC;   // secondary thread id
+	HANDLE*       g_dbPauseEventHandle  = (HANDLE*) 0x01FF5068;   // "hHandle" — used by SetEvent/ResetEvent
+	int*          g_dbWorkerPausedFlag  = (int*)    0x01FF5244;   // 1 when DB worker is paused by this path
+	uint8_t*      g_dbFlag951A02        = (uint8_t*)0x00951A02;   // flag in DB busy state check
+	uint8_t*      g_dbFlag3BED85D       = (uint8_t*)0x03BED85D;   // flag in thread-id alt-check
+	DWORD*        g_dbPtr99724C         = (DWORD*)  0x0099724C;   // pointer checked in alt-thread branch
+	DWORD*        g_dbAltDefaultDvarPtr = (DWORD*)  0x01F55288;   // dvar* used by useDefault alt path
 	bool* g_assetsDirty = (bool*)0x45C22C5;  // byte_45C22C5  — "assets need sync" flag
 
 	ZoneFileEntry* g_zoneFileNames = (ZoneFileEntry*)0xD04CB0;
@@ -166,7 +183,7 @@ namespace Dvars {
 }
 
 // fucking __usercall
-// @wrapper — asm usercall vers sub_5EEE20
+// @wrapper — asm usercall to sub_5EEE20
 dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description)
 {
 	DWORD func = 0x5EEE20;
@@ -187,7 +204,7 @@ dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const cha
 //typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
 //DvarRegisterFloatFunc Dvar_RegisterFloat = (DvarRegisterFloatFunc)0x5EEF10;
 // fucking __usercall -- Clippy95 ~10 years later.
-// @wrapper — asm usercall vers sub_5EEF10
+// @wrapper — asm usercall to sub_5EEF10
 dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description)
 {
 	DWORD func = 0x5EEF10;
@@ -212,7 +229,7 @@ dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, 
 	return ret;
 }
 
-// @wrapper — asm usercall vers sub_5EF150
+// @wrapper — asm usercall to sub_5EF150
 dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = 0x5EF150;
@@ -233,7 +250,7 @@ dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* 
 	return ret;
 }
 
-// @wrapper — asm usercall vers sub_6E8DA0
+// @wrapper — asm usercall to sub_6E8DA0
 int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
 {
 	int result;
@@ -251,7 +268,8 @@ int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
 	return result;
 }
 
-inline float R_NormalizedTextScale(game::Font_s* font, float scale) {
+inline float R_NormalizedTextScale(game::Font_s* font, float scale) 
+{
 	return scale * 48.0 / (double)font->pixelHeight;
 }
 
@@ -268,7 +286,8 @@ int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, flo
 // void* returns are always in eax
 uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
 
-void __declspec(naked) DoReturn() {
+void __declspec(naked) DoReturn() 
+{
 	__asm retn
 }
 
@@ -304,7 +323,8 @@ uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* 
 }
 
 // @wrapper — asm usercall vers sub_5EEEA0
-dvar_t* Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description) {
+dvar_t* Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description) 
+{
 	//return (dvar_t*)Dvar_RegisterInt_asm(default_value, name, min, max, flags, description);
 	__asm pushad
 
@@ -433,16 +453,16 @@ DWORD& db_streamDecompBytesDone = *(DWORD*)0x9571A4;
 // not yet loaded when the T4M DLL initializes. Always dereference at use.
 const char** language_system = (const char**)0x22BA528;
 
-void* DB_ReallocXAssetPool(XAssetType type, unsigned int size)
+void* T4M_DB_ReallocXAssetPool(XAssetType type, unsigned int size)
 {
-	int elSize = DB_GetXAssetTypeSize(type);
+	int elSize = T4M_DB_GetXAssetTypeSize(type);
 	void* poolEntry = malloc(size * elSize);
 	DB_XAssetPool[type] = poolEntry;
 	g_poolSize[type] = size;
 	return poolEntry;
 }
 
-void __cdecl DB_ListAssetPool(XAssetType type, bool count_only)
+void __cdecl T4M_DB_ListAssetPool(XAssetType type, bool count_only)
 {
 	char *v1;
 	XZoneName *v2;
@@ -460,10 +480,10 @@ void __cdecl DB_ListAssetPool(XAssetType type, bool count_only)
 	unsigned int overrideAssetEntryIndex;
 	assetPoolCount = 0;
 	assetPoolSize = 0;
-	v1 = DB_GetXAssetTypeName(type);
+	v1 = T4M_DB_GetXAssetTypeName(type);
 	
 	if (!count_only)
-		Com_Printf(0, "Listing assets in %s pool.\n", v1);
+		Com_Printf(0, "[T4M] Listing assets in %s pool.\n", v1);
 
 	for (hash = 0; hash < 0x8000; ++hash)
 	{
@@ -475,10 +495,10 @@ void __cdecl DB_ListAssetPool(XAssetType type, bool count_only)
 			{
 				++assetPoolCount;
 				v2 = &g_zoneNames[assetEntry->zoneIndex];
-				v3 = DB_GetXAssetName(&assetEntry->asset);
+				v3 = T4M_DB_GetXAssetName(&assetEntry->asset);
 				if (!count_only)
-					Com_Printf(0, "Asset: %s FF: %s\n", v3, v2->name);
-				assetPoolSize += DB_GetXAssetTypeSize(assetEntry->asset.type);
+					Com_Printf(0, "[T4M] Asset: %s FF: %s\n", v3, v2->name);
+				assetPoolSize += T4M_DB_GetXAssetTypeSize(assetEntry->asset.type);
 				for (overrideAssetEntryIndex = assetEntry->nextOverride;
 					overrideAssetEntryIndex;
 					overrideAssetEntryIndex = overrideAssetEntry->nextOverride)
@@ -486,30 +506,30 @@ void __cdecl DB_ListAssetPool(XAssetType type, bool count_only)
 					overrideAssetEntry = &g_assetEntryPool[overrideAssetEntryIndex].entry;
 					++assetPoolCount;
 					v5 = &g_zoneNames[g_assetEntryPool[overrideAssetEntryIndex].entry.zoneIndex];
-					v6 = DB_GetXAssetName(&g_assetEntryPool[overrideAssetEntryIndex].entry.asset);
+					v6 = T4M_DB_GetXAssetName(&g_assetEntryPool[overrideAssetEntryIndex].entry.asset);
 					if (!count_only)
-						Com_Printf(0, "Asset: %s FF: %s | overriden\n", v6, v5);
-					assetPoolSize += DB_GetXAssetTypeSize(overrideAssetEntry->asset.type);
+						Com_Printf(0, "[T4M] Asset: %s FF: %s | overriden\n", v6, v5);
+					assetPoolSize += T4M_DB_GetXAssetTypeSize(overrideAssetEntry->asset.type);
 				}
 			}
 		}
 	}
-	v7 = DB_GetXAssetTypeName(type);
-	Com_Printf(16, "Total of %d assets in %s pool, max %d, size %d\n", assetPoolCount, v7, g_poolSize[type], assetPoolSize);
+	v7 = T4M_DB_GetXAssetTypeName(type);
+	Com_Printf(16, "[T4M] Total of %d assets in %s pool, max %d, size %d\n", assetPoolCount, v7, g_poolSize[type], assetPoolSize);
 }
 
-char *__cdecl DB_GetXAssetTypeName(int type)
+char *__cdecl T4M_DB_GetXAssetTypeName(int type)
 {
 	char** g_assetNames = (char **)0x008DCA68;
 	return g_assetNames[type];
 }
 
-const char *__cdecl DB_GetXAssetName(XAsset *asset)
+const char *__cdecl T4M_DB_GetXAssetName(XAsset *asset)
 {
-	return DB_GetXAssetHeaderName(asset->type, &asset->header);
+	return T4M_DB_GetXAssetHeaderName(asset->type, &asset->header);
 }
 
-const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header)
+const char *__cdecl T4M_DB_GetXAssetHeaderName(int type, XAssetHeader *header)
 {
 	int v2;
 	const char *name;
@@ -517,7 +537,7 @@ const char *__cdecl DB_GetXAssetHeaderName(int type, XAssetHeader *header)
 	return name;
 }
 
-int __cdecl DB_GetXAssetTypeSize(int type)
+int __cdecl T4M_DB_GetXAssetTypeSize(int type)
 {
 	return DB_GetXAssetSizeHandler[type]();
 }
@@ -694,9 +714,7 @@ void T4M_DB_WriterRelease()
 	InterlockedDecrement((LONG*)g_dbWriterCount);
 }
 
-// @faithful — sub_48D560 (lock half)
-// T4M_DB_ReaderAcquire: atomically increments readerCount, then waits
-// until writerCount == 0.
+// @faithful — sub_48D560 (reader lock acquire)
 void T4M_DB_ReaderAcquire()
 {
 	InterlockedIncrement((LONG*)g_dbReaderCount);
@@ -704,30 +722,63 @@ void T4M_DB_ReaderAcquire()
 		Sleep(0);
 }
 
-// @faithful — sub_48D560 (release half)
+// @faithful — sub_48D560 (reader lock release)
 void T4M_DB_ReaderRelease()
 {
 	InterlockedDecrement((LONG*)g_dbReaderCount);
 }
 
 // =====================================================================
-// =====================================================================
-//  Asset DB — C++ reconstructions (replace the vanilla engine pointers
-//  0x48D410, 0x48D3B0, 0x48D2A0, 0x48D760, 0x48D7D0, 0x48D860, 0x48DFF0,
-//  loc_48F4C3, 0x48F340 — all commented out above).
+// T4M_DB_EnumAssetPool — full C++ reconstruction of sub_48D560
+// @faithful — sub_48D560
 //
-//  Benefits:
-//    - Clean cdecl convention (no buggy __fastcall typedef)
-//    - 100% C++ logic, debuggable in source
-//    - Semantically identical to vanilla behavior
+//   Acquires the reader lock, walks every one of the 0x8000 hash
+//   buckets, and calls callback(entry->asset.header.data, pType) for
+//   each entry whose type matches.  When followOverrides != 0, the
+//   nextOverride chain of each matching entry is also walked.
+//   Releases the reader lock on exit.
 //
-//  PatchT4_Override installs a detour on 0x48F340 → T4_DB_UnloadZoneAssets
-//  so that vanilla internal callers also hit the reconstruction.
-//
-//  Every T4_DB_* function below is @faithful (identical behavior to
-//  vanilla, just reimplemented in clean C++ and detoured).
+//   Signature (__cdecl, derived from ASM):
+//     sub_48D560(int type,
+//                void (__cdecl* callback)(void*, int*),
+//                int* pType,
+//                int  followOverrides)   ; arg_C — byte in vanilla
 // =====================================================================
-// =====================================================================
+__declspec(noinline)
+void T4M_DB_EnumAssetPool(int type,
+                           void (__cdecl* callback)(void*, int*),
+                           int* pType,
+                           int  followOverrides)
+{
+	T4M_DB_ReaderAcquire();
+
+	for (unsigned int b = 0; b < 0x8000; ++b)
+	{
+		unsigned short idx = db_hashTable[b];
+		while (idx != 0)
+		{
+			XAssetEntry* e = T4M_POOL_ENTRY(idx);
+			if (e->asset.type == type)
+			{
+				callback(e->asset.header.data, pType);
+
+				if (followOverrides != 0)
+				{
+					unsigned short ovIdx = e->nextOverride;
+					while (ovIdx != 0)
+					{
+						XAssetEntry* ov = T4M_POOL_ENTRY(ovIdx);
+						callback(ov->asset.header.data, pType);
+						ovIdx = ov->nextOverride;
+					}
+				}
+			}
+			idx = e->nextHash;
+		}
+	}
+
+	T4M_DB_ReaderRelease();
+}
 
 #include <malloc.h>   // _alloca
 
@@ -735,21 +786,115 @@ void T4M_DB_ReaderRelease()
 // T4_DB_HashAssetName — sub_48D410
 //   15-bit hash (bucket 0..0x7FFF). tolower + '\\' → '/'.
 //   Seed: type. Multiplier: 31 (shl 5; sub seed).
+//
+// TODO(@faithful rewrite): this is currently a naked wrapper that delegates
+// to vanilla sub_48D410 at 0x48D410 as a safety measure. A previous C++
+// reimplementation diverged for some material names and caused
+// FindXAssetByName to miss (→ LinkXAssetEntry fallback → d3d9 freeze during
+// R_Init). Reconstruct in C++ using **CRT `tolower` on movsx-signed bytes**
+// (`(int)(signed char)*name`), matching vanilla's sub_7AA75E call exactly,
+// then restore the naked wrapper only if byte-for-byte equivalence fails.
 // =====================================================================
-__declspec(noinline)
-unsigned int T4_DB_HashAssetName(int type, const char* name)
+__declspec(naked)
+unsigned int T4_DB_HashAssetName(int /*type*/, const char* /*name*/)
 {
-	unsigned int h = static_cast<unsigned int>(type);
-	while (*name)
+	__asm
 	{
-		int c = static_cast<unsigned char>(*name);
-		if (c == '\\')               c = '/';
-		else if (c >= 'A' && c <= 'Z') c += 0x20;
-		h = (h * 31u) + static_cast<unsigned int>(c);
-		++name;
+		mov     eax, [esp+4]        ; eax = type  (__usercall arg)
+		mov     ecx, [esp+8]        ; ecx = name  (__usercall arg)
+		mov     edx, 0x0048D410
+		call    edx                 ; vanilla sub_48D410 — eax = bucket
+		ret                          ; cdecl: caller cleans args
 	}
-	return h & 0x7FFFu;
 }
+
+// =====================================================================
+// Pool-dump helpers — sub_48D2A0 error path
+//
+// sub_48D270: per-asset print callback.
+//   Vanilla: `lea ecx, [esp+arg_0]` → getName takes the address of the
+//   first stack arg as an XAssetHeader* (XAssetHeader = { void* data }).
+// =====================================================================
+static void __cdecl DB_PoolDumpAsset_cb(void* assetData, int* pType)
+{
+	const char* name = DB_XAssetGetNameHandlers[*pType]((XAssetHeader*)&assetData);
+	Com_Printf(0, "%s\n", name);
+}
+
+// sub_59A380 — non-fatal error channel print (^1Error: prefix, channel 1).
+typedef void (__cdecl* DB_PrintError_t)(int, const char*, ...);
+static const DB_PrintError_t DB_PrintError = (DB_PrintError_t)0x0059A380;
+
+// sub_59AC50 — fatal error handler (terminates process; distinct from Com_Error @ 0x6C1CE0).
+typedef void (__cdecl* DB_FatalError_t)(int, const char*, ...);
+static const DB_FatalError_t DB_FatalError = (DB_FatalError_t)0x0059AC50;
+
+// =====================================================================
+// T4M_DB_EnumAssetPoolB — full C++ reconstruction of sub_5E3FC0
+// @faithful — sub_5E3FC0
+//
+//   Type-specific enumerator for types 5–8 only; all other types: no-op.
+//   Does NOT use the global hash table — each case has its own storage:
+//
+//   type 5 — walks a 1024-slot pointer array at 0x21AB318 (dword_21AB318).
+//             Each slot heads a singly-linked list; nodes have the layout:
+//               [+0] void*   data     → passed to callback as arg0
+//               [+4] node*   next     → next node in list
+//               [+8] uint8_t nodeType → only nodes where nodeType==5 are emitted
+//
+//   type 6 — delegates to sub_6E9C80(callback)
+//   type 7 — delegates to sub_6E9C50(callback)
+//   type 8 — delegates to sub_70FCC0(callback)
+//   default — no-op (return immediately)
+//
+//   arg_C (followOverrides) is accepted for DB_EnumPoolForDump_t compat
+//   but is not used (vanilla ignores it too).
+// =====================================================================
+struct DB_Type5PoolNode
+{
+    void*              data;     // [+0] — passed to callback
+    DB_Type5PoolNode*  next;     // [+4] — next in linked list
+    uint8_t            nodeType; // [+8] — must equal 5 to emit
+};
+static DB_Type5PoolNode** const s_type5Pool =
+    reinterpret_cast<DB_Type5PoolNode**>(0x021AB318); // dword_21AB318[0..1023]
+
+typedef void (__cdecl* R_EnumImagePool_t)       (void (__cdecl*)(void*, int*));  // type 6 = IMAGE,      2048 entries @ 0x3BF6984
+typedef void (__cdecl* Snd_EnumSoundPool_t)     (void (__cdecl*)(void*, int*));  // type 7 = SOUND,      4096 entries @ 0x3BED87C
+typedef void (__cdecl* Snd_EnumSoundCurvePool_t)(void (__cdecl*)(void*, int*));  // type 8 = SOUND_CURVE, 2048 entries @ 0x45C22D0 (range-filtered)
+static const R_EnumImagePool_t        R_EnumImagePool        = (R_EnumImagePool_t)       0x006E9C80;
+static const Snd_EnumSoundPool_t      Snd_EnumSoundPool      = (Snd_EnumSoundPool_t)     0x006E9C50;
+static const Snd_EnumSoundCurvePool_t Snd_EnumSoundCurvePool = (Snd_EnumSoundCurvePool_t)0x0070FCC0;
+
+__declspec(noinline)
+void T4M_DB_EnumAssetPoolB(int type,
+                            void (__cdecl* callback)(void*, int*),
+                            int* pType,
+                            int  /*followOverrides*/)
+{
+    switch (type)
+    {
+    case 5:
+        for (int i = 0; i < 1024; ++i)
+        {
+            DB_Type5PoolNode* node = s_type5Pool[i];
+            while (node)
+            {
+                if (node->nodeType == 5)
+                    callback(node->data, pType);
+                node = node->next;
+            }
+        }
+        break;
+    case 6: R_EnumImagePool(callback);        break;
+    case 7: Snd_EnumSoundPool(callback);      break;
+    case 8: Snd_EnumSoundCurvePool(callback); break;
+    default: break;
+    }
+}
+
+// dword_1F552FC — dvar pointer; byte at +0x10 selects the enumeration path.
+static const DWORD* const s_dvar_1F552FC_ptr = (const DWORD*)0x01F552FC;
 
 // =====================================================================
 // T4M_DB_AllocAssetHeader — full C++ reconstruction of sub_48D2A0
@@ -757,8 +902,12 @@ unsigned int T4_DB_HashAssetName(int type, const char* name)
 //
 //   Allocates a typed header from the type's pool (DB_XAssetPool[type]).
 //   Uses the per-type alloc handlers (funcs_48D2B5 @ 0x8DC708).
-//   On pool exhaustion, issues a fatal Com_Error (vanilla additionally
-//   dumps the pool contents before erroring — omitted here for brevity).
+//   On pool exhaustion:
+//     1. Releases the DB writer lock (lock xadd -1 on dword_BF0088).
+//     2. Non-fatal print via sub_59A380 (channel 1, "Exceeded limit…").
+//     3. Dumps every live pool entry via sub_48D270 callback through
+//        sub_48D560 or sub_5E3FC0 (gated on dword_1F552FC[+0x10]).
+//     4. Fatal error via sub_59AC50 (same message, terminates process).
 // =====================================================================
 __declspec(noinline)
 static void* T4M_DB_AllocAssetHeader(int type)
@@ -766,15 +915,26 @@ static void* T4M_DB_AllocAssetHeader(int type)
 	void* pool = DB_XAssetPool[type];
 	void* slot = DB_XAssetAllocHandlers[type](pool);
 
-	if (!slot)
+	if (slot)
+		return slot;
+
+	InterlockedDecrement((LONG*)g_dbWriterCount);
+
+	DB_PrintError(1, "Exceeded limit of %d '%s' assets.\n",
+		g_poolSize[type], T4M_DB_GetXAssetTypeName(type));
+
 	{
-		// Vanilla decrements g_dbWriterCount and calls a fatal Com_Error.
-		InterlockedDecrement((LONG*)g_dbWriterCount);
-		Com_Error(1, "Exceeded limit of %d '%s' assets.\n",
-			g_poolSize[type], DB_GetXAssetTypeName(type));
-		return nullptr;
+		const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*s_dvar_1F552FC_ptr);
+		if (dvar && dvar[0x10] != 0)
+			T4M_DB_EnumAssetPool(type, DB_PoolDumpAsset_cb, &type, 1);
+		else
+			T4M_DB_EnumAssetPoolB(type, DB_PoolDumpAsset_cb, &type, 1);
 	}
-	return slot;
+
+	DB_FatalError(1, "Exceeded limit of %d '%s' assets.\n",
+		g_poolSize[type], T4M_DB_GetXAssetTypeName(type));
+
+	return nullptr;
 }
 
 // =====================================================================
@@ -792,7 +952,7 @@ XAssetEntry* T4_DB_AllocXAssetEntry(int type, unsigned char zoneIndex)
 	if (!head)
 	{
 		InterlockedDecrement((LONG*)g_dbWriterCount);
-		Com_Error(1, "Could not allocate asset - increase XASSET_SIZE or XASSET_ENTRY_SIZE.\n");
+		DB_FatalError(1, "Could not allocate asset - increase XASSET_SIZE or XASSET_ENTRY_SIZE.\n");
 		return nullptr;
 	}
 
@@ -870,30 +1030,407 @@ found:
 }
 
 // =====================================================================
-// T4_DB_LinkXAssetEntry — __usercall → __cdecl wrapper for sub_48D860
-//
-//   Vanilla convention: eax = type (register), arg_0 stack = name.
-//   Returns eax = new XAssetEntry*.
-//
-//   Vanilla logic:
-//     1. T4_DB_FindDefaultAsset(type) → header template
-//     2. AllocXAssetEntry + memcpy default → new entry
-//     3. setName via internal string table, insert at nextHash head.
-//
-//   We delegate to the engine (complex string table) — just fix the ASM.
+// External helper signatures invoked during the T4_DB_FindXAssetHeader
+// wait loop. Called directly through their VAs to stay byte-equivalent
+// with vanilla sub_48DA30. "?" comments mark functions whose exact
+// semantics are unknown but whose side effects are reproduced faithfully.
 // =====================================================================
-__declspec(naked)
-XAssetEntry* T4_DB_LinkXAssetEntry(int type, const char* name)
+typedef int   (__cdecl* Sys_LeaveRecursiveLock_t) ();         // sub_70E3A0 — recursive lock release (ref-count + LeaveCriticalSection×2)
+typedef void  (__cdecl* fn_void_void_t)();  // shared void(void) — Sys_EnterRecursiveLock / DB_WaitForWorkerEvent
+typedef void  (__cdecl* Sys_DequeueLoadEvent_t)   (void* buf, int one);
+typedef DWORD (__cdecl* Sys_GetTimeDelta_t)        ();         // timeGetTime() - g_waitStartTime (lazy-init base)
+// DB_WarnMissingAsset (sub_48D980) is __usercall(eax = delta, edi = type, esi = name).
+// Naked thunk below translates from our cdecl call site.
+
+static const Sys_LeaveRecursiveLock_t Sys_LeaveRecursiveLock = (Sys_LeaveRecursiveLock_t) 0x0070E3A0;
+static const fn_void_void_t           Sys_EnterRecursiveLock = (fn_void_void_t)           0x0070E340;
+static const Sys_DequeueLoadEvent_t   Sys_DequeueLoadEvent   = (Sys_DequeueLoadEvent_t)   0x005FEC60;
+static const fn_void_void_t           DB_WaitForWorkerEvent  = (fn_void_void_t)           0x005A32B0;
+static const Sys_GetTimeDelta_t       Sys_GetTimeDelta        = (Sys_GetTimeDelta_t)       0x00603D40;
+
+// DB_RecordMissingAsset (sub_48D460) is __usercall(ecx = type). Naked thunk to translate from cdecl.
+__declspec(naked) static void T4M_Call_DB_RecordMissingAsset(int /*type*/)
 {
 	__asm
 	{
-		push    dword ptr [esp+8]       ; push name (arg_1)
-		mov     eax, [esp+8]            ; eax = type (arg_0, +8 after push)
-		mov     edx, 0x48D860
-		call    edx                     ; sub_48D860: eax = entry ptr
-		add     esp, 4                  ; cleanup push name
-		ret                              ; cdecl: caller cleans args
+		mov     ecx, [esp + 4]        ; ecx = type (cdecl arg_0)
+		mov     eax, 0x0048D460
+		jmp     eax                    ; tail-jump; callee returns to our caller
 	}
+}
+
+// DB_WarnMissingAsset (sub_48D980) is __usercall(eax = delta, edi = type, esi = name). Naked thunk
+// translates from cdecl (delta, type, name) and preserves callee-saved edi/esi.
+__declspec(naked) static void T4M_Call_DB_WarnMissingAsset(int /*delta*/, int /*type*/, const char* /*name*/)
+{
+	__asm
+	{
+		push    edi                    ; preserve caller's edi (cdecl callee-saved)
+		push    esi                    ; preserve caller's esi (cdecl callee-saved)
+		; stack: [0]=esi_saved, [4]=edi_saved, [8]=retaddr, [12]=delta, [16]=type, [20]=name
+		mov     eax, [esp + 12]        ; eax = delta
+		mov     edi, [esp + 16]        ; edi = type
+		mov     esi, [esp + 20]        ; esi = name
+		mov     edx, 0x0048D980
+		call    edx                     ; __usercall(eax, edi, esi)
+		pop     esi                    ; restore esi
+		pop     edi                    ; restore edi
+		ret                             ; cdecl: caller cleans 3 stack args
+	}
+}
+
+// Read `[TLS[0] + 0x20]` — vanilla caches the current thread id in that
+// slot and reuses it across calls. Replicated byte-for-byte so other
+// engine code that reads/writes the same slot stays coherent.
+static DWORD* T4M_DB_TlsCachedTidSlot()
+{
+	DWORD tls0;
+	__asm
+	{
+		mov     eax, fs:[0x2C]    ; TEB.ThreadLocalStoragePointer
+		mov     eax, [eax]         ; first module's TLS block
+		mov     tls0, eax
+	}
+	return (DWORD*)(tls0 + 0x20);
+}
+
+// =====================================================================
+// T4_DB_FindXAssetHeader — sub_48DA30
+// @faithful (full reconstruction).
+//
+//   Signature (__cdecl):
+//     void* DB_FindXAssetHeader(int type, const char* name,
+//                               bool useDefault, int timeoutMs);
+//
+//   Returns XAssetHeader.data (= entry->asset.header.data), or nullptr
+//   for type ∈ {0x17, 0x20} when the entry is truly missing.
+//
+//   Faithful port of vanilla sub_48DA30 including:
+//     - TLS-cached current-thread-id at [TLS[0] + 0x20]
+//     - Infinite timeout loops forever (no artificial cap)
+//     - Dual event waits on g_dbWorkerEvent and g_dbSecondaryEvent
+//     - DB-worker pause bookkeeping via g_dbPauseEventHandle +
+//       g_dbWorkerPausedFlag
+//     - Full pumping sequence: sub_70E3A0 → Sys_SyncDatabase →
+//       sub_5FEC60 → sub_5A32B0 → Sleep(0) → Sys_WakeDatabase →
+//       (optional) sub_70E340
+//     - useDefault alt-lookup via sub_48D460 when the 0x1F55288 dvar is set
+//     - "Waited %i msec for asset..." logging path
+// =====================================================================
+__declspec(noinline)
+void* T4_DB_FindXAssetHeader(int type, const char* name, bool useDefault, int timeoutMs)
+{
+	DWORD waitStartDelta = 0;          // var_1C
+	// var_18 in vanilla sub_48DA30. sub_5FEC60 writes 24 bytes there (three
+	// 8-byte movq stores at offsets 0, 8, 0x10). Must be ≥ 24 bytes or the
+	// /GS cookie is corrupted → STATUS_STACK_BUFFER_OVERRUN on return.
+	char  sub5FEC60Buf[32] = { 0 };
+	XAssetEntry* entry = nullptr;
+
+loc_48DA44:
+	// Reader acquire: inc reader count, then spin while writer count != 0.
+	InterlockedIncrement((LONG*)g_dbReaderCount);
+	while (*g_dbWriterCount != 0) Sleep(0);
+
+	// Lookup
+	entry = T4_DB_FindXAssetByName(type, name);
+
+	// Reader release
+	InterlockedDecrement((LONG*)g_dbReaderCount);
+
+	if (entry == nullptr) goto loc_48DAC9;
+
+	// Fast path: fully-loaded entry
+	if (entry->zoneIndex != 0) goto loc_48DD4F;
+
+	// Entry exists but zoneIndex == 0: poll the worker event once.
+	{
+		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		int signaled = (w == 0) ? 1 : 0;     // mirrors neg/sbb/inc idiom
+		if (signaled == 0) DB_WaitForPendingLoads();  // sub_5FDBF0
+		if (signaled != 0) goto loc_48DD4F;
+	}
+	// fall through
+
+loc_48DAC9:
+	{
+		DWORD* tid = T4M_DB_TlsCachedTidSlot();
+		if (*tid == 0) *tid = GetCurrentThreadId();
+		if (*tid == *g_dbWorkerThreadId) goto loc_48DD20;
+	}
+
+	if (waitStartDelta != 0) goto loc_48DB76;
+
+	if (*g_waitTimerStarted == 0)
+	{
+		*g_waitStartTime = timeGetTime();
+		*g_waitTimerStarted = 1;
+	}
+	waitStartDelta = timeGetTime() - *g_waitStartTime;
+
+	{
+		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		int signaled = (w == 0) ? 1 : 0;
+		if (signaled == 0) DB_WaitForPendingLoads();
+		// Vanilla loc_48DB4E: `test esi, esi; jnz loc_48DA44` — retry if signaled.
+		if (signaled != 0) goto loc_48DA44;
+
+		// Not signaled: cache current-thread-id if slot is empty.
+		DWORD* tid = T4M_DB_TlsCachedTidSlot();
+		if (*tid == 0) *tid = GetCurrentThreadId();
+	}
+	// fall through
+
+loc_48DB76:
+	{
+		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		int signaled = (w == 0) ? 1 : 0;
+		if (signaled == 0) DB_WaitForPendingLoads();
+		// Vanilla loc_48DB9C: `test esi, esi; jnz loc_48DD20` — bail if signaled.
+		if (signaled != 0) goto loc_48DD20;
+	}
+
+	if (*g_dbHasLoadedZones != 0 && *g_dbFlag951A02 != 0) goto loc_48DD20;
+
+	{
+		DWORD w = WaitForSingleObject(*g_dbSecondaryEvent, 0);
+		int signaled = (w == 0) ? 1 : 0;
+		if (signaled == 0) DB_WaitForPendingLoads();
+		// Vanilla loc_48DBDB: `test esi, esi; jz loc_48DC45` — go to pump path if NOT signaled.
+		if (signaled == 0) goto loc_48DC45;
+	}
+
+	// Secondary event signaled: ensure TLS tid cached, then branch on tid.
+	// Vanilla loc_48DBE3..loc_48DBFC: read [TLS[0]+0x20]; if 0, call
+	// GetCurrentThreadId and cache it.
+	{
+		DWORD* tid = T4M_DB_TlsCachedTidSlot();
+		if (*tid == 0) *tid = GetCurrentThreadId();
+	}
+
+	// Vanilla loc_48DBFC:
+	//   cached = [TLS[0]+0x20]
+	//   if cached == ThreadId (alt):     goto loc_48DC3B (call sub_48E560)
+	//   if cached == 0:                  re-fetch + cache GetCurrentThreadId
+	//   if cached != dword_1FF51CC:      goto loc_48DC45
+	//   if byte_3BED85D == 0:            goto loc_48DC45
+	//   if dword_99724C == 0:            goto loc_48DC45
+	//   else:                            fall through to loc_48DC3B
+	{
+		DWORD* tid = T4M_DB_TlsCachedTidSlot();
+		DWORD cached = *tid;
+		if (cached == *g_dbAltThreadId) goto loc_48DC3B;
+		if (cached == 0)
+		{
+			*tid = GetCurrentThreadId();
+			cached = *tid;
+		}
+		if (cached != *g_dbSecondaryThreadId) goto loc_48DC45;
+		if (*g_dbFlag3BED85D == 0)            goto loc_48DC45;
+		if (*g_dbPtr99724C == 0)              goto loc_48DC45;
+	}
+
+loc_48DC3B:
+	DB_CheckPendingComplete();   // sub_48E560
+	goto loc_48DCDF;
+
+loc_48DC45:
+	{
+		DWORD* tid = T4M_DB_TlsCachedTidSlot();
+		if (*tid == 0) *tid = GetCurrentThreadId();
+	}
+	{
+		// If the DB worker is currently paused (flag==1), temporarily unpause
+		// it, pump, and re-pause at the end.
+		int needRepause = (*g_dbWorkerPausedFlag == 1) ? 1 : 0;
+		if (needRepause)
+		{
+			// Vanilla order: clear flag first, then SetEvent
+			*g_dbWorkerPausedFlag = 0;
+			SetEvent(*g_dbPauseEventHandle);
+		}
+
+		int lockCtx = Sys_LeaveRecursiveLock();
+		Sys_SyncDatabase();                     // sub_6F6CE0
+		Sys_DequeueLoadEvent(sub5FEC60Buf, 1);
+		DB_WaitForWorkerEvent();
+		Sleep(0);
+		Sys_WakeDatabase();                     // sub_6F6D60
+		if (lockCtx != 0) Sys_EnterRecursiveLock();
+
+		if (needRepause)
+		{
+			// Vanilla order: set flag first, then ResetEvent
+			*g_dbWorkerPausedFlag = 1;
+			ResetEvent(*g_dbPauseEventHandle);
+		}
+	}
+	// fall through
+
+loc_48DCDF:
+	if (timeoutMs == (int)0xFFFFFFFF) goto loc_48DA44;   // infinite → retry forever
+
+	if (*g_waitTimerStarted == 0)
+	{
+		*g_waitStartTime = timeGetTime();
+		*g_waitTimerStarted = 1;
+	}
+	{
+		DWORD elapsed = timeGetTime() - *g_waitStartTime - waitStartDelta;
+		if ((int)elapsed < timeoutMs) goto loc_48DA44;
+	}
+	// fall through to timeout bailout
+
+loc_48DD20:
+	if (entry != nullptr) goto loc_48DD4F;
+
+	// Take writer lock and re-search. If still missing → synthesize default.
+	T4M_DB_WriterAcquire();
+	entry = T4_DB_FindXAssetByName(type, name);
+	if (entry == nullptr) goto loc_48DDB0;
+	InterlockedDecrement((LONG*)g_dbWriterCount);
+	// fall through
+
+loc_48DD4F:
+	entry->inuse = true;
+	if (waitStartDelta != 0)
+	{
+		if (*g_waitTimerStarted == 0)
+		{
+			*g_waitStartTime = timeGetTime();
+			*g_waitTimerStarted = 1;
+		}
+		DWORD waited = timeGetTime() - *g_waitStartTime - waitStartDelta;
+		Com_PrintfChannel(0x0A, "Waited %i msec for asset '%s' of type '%s'\n",
+			(int)waited, name, T4M_DB_GetXAssetTypeName(type));
+	}
+	return entry->asset.header.data;
+
+loc_48DDB0:
+	// Under writer lock. Optional alt-default via sub_48D460 when the
+	// 0x1F55288 dvar is set.
+	{
+		bool useAlt = useDefault;
+		if (useAlt)
+		{
+			// [edx+0x10] = dvar->current (first byte) — vanilla: cmp byte ptr [edx+0x10], 0
+			const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*g_dbAltDefaultDvarPtr);
+			useAlt = dvar && dvar[0x10] != 0;
+		}
+		if (useAlt) T4M_Call_DB_RecordMissingAsset(type);
+	}
+
+	if (waitStartDelta != 0 && useDefault)
+	{
+		DWORD waited = Sys_GetTimeDelta() - waitStartDelta;
+		T4M_Call_DB_WarnMissingAsset((int)waited, type, name);
+	}
+
+	if (type == 0x17 || type == 0x20)
+	{
+		InterlockedDecrement((LONG*)g_dbWriterCount);
+		return nullptr;
+	}
+
+	entry = T4_DB_LinkXAssetEntry(type, name);
+	InterlockedDecrement((LONG*)g_dbWriterCount);
+
+	if (!entry) return nullptr;
+	return entry->asset.header.data;
+}
+
+// T4M_Sys_MemCpyFix — detour of vanilla sub_7AFFC0 (optimised memmove, installed in
+// PatchT4_PreLoad). Called unconditionally even when defaultHdr==NULL.
+
+// =====================================================================
+// T4_DB_LinkXAssetEntry — sub_48D860
+// @faithful — sub_48D860
+//
+//   Vanilla __usercall: eax = type (register), arg_0 (stack) = name.
+//   T4M takes (type, name) __cdecl.
+//
+//   Behavior:
+//     1. T4_DB_FindDefaultAsset(type) → defaultHdr.
+//        If NULL: lock xadd -1 on g_dbWriterCount, then sub_59AC50(1,…):
+//          types 0xB/0xC → BSP message ("…build the fast file…") with name.
+//          others        → "Could not load default asset…" with defName/typeName/name.
+//        Execution continues regardless (code falls to loc_48D8BD).
+//     2. g_assetRefCount++; T4_DB_AllocXAssetEntry(type, 0) → entry.
+//     3. sub_7AFFC0(entry->header.data, defaultHdr, getSize(type))
+//        — unconditional (vanilla calls it even when defaultHdr==NULL).
+//     4. type==9 quirk: zero dword at header.data+8 FIRST, then +4.
+//     5. Hash-insert entry at HEAD of bucket (nextHash chain).
+//     6. strlen(name)+1 → StringTable_Find(0, name, 4, len) → intern;
+//        call DB_XAssetSetNameHandlers[type](&header, internedAddr).
+//     7. entry->inuse = 1; return entry.
+// =====================================================================
+__declspec(noinline)
+XAssetEntry* T4_DB_LinkXAssetEntry(int type, const char* name)
+{
+	// Com_Printf(0, "T4M Link[%d] %s ...\n", type, name ? name : "<null>");
+
+	// 1. Find default; on miss release writer lock and report via sub_59AC50
+	void* defaultHdr = T4_DB_FindDefaultAsset(type);
+	if (!defaultHdr)
+	{
+		InterlockedDecrement((LONG*)g_dbWriterCount);
+		if (type == 0xB || type == 0xC)
+		{
+			DB_FatalError(1,
+				"Couldn't find the bsp for this map.  "
+				"Please build the fast file associated with %s and try again.",
+				name);
+		}
+		else
+		{
+			DB_FatalError(1,
+				"Could not load default asset '%s' for asset type '%s'.\n"
+				"Tried to load asset '%s'.",
+				DB_XAssetDefaultNames[type],
+				T4M_DB_GetXAssetTypeName(type),
+				name);
+		}
+	}
+
+	// 2. Increment asset ref-count; allocate entry (zoneIndex=0 = permanent zone)
+	*g_assetRefCount += 1;
+	XAssetEntry* entry = T4_DB_AllocXAssetEntry(type, 0);
+
+	// 3. Copy default data — unconditional (T4M_Sys_MemCpyFix = detour of vanilla sub_7AFFC0).
+	// ASM: `push eax/size; push ebp/defaultHdr; push edx/entry->header.data; call sub_7AFFC0`.
+	// `src` must be the defaultHdr pointer VALUE — passing `&defaultHdr` copies bytes from
+	// our own stack frame and fills the entry header with garbage, which leaves name-hash
+	// lookups pointing at a bucket where sub_48E370's chain scan never terminates.
+	T4M_Sys_MemCpyFix(entry->asset.header.data, (void**)defaultHdr, (int)T4M_GetSize(type));
+
+	// 4. Type-9 (LIGHTDEF) quirk: zero offset+8 first, then offset+4 (ASM order)
+	if (type == 9)
+	{
+		uint32_t* hdr = reinterpret_cast<uint32_t*>(entry->asset.header.data);
+		hdr[2] = 0;
+		hdr[1] = 0;
+	}
+
+	// 5. Hash-insert at HEAD of bucket
+	unsigned int   bucket = T4_DB_HashAssetName(type, name);
+	unsigned short newIdx = T4M_POOL_INDEX(entry);
+	entry->nextHash      = db_hashTable[bucket];
+	db_hashTable[bucket] = newIdx;
+
+	// 6. Intern name in global string table; call setName handler.
+	// ASM: test eax,eax / jz loc_48D956 → loc_48D956: xor eax,eax (NULL).
+	// When StringTable_Find returns 0, vanilla explicitly passes NULL to the handler.
+	int nameLen   = static_cast<int>(strlen(name)) + 1;
+	int stringIdx = StringTable_Find(0, name, 4, nameLen);
+	const char* stringAddr = nullptr;
+	if (stringIdx != 0)
+		stringAddr = *g_stringTableBase + stringIdx * 12 + 4;
+	DB_XAssetSetNameHandlers[entry->asset.type](&entry->asset.header, stringAddr);
+
+	// 7. Mark inuse; return entry
+	entry->inuse = true;
+	// Com_Printf(0, "T4M Link[%d] %s OK\n", type, name ? name : "<null>");
+	return entry;
 }
 
 // =====================================================================
@@ -941,6 +1478,13 @@ void T4_DB_PromoteOverride(XAssetEntry* main, XAssetEntry* override)
 	ovPE->next = *g_freeAssetEntries;
 	*g_freeAssetEntries = ovPE;
 }
+
+// DB_PushCopyInfo (sub_48D720) — if g_syncValue!=0: immediately re-links entry via
+// T4_DB_LinkXAssetEntryOverrideAware(entry, copyData=1); otherwise enqueues entry
+// into g_copyInfo[g_copyInfoCount++] (max 3072) for deferred processing.
+// __fastcall: ecx = XAssetEntry*. Called when copyData==0 and existing is found.
+typedef void (__fastcall* DB_PushCopyInfo_t)(XAssetEntry*);
+static const DB_PushCopyInfo_t DB_PushCopyInfo = (DB_PushCopyInfo_t)0x0048D720;
 
 // =====================================================================
 // T4_DB_LinkXAssetEntryOverrideAware — sub_48DFF0
@@ -1030,33 +1574,86 @@ XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyD
 	newEntry = entry;
 
 	// =================================================================
-	// BRANCH C — existing present: priority arbitration
+	// BRANCH C — existing present
 	// =================================================================
 
-	// "Attempting to override" warning — vanilla behavior is INVERTED vs
-	// what you would expect: the warning only fires when the asset does
-	// NOT have a default name AND type is not 0x10 / 0x20.
+	// ----- C.0 — existing is in zone 0 (permanent zone) → loc_48E1FB -----
 	//
-	// Vanilla loc_48E131+27:
-	//   cmp [defaultName], 0
-	//   jnz skip           ; ← skip if defName is non-empty (= normal case)
-	//   cmp type, 20h
-	//   jz  skip
-	//   cmp type, 10h
-	//   jz  skip
-	//   print warning      ; rare — only for types with no default
+	// When existing is in zone 0 (code_post_gfx / permanent zone), vanilla
+	// takes a COMPLETELY DIFFERENT path from the C.1/C.2 arbitration below:
+	// REPLACE + FREE newEntry (no nextOverride chaining at all).
 	//
-	// Without this inversion we would spam Com_PrintfChannel for every
-	// normal override (thousands of calls while loading a mod) → likely
-	// deadlock in the console/overlay under the DB writer lock.
-	if (existing->zoneIndex != 0)
+	// Vanilla loc_48E1FB flow:
+	//   1. g_assetRefCount--
+	//   2. inuse dispatch if existing->inuse
+	//   3. sub_48D6D0(existing, newEntry):
+	//        a. promoter(existing, newEntry, isPerm=true)
+	//        b. memcpy(existing->header, newEntry->header, getSize(type))
+	//        c. existing->zoneIndex = newEntry->zoneIndex
+	//   4. free newEntry->header via DB_XAssetFreeHandlers[type]
+	//   5. newEntry entry → g_freeAssetEntries
+	//   6. return existing
+	//
+	// Missing this branch was the cause of the mak.ff freeze: without
+	// freeing newEntry's typed header, per-type asset pools (materials,
+	// images…) fill up quickly with ghost override entries whose data
+	// is never released.
+	if (existing->zoneIndex == 0)
+	{
+		// copyData==0: discard newEntry (fresh alloc) and return existing unchanged
+		// (ASM loc_48E1FB: cmp [ebp+arg_4], 0 / jz loc_48E2E4)
+		if (copyData == 0)
+		{
+			DB_PushCopyInfo(newEntry);
+			return existing;
+		}
+
+		// g_assetRefCount--
+		*g_assetRefCount -= 1;
+
+		// inuse dispatch
+		if (existing->inuse)
+		{
+			*g_inuseEntry  = existing;
+			*g_inuseHeader = &existing->asset.header;
+			DB_InUseHandlerDispatch();
+		}
+
+		// Emulate sub_48D6D0: promoter + memcpy + zoneIndex transfer
+		int type0 = existing->asset.type;
+		DB_XAssetOverridePromoter_t promoterZ = DB_XAssetOverridePromoters[type0];
+		if (promoterZ)
+		{
+			// isPerm = (existing->zoneIndex == 0) which is TRUE in this branch
+			promoterZ(existing->asset.header.data, newEntry->asset.header.data, /*isPerm=*/true);
+		}
+		int sizeZ = T4M_GetSize(type0);
+		memcpy(existing->asset.header.data, newEntry->asset.header.data, static_cast<size_t>(sizeZ));
+		existing->zoneIndex = newEntry->zoneIndex;
+
+		// Free newEntry's typed header
+		void* poolZ = DB_XAssetPool[newEntry->asset.type];
+		DB_XAssetFreeHandlers[newEntry->asset.type](poolZ, newEntry->asset.header.data);
+
+		// Return newEntry entry to the free list
+		XAssetEntryPoolEntry* pe = reinterpret_cast<XAssetEntryPoolEntry*>(newEntry);
+		pe->next = *g_freeAssetEntries;
+		*g_freeAssetEntries = pe;
+
+		return existing;
+	}
+
+	// "Attempting to override" warning — vanilla behavior: only fires when
+	// the asset has NO default name AND type is not 0x10 / 0x20.
+	// (ASM loc_48E131: cmp [defaultName], 0 / jnz skip — skips the normal case)
 	{
 		const char* defName = DB_XAssetDefaultNames[type];
 		bool hasEmptyDefault = (!defName || defName[0] == '\0');
 		if (hasEmptyDefault && type != 0x20 && type != 0x10)
 		{
-			Com_PrintfChannel(1,
-				"[T4M] Attempting to override asset '%s' from '%s' with '%s'\n",
+			InterlockedDecrement((LONG*)g_dbWriterCount);
+			DB_FatalError(1,
+				"Attempting to override asset '%s' from '%s' with '%s'",
 				name,
 				g_zoneFileNames[existing->zoneIndex].name,
 				g_zoneFileNames[newEntry->zoneIndex].name);
@@ -1087,24 +1684,33 @@ XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyD
 	// ----- C.2 — NEW WINS: swap data, chain existing as override -----
 	//
 	// Vanilla flow (sub_48DFF0:loc_48E25A + sub_48D6D0):
-	//   1. If existing->inuse → InUse dispatch
-	//   2. Swap nextOverride: newEntry.nextOverride = existing.nextOverride
+	//   1. If copyData==0 → sub_48D720(newEntry); return existing
+	//   2. If existing->inuse → InUse dispatch
+	//   3. Swap nextOverride: newEntry.nextOverride = existing.nextOverride
 	//                          existing.nextOverride = idx(newEntry)
-	//   3. size = getSize(existing->type)
-	//   4. memcpy(tmp, existing->header, size)        ← save existing's data
-	//   5. bl = existing->zoneIndex                    ← save existing's zone
-	//   6. sub_48D6D0(esi=existing, edi=newEntry):
+	//   4. size = getSize(existing->type)
+	//   5. memcpy(tmp, existing->header, size)        ← save existing's data
+	//   6. bl = existing->zoneIndex                    ← save existing's zone
+	//   7. sub_48D6D0(esi=existing, edi=newEntry):
 	//        a. promoter(existing, newEntry, existing->zoneIndex == 0)
 	//        b. memcpy(existing->header, newEntry->header, getSize(new->type))
 	//        c. existing->zoneIndex = newEntry->zoneIndex
-	//   7. memcpy(newEntry->header, tmp, getSize(new->type))
-	//   8. newEntry->zoneIndex = bl
+	//   8. memcpy(newEntry->header, tmp, getSize(new->type))
+	//   9. newEntry->zoneIndex = bl
 	//
-	// CRITICAL: the PROMOTER (step 6a) transfers GPU state between
+	// CRITICAL: the PROMOTER (step 7a) transfers GPU state between
 	// existing and newEntry for materials/images/techsets. Skipping it
 	// leaks or strands the D3D state → render pipeline deadlock.
 
-	// 1. InUse dispatch
+	// 1. copyData==0: discard newEntry (fresh alloc) and return existing unchanged
+	// (ASM loc_48E25A: cmp [ebp+arg_4], 0 / jz loc_48E2E4)
+	if (copyData == 0)
+	{
+		DB_PushCopyInfo(newEntry);
+		return existing;
+	}
+
+	// 2. InUse dispatch
 	if (existing->inuse)
 	{
 		*g_inuseEntry  = existing;
@@ -1112,19 +1718,19 @@ XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyD
 		DB_InUseHandlerDispatch();
 	}
 
-	// 2. Swap nextOverride
+	// 3. Swap nextOverride
 	newEntry->nextOverride = existing->nextOverride;
 	existing->nextOverride = T4M_POOL_INDEX(newEntry);
 
-	// 3+4. Save existing's data
+	// 4+5. Save existing's data
 	int size = T4M_GetSize(type);
 	void* tmp = _alloca(static_cast<size_t>(size));
 	memcpy(tmp, existing->asset.header.data, static_cast<size_t>(size));
 
-	// 5. Save existing's zoneIndex
+	// 6. Save existing's zoneIndex
 	unsigned char savedExistingZone = existing->zoneIndex;
 
-	// 6a. Call promoter BEFORE data overwrite (existing still has old data)
+	// 7a. Call promoter BEFORE data overwrite (existing still has old data)
 	DB_XAssetOverridePromoter_t promoter = DB_XAssetOverridePromoters[type];
 	if (promoter)
 	{
@@ -1132,16 +1738,16 @@ XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyD
 		promoter(existing->asset.header.data, newEntry->asset.header.data, isPermZone);
 	}
 
-	// 6b. Copy new's data into existing
+	// 7b. Copy new's data into existing
 	memcpy(existing->asset.header.data, newEntry->asset.header.data, static_cast<size_t>(size));
 
-	// 6c. existing->zoneIndex = newEntry->zoneIndex
+	// 7c. existing->zoneIndex = newEntry->zoneIndex
 	existing->zoneIndex = newEntry->zoneIndex;
 
-	// 7. Copy saved existing data into newEntry (newEntry becomes the losing override)
+	// 8. Copy saved existing data into newEntry (newEntry becomes the losing override)
 	memcpy(newEntry->asset.header.data, tmp, static_cast<size_t>(size));
 
-	// 8. newEntry->zoneIndex = saved existing zone
+	// 9. newEntry->zoneIndex = saved existing zone
 	newEntry->zoneIndex = savedExistingZone;
 
 	// NOTE: vanilla does NOT swap the inuse flag — we leave it out too.
@@ -1264,7 +1870,7 @@ void T4_DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 					{
 						Com_PrintfChannel(1,
 							"[T4M] No default asset for type %s during unload\n",
-							DB_GetXAssetTypeName(type));
+							T4M_DB_GetXAssetTypeName(type));
 					}
 					continue;
 				}
