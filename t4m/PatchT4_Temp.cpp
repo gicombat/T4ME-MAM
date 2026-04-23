@@ -56,8 +56,6 @@ namespace Engine
 	typedef void(__cdecl* Com_Frame_EventLoop_t)(int run);                           // sub_59B0D0
 	typedef void(__cdecl* Com_Fatal_t)         (const char* msg);                   // sub_5FE8C0
 	typedef char* (__cdecl* Com_FormatMsg_t)     (const char* fmt, ...);              // sub_5F6D80
-	typedef void(__cdecl* Sys_SyncDatabase_t)  (void);                               // sub_6F6CE0
-	typedef void(__cdecl* Sys_WakeDatabase_t)  (void);                               // sub_6F6D60
 	typedef int(__cdecl* Sys_Milliseconds_t)  (void);                               // sub_59A6F0
 	typedef bool(__cdecl* Sys_SpawnRenderThread_t)(void);                            // sub_5A3110
 	typedef bool(__cdecl* Sys_SpawnDBThread_t)  (void);                               // sub_5A31F0
@@ -125,7 +123,6 @@ namespace Engine
 	typedef void(__cdecl* R_InitDeviceAndWindow_t)(void);                            // sub_6D6880
 	typedef void(__cdecl* R_InitRTPool_t)      (void);                               // sub_70E8F0
 	typedef void(__cdecl* UI_LoadCinematic_t)  (void);                               // sub_71EFC0
-	typedef void(__cdecl* Com_Printf_Header_t) (int channel, const char* fmt, ...);  // sub_59A2C0
 	typedef void* (__cdecl* DB_FindXAssetHeader_full_t)(int type, const char* name, int createIfMissing, int user); // sub_48DA30
 	typedef void(__cdecl* MatReg_Singlethread_t)(const char* name, int flags);       // sub_6E9B80
 
@@ -140,8 +137,6 @@ namespace Engine
 	static const Com_Frame_EventLoop_t         Com_EnqueueEvent = (Com_Frame_EventLoop_t)0x0059B0D0;
 	static const Com_Fatal_t                   Com_Fatal = (Com_Fatal_t)0x005FE8C0;
 	static const Com_FormatMsg_t               Com_FormatMsg = (Com_FormatMsg_t)0x005F6D80;
-	static const Sys_SyncDatabase_t            Sys_SyncDatabase = (Sys_SyncDatabase_t)0x006F6CE0;
-	static const Sys_WakeDatabase_t            Sys_WakeDatabase = (Sys_WakeDatabase_t)0x006F6D60;
 	static const Sys_Milliseconds_t            Sys_Milliseconds = (Sys_Milliseconds_t)0x0059A6F0;
 	static const Sys_SpawnRenderThread_t       Sys_SpawnRenderThread = (Sys_SpawnRenderThread_t)0x005A3110;
 	static const Sys_SpawnDBThread_t           Sys_SpawnDBThread = (Sys_SpawnDBThread_t)0x005A31F0;
@@ -207,7 +202,6 @@ namespace Engine
 	static const R_InitDeviceAndWindow_t       R_InitDeviceAndWindow = (R_InitDeviceAndWindow_t)0x006D6880;
 	static const R_InitRTPool_t                R_InitRTPool = (R_InitRTPool_t)0x0070E8F0;
 	static const UI_LoadCinematic_t            UI_LoadCinematic = (UI_LoadCinematic_t)0x0071EFC0;
-	static const Com_Printf_Header_t           Com_Print = (Com_Printf_Header_t)0x0059A2C0;
 	static const DB_FindXAssetHeader_full_t    DB_FindXAssetHeader4 = (DB_FindXAssetHeader_full_t)0x0048DA30;
 	static const MatReg_Singlethread_t         Material_Register_ST = (MatReg_Singlethread_t)0x006E9B80;
 	static const Com_InitSessionFinalize_t     Com_InitSessionFinalize = (Com_InitSessionFinalize_t)0x0046FA40;
@@ -368,7 +362,7 @@ extern "C" void __cdecl Material_InitDefault()
 // ===========================================================================
 extern "C" void __cdecl R_Init()
 {
-	Engine::Com_Print(8, "----- R_Init -----\n");
+	Com_Printf(8, "----- R_Init -----\n");
 
 	// var_4 is a local word; asm sets byte[var_4] = 1, byte[var_4+1] = 0
 	// then compares the word with 1 → taken branch always (fullscreen path).
@@ -411,7 +405,7 @@ extern "C" void __cdecl R_Init()
 
 	if (!sunOK)
 	{
-		Engine::Com_Print(8, "Sun sprite occlusion query calibration failed.\n");
+		Com_Printf(8, "Sun sprite occlusion query calibration failed.\n");
 		Engine::R_ResetToDefault();       // sub_72D000
 	}
 
@@ -559,7 +553,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		"1", "7", 0x4EF, "350073", "JADAMS2", "Thu Oct 29 15:43:55 2009");
 	(void)banner;
 
-	Engine::Com_Print(0x10, "%s %s build %s %s\n",
+	Com_Printf(0x10, "%s %s build %s %s\n",
 		"COD_WaW", "win-x86", "7", "Oct 29 2009");
 
 	// ---- Preliminaries ----------------------------------------------------
@@ -582,7 +576,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		&& (*G::dvar_singlethreadRender)->current.boolean)
 	{
 		Engine::Hunk_InitMemory();                       // sub_5F5480
-		Engine::Com_Print(7, "begin $init\n");
+		Com_Printf(7, "begin $init\n");
 
 		*G::g_comInitDone = 1;
 		if (*G::g_initHasStart == 0)
@@ -685,7 +679,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i)
 		{
 			if (Engine::Cmd_Exists(entries[i].name))
-				Engine::Com_Print(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
+				Com_Printf(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
 			else
 				Cmd_AddCommand(entries[i].name, entries[i].func);
 		}
@@ -736,7 +730,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		Engine::Com_PrintError(0x10, "WARNING: Winsock initialization failed, returned %d\n", wsaRc);
 	else
 	{
-		Engine::Com_Print(0x10, "Winsock Initialized\n");
+		Com_Printf(0x10, "Winsock Initialized\n");
 		*G::g_46E50B0_netUp = 1;
 		Engine::Cinema_Init();                            // sub_600CC0
 		Engine::Cinema_SetInitialized(1);                 // sub_600ED0 (eax=1)
@@ -788,19 +782,19 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		else if (rec <= 10) workers = rec - 2;
 		else                workers = 8;
 
-		Engine::Com_Print(0x10, "%s %d\n",
+		Com_Printf(0x10, "%s %d\n",
 			"Number of worker threads", workers);
 
 		*G::g_smpWorkerThreads = (DWORD)Engine::Dvar_RegisterString(
 			"r_smp_worker_threads", 5, (void*)(uintptr_t)workers, (const char*)2);
 	}
 
-	Engine::Com_Print(8, "Trying SMP acceleration...\n");
+	Com_Printf(8, "Trying SMP acceleration...\n");
 	if (!Engine::Sys_SpawnRenderThread())
 		Engine::Com_Error(0, "Failed to create render thread");
 
 	Engine::UI_LoadCinematic();                           // sub_71EFC0
-	Engine::Com_Print(8, "...succeeded.\n");
+	Com_Printf(8, "...succeeded.\n");
 
 	// ---- Video post-init ---------------------------------------------------
 	Com_PostInit_Video();                                 // sub_644BE0
@@ -830,11 +824,11 @@ finish_banner:
 			*G::g_initHasStart = 1;
 		}
 		DWORD end = timeGetTime() - *G::g_initStartMs;
-		Engine::Com_Print(0x10, "end $init %d ms\n", end);
+		Com_Printf(0x10, "end $init %d ms\n", end);
 	}
 
 	// ---- Final banner + trace session ------------------------------------
-	Engine::Com_Print(0x10, "--- Common Initialization Complete ---\n");
+	Com_Printf(0x10, "--- Common Initialization Complete ---\n");
 	*G::g_1F964B0_done = 1;
 
 	{
@@ -869,9 +863,9 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 		{
 			if (*G::g_48AE4D4_inCgame == 0)
 				Com_PostInit_Video();                     // sub_644BE0
-			Engine::Sys_SyncDatabase();                   // sub_6F6CE0
+			Sys_SyncDatabase();                            // sub_6F6CE0
 			Engine::Com_PostInit2();                      // sub_644E60
-			Engine::Sys_WakeDatabase();                   // sub_6F6D60
+			Sys_WakeDatabase();                            // sub_6F6D60
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
@@ -889,6 +883,166 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 // These wrappers run the full vanilla init path — they invoke Com_Printf,
 // Com_Error, etc., which means they MUST NOT be called from Sys_RunInit.
 // ---------------------------------------------------------------------------
+
+// ===========================================================================
+// Call helpers — __usercall callees used by sub_44B7E0 / sub_44B8E0.
+// Each thin wrapper fixes up registers before the call and restores them
+// after, so the body reconstructions can be written as plain __cdecl.
+// ===========================================================================
+
+// sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val
+// Equivalent to _snprintf(dest, size, fmt, val).
+static void T4M_Com_sprintf(char* dest, int size, const char* fmt, DWORD val)
+{
+    const void* fn = (const void*)0x005F6D00;
+    __asm {
+        push esi
+        push edi
+        push val
+        push fmt
+        mov  esi, size
+        mov  edi, dest
+        call fn
+        add  esp, 8
+        pop  edi
+        pop  esi
+    }
+}
+
+// sub_5C7530  __usercall: eax=ctx, edx=cmd, [esp+4]=0, [esp+8]=0  → binding handle
+// Returns non-zero if cmd is currently bound to a key.
+static int T4M_Key_GetBinding(void* ctx, const char* cmd)
+{
+    int result;
+    const void* fn = (const void*)0x005C7530;
+    __asm {
+        push 0
+        push 0
+        mov  edx, cmd
+        mov  eax, ctx
+        call fn
+        add  esp, 8
+        mov  result, eax
+    }
+    return result;
+}
+
+// sub_5BB830  __usercall: eax=bindHandle, [esp+4]=bufSize
+// Writes the display key string for bindHandle into the caller-owned buffer.
+// TODO: output buffer pointer mechanism unverified — may need arg adjustment.
+static void T4M_Key_BindingToString(int bindHandle, int bufSize)
+{
+    const void* fn = (const void*)0x005BB830;
+    __asm {
+        push bufSize
+        mov  eax, bindHandle
+        call fn
+        add  esp, 4
+    }
+}
+
+// sub_5BB5E0  __usercall: eax=keyStr  → eax (canonical display name)
+static const char* T4M_Key_KeynumToString(const char* keyStr)
+{
+    const char* result;
+    const void* fn = (const void*)0x005BB5E0;
+    __asm {
+        mov  eax, keyStr
+        call fn
+        mov  result, eax
+    }
+    return result;
+}
+
+// sub_44B860  __cdecl: (inputCmd, cmdNameBuf, argsBuf) — splits "cmd[:args]"
+static void T4M_Key_SplitBindCmd(const char* inputCmd, char* cmdNameBuf, char* argsBuf)
+{
+    typedef void(__cdecl* fn_t)(const char*, char*, char*);
+    ((fn_t)0x0044B860)(inputCmd, cmdNameBuf, argsBuf);
+}
+
+// ===========================================================================
+// 7. sub_44B7E0 — FAKE_INTRO_SECONDS argument formatter  (0x44B7E0)
+// @faithful  __usercall: eax=argStr, [esp+4]=outBuf (4-byte dest)
+//
+// Parses an integer from argStr via sub_7AB559 ("%d").
+// Validates range [0,40]; out-of-range: Com_PrintError + clamp to 0.
+// Adds elapsed seconds (dword_351DF34 / 1000) from the frame timer.
+// Formats result as "%02d" into outBuf via sub_5F6D00.
+// ===========================================================================
+static void __cdecl T4_Key_FormatIntroSeconds(const char* argStr, char* outBuf)  // @faithful
+{
+    int value = 0;
+    {
+        typedef int(__cdecl* ScanInt_t)(const char*, const char*, int*);
+        ((ScanInt_t)0x007AB559)(argStr, (const char*)0x0084AF48 /* "%d" */, &value);
+    }
+
+    if (value < 0 || value > 40)
+    {
+        Engine::Com_PrintError(1,
+            "Argument \"%s\" given for FAKE_INTRO_SECONDS is outside the acceptable range of (%d,%d).",
+            argStr, 0, 40);
+        value = 0;
+    }
+
+    value += (int)(*(DWORD*)0x00351DF34 / 1000u);  // dword_351DF34 — frame timer ms
+
+    T4M_Com_sprintf(outBuf, 4, "%02d", (DWORD)value);
+}
+
+// ===========================================================================
+// 8. sub_44B8E0 — Key binding display string  (0x44B8E0)
+// @faithful  __usercall: eax=outBuf, ecx=ctx, [esp+4]=inputCmd
+//
+// Resolution order:
+//   1. Direct binding via sub_5C7530 → display string via sub_5BB830.
+//   2. Parse "cmd[:args]" via sub_44B860.
+//   3. "FAKE_INTRO_SECONDS" → T4_Key_FormatIntroSeconds.
+//   4. "gocrouch" alias → try "togglecrouch" then "+movedown" bindings.
+//   5. Fallback → output "\"KEY_UNBOUND\"" via sub_5BB5E0 + sub_5F6D00.
+// ===========================================================================
+static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const char* inputCmd)  // @faithful
+{
+    char cmd_name[256];  // var_200
+    char args[256];      // var_100
+
+    // Phase 1 — direct binding
+    int binding = T4M_Key_GetBinding(ctx, inputCmd);
+    if (binding != 0)
+    {
+        // TODO: sub_5BB830 output-buffer handoff unverified; size arg may differ.
+        T4M_Key_BindingToString(binding, 32);
+        return;
+    }
+
+    // Phase 2 — split "cmd[:args]"
+    T4M_Key_SplitBindCmd(inputCmd, cmd_name, args);
+
+    // Phase 3 — FAKE_INTRO_SECONDS
+    if (T4M_Q_stricmpn(cmd_name, "FAKE_INTRO_SECONDS", 0x7FFFFFFF) == 0)
+    {
+        T4_Key_FormatIntroSeconds(args, outBuf);
+        return;
+    }
+
+    // Phase 4 — "gocrouch" alias
+    if (T4M_Q_stricmpn(cmd_name, "gocrouch", 0x7FFFFFFF) == 0)
+    {
+        binding = T4M_Key_GetBinding(ctx, "togglecrouch");
+        if (!binding)
+            binding = T4M_Key_GetBinding(ctx, "+movedown");
+        if (binding)
+        {
+            T4M_Key_BindingToString(binding, 32); // TODO: same uncertainty as Phase 1
+            return;
+        }
+    }
+
+    // Phase 5 — fallback: "KEY_UNBOUND"
+    const char* unboundStr = T4M_Key_KeynumToString("KEY_UNBOUND");
+    T4M_Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
+}
 
 // =====================================================================
 // PatchT4_Temp — installs experimental / temporary detours.

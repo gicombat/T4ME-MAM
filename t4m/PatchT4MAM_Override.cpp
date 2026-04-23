@@ -195,6 +195,6 @@ void PatchT4_Override()
 	// leaves an asset's hash-chain linkage broken. Needs further investigation
 	// (probable suspects: T4_DB_LinkXAssetEntry fallback ordering, or pump
 	// sequence causing DB worker to promote entries in unexpected order).
-	// Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_DB_FindXAssetHeader,          Detours::X86Option::USE_JUMP);
+	 Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_DB_FindXAssetHeader,          Detours::X86Option::USE_JUMP);
 
 }
