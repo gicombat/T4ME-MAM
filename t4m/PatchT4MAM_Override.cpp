@@ -177,14 +177,12 @@ void PatchT4_Override()
 	Detours::X86::DetourFunction((uintptr_t)0x0048D760, (uintptr_t)&T4M_DB_FindXAssetByName_Wrapper,       Detours::X86Option::USE_JUMP);
 
 	// TEMPORAIRE — ce détour sera retiré une fois que tous les appelants
-	// de sub_48D860 (sub_48DA30, sub_48DFF0) seront remplacés par des fonctions
-	// T4M full-C++ qui appellent directement T4_DB_LinkXAssetEntry en __cdecl.
-	// À terme le wrapper et ce détour ne seront plus nécessaires.
+	// seront remplacés par des fonctions T4M full-C++ qui appellent directement 
+	// T4_DB_LinkXAssetEntry en __cdecl. À terme le wrapper et ce détour ne seront plus nécessaires.
 	Detours::X86::DetourFunction((uintptr_t)0x0048D860, (uintptr_t)&T4M_DB_LinkXAssetEntry_Wrapper,        Detours::X86Option::USE_JUMP);
 
-	// Re-enabled after adding the loc_48E1FB path (zoneIndex==0 case) which
-	// properly frees newEntry instead of chaining it as a ghost override.
-	// Detours::X86::DetourFunction((uintptr_t)0x0048DFF0, (uintptr_t)&T4_DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
+	// TEMPORAIRE — 0x0048DFF0
+	 Detours::X86::DetourFunction((uintptr_t)0x0048DFF0, (uintptr_t)&T4_DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
 
 	// Full vanilla-faithful reconstruction of DB_FindXAssetHeader (sub_48DA30).
 	//

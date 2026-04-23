@@ -160,6 +160,8 @@ extern "C"
 	PMem_Pool* g_pmem_pools = (PMem_Pool*)0x224F9D8;
 
 	DB_XAssetGetNameHandler * DB_XAssetGetNameHandlers = (DB_XAssetGetNameHandler *)0x008DCAF8;
+
+	int* g_currentZoneIndex = (int*)0x00987084;  // dword_987084 — zone index currently being loaded
 }
 
 dvar_t emptydvar{};
@@ -1510,12 +1512,24 @@ static const DB_PushCopyInfo_t DB_PushCopyInfo = (DB_PushCopyInfo_t)0x0048D720;
 __declspec(noinline)
 XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyData)
 {
-	int type = newEntry->asset.type;
 
+	int type = newEntry->asset.type;
+	/*
+	// Guard: catch corrupted entries before the name handler dereferences header.data
+	if ((unsigned)type >= ASSET_TYPE_MAX || (uintptr_t)newEntry->asset.header.data < 0x1000)
+	{
+		Com_PrintfChannel(0, "[T4M] CORRUPT ENTRY: newEntry=%p type=%d header.data=%p copyData=%d\n",
+			newEntry, type, newEntry->asset.header.data, copyData);
+		__debugbreak();
+		return newEntry;
+	}
+	*/
 	// --- 1. Read name, detect ',' soft-override prefix ---
 	const char* name    = DB_XAssetGetNameHandlers[type](&newEntry->asset.header);
 	bool softOverride   = (name[0] == ',');
 	if (softOverride) name = name + 1;
+
+	//Com_PrintfChannel(0, "[T4M] - Link Asset Entry Override Aware, type %d name %s copyData %d", (int)type, name, copyData);
 
 	// --- 2. Look up an existing entry in the bucket (same name & type) ---
 	unsigned int bucket = T4_DB_HashAssetName(type, name);
@@ -1550,11 +1564,20 @@ XAssetEntry* T4_DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyD
 	if (copyData == 0)
 	{
 		// Allocate a fresh entry and copy newEntry's data into it.
-		// zoneIndex: vanilla reads dword_987084 (current zone). We use
-		// newEntry->zoneIndex as a reasonable approximation.
-		XAssetEntry* fresh = T4_DB_AllocXAssetEntry(type, newEntry->zoneIndex);
+		// zoneIndex: vanilla sub_48DFF0 BRANCH B (loc_48E0C2) reads dword_987084
+		// (current loading zone). newEntry is a stack-local in sub_48E300 with only
+		// type and header.data initialized — its zoneIndex byte is garbage.
+		//XAssetEntry* fresh = T4_DB_AllocXAssetEntry(type, (unsigned char)*g_currentZoneIndex);
+
+		XAssetEntry* fresh = T4_DB_AllocXAssetEntry(type, (unsigned char)*g_currentZoneIndex);
 		int size = T4M_GetSize(type);
 		memcpy(fresh->asset.header.data, newEntry->asset.header.data, static_cast<size_t>(size));
+		// Ensure getName(fresh->header) hashes to the same bucket that fresh is
+		// inserted into below. The zone data may carry a comma-prefixed name;
+		// without this setName the invariant breaks through any later C.0/C.2
+		// memcpy that promotes fresh's data into an existing entry.
+		//if (softOverride)
+		//	DB_XAssetSetNameHandlers[type](&fresh->asset.header, name);
 		entry = fresh;
 	}
 
