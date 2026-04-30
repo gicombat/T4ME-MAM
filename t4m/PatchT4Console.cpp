@@ -142,7 +142,7 @@ void PatchT4_ConsoleBox()
 
 void testCmd_f()
 {
-	T4::Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", Cmd_Argc() - 1);
+	T4::Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", T4::Cmd_Argc() - 1);
 }
 
 void __cdecl DB_ListAssetPool_f()

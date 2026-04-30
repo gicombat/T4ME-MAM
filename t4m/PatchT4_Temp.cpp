@@ -824,11 +824,11 @@ finish_banner:
 			*G::g_initHasStart = 1;
 		}
 		DWORD end = timeGetTime() - *G::g_initStartMs;
-		Com_Printf(0x10, "end $init %d ms\n", end);
+		T4::Com_Printf(0x10, "end $init %d ms\n", end);
 	}
 
 	// ---- Final banner + trace session ------------------------------------
-	Com_Printf(0x10, "--- Common Initialization Complete ---\n");
+	T4::Com_Printf(0x10, "--- Common Initialization Complete ---\n");
 	*G::g_1F964B0_done = 1;
 
 	{
