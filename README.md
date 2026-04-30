@@ -11,7 +11,7 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 
 - When loading a map, two new ff are loaded : localized_XXX_mapname.ff depending on the language of the game, and mapname_patch_ex.ff - It's to extend and bypass already existing _patch to add more thing without using mod.ff (MAM-1.0)
 - Load a localized_XXX_mod.ff depending on the language of the game (MAM-1.0)
-- Increase max Images count to 4096 (MAM-1.0)
+- Fix bug when increase the max Images count to 4096 (MAM-1.0)
 - Expose vulkan parameter to be able to change in-game the settings of vulkan (MAM-1.0)
 - Console reset times (r49)
 - Gamepad autoaim from console (r49)
