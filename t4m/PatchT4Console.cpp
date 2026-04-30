@@ -11,8 +11,7 @@
 #include "t4_headers.h"
 #include "StdInc.h"
 #include "T4.h"
-#include <string>  
-
+#include <string>
 
 vec4_t whiteColor = { 8.0f, 8.0f, 8.0f, 1.0f };
 
@@ -26,6 +25,20 @@ ConDrawInput_TextLimitChars_t ConDrawInput_TextLimitChars = (ConDrawInput_TextLi
 
 ConDrawInputGlob* conDraw = (ConDrawInputGlob*)0x92C370;
 
+
+extern dvar_t** logfile;  // defined in PatchT4Script.cpp, vanilla 0x01F552BC
+
+// Force `logfile` dvar to async-write mode. Engine registers it with default 0
+// (no archive flag), so console.log is never written unless we flip it. Called
+// from Cmd_Init_T4 — runs after Cvar_Init so *logfile is valid.
+static void ForceLogfileEnabled()
+{
+	if (!logfile || !*logfile) return;
+	// 0=off, 1=sync, 2=async file write (preferred — flushes more often)
+	(*logfile)->current.integer = 2;
+	(*logfile)->latched.integer = 2;
+	(*logfile)->modified        = true;
+}
 
 void DrawDvarFlags(dvar_t* dvar)
 {
@@ -129,7 +142,7 @@ void PatchT4_ConsoleBox()
 
 void testCmd_f()
 {
-	Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", Cmd_Argc() - 1);
+	T4::Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", Cmd_Argc() - 1);
 }
 
 void __cdecl DB_ListAssetPool_f()
@@ -141,30 +154,30 @@ void __cdecl DB_ListAssetPool_f()
 
 	unsigned int* g_poolSize = (unsigned int*)0x8DC5D0;
 
-	if (Cmd_Argc() >= 2)
+	if (T4::Cmd_Argc() >= 2)
 	{
-		v1 = Cmd_Argv(1);
+		v1 = T4::Cmd_Argv(1);
 		type = (XAssetType)atoi(v1);
-		T4M_DB_ListAssetPool(type, false);
+		T4M::DB_ListAssetPool(type, false);
 	}
 	else
 	{
-		Com_Printf(0, "listassetpool <poolnumber>: lists all the assets in the specified pool\n");
+		T4::Com_Printf(0, "listassetpool <poolnumber>: lists all the assets in the specified pool\n");
 		for (i = 0; i < ASSET_TYPE_MAX; ++i)
 		{
-			v0 = T4M_DB_GetXAssetTypeName(i);
-			Com_Printf(0, "%d %s %i\n", i, v0, g_poolSize[i]);
+			v0 = T4M::DB_GetXAssetTypeName(i);
+			T4::Com_Printf(0, "%d %s %i\n", i, v0, g_poolSize[i]);
 		}
 	}
 }
 
 void DB_ListAssetCounts_f()
 {
-	Com_Printf(0, "Listing assets in all pools.\n");
+	T4::Com_Printf(0, "Listing assets in all pools.\n");
 
 	for (int i = 0; i < ASSET_TYPE_MAX; ++i)
 	{
-		T4M_DB_ListAssetPool((XAssetType)i, true);
+		T4M::DB_ListAssetPool((XAssetType)i, true);
 	}
 }
 
@@ -208,27 +221,29 @@ void Cmd_Init_T4()
 
 	__asm call Cmd_Init_T4
 
+	ForceLogfileEnabled();
+
 	//Cmd_AddCommand("testcmd", testCmd_f);
-	Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
-	Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
+	T4M::Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
+	T4M::Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
 	// UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
 	// if (disableIntro == 1)
 	// {
 	// 	nop(0x59D68B, 5);	// don't play intro video
 	// }
 
-	Cmd_AddCommand("enable_vulkan", EnableVulkan);
-	Cmd_AddCommand("disable_vulkan", DisableVulkan);
-	Cmd_AddCommand("switch_modes", SwitchModes);
+	T4M::Cmd_AddCommand("enable_vulkan", EnableVulkan);
+	T4M::Cmd_AddCommand("disable_vulkan", DisableVulkan);
+	T4M::Cmd_AddCommand("switch_modes", SwitchModes);
 	//Cmd_AddCommand("load_t4m", LoadConfig);
-	Cmd_AddCommand("resetviewport", CL_ResetViewport);
+	T4M::Cmd_AddCommand("resetviewport", CL_ResetViewport);
 }
 
 void ShitTest()
 {
 	for (int i = 0; i < ASSET_TYPE_MAX; ++i)
 	{
-		T4M_DB_ListAssetPool((XAssetType)i, true);
+		T4M::DB_ListAssetPool((XAssetType)i, true);
 	}
 }
 
@@ -270,13 +285,13 @@ void PatchT4_GetGEnts()
 
 void PatchT4_Console()
 {
-	con_external = Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
-	enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
-	disable_intro = Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
-	is_watching_for_switch_mode_input = Dvar_RegisterBool(0, "i_watching_sm_input", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
-	switch_mode_input_pressed = Dvar_RegisterBool(0, "i_sm_pressed", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
-	loadout_preset_usa = Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
-	loadout_preset_rus = Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	con_external = T4::Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
+	enable_scoreboard = T4::Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+	disable_intro = T4::Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
+	is_watching_for_switch_mode_input = T4::Dvar_RegisterBool(0, "i_watching_sm_input", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	switch_mode_input_pressed = T4::Dvar_RegisterBool(0, "i_sm_pressed", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	loadout_preset_usa = T4::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	loadout_preset_rus = T4::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

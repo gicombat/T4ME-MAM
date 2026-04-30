@@ -4,6 +4,7 @@
 
 #include <safetyhook.hpp>
 #include <MemoryMgr.h>
+
 static uintptr_t Path_NodesInCylinder_addr = 0x0055A1E0;
 
 
@@ -176,7 +177,7 @@ pathnode_t* __cdecl Path_NearestNodeNotCrossPlanes_lol(
 	maxs[1] = 15.0;
 	maxs[2] = 48.0;
 	mins[2] = 0.0 + 17.0;
-	if (isZombieMode())
+	if (T4M::isZombieMode())
 	{
 		mins[0] = mins[0] + zombie_fudge;
 		mins[1] = mins[1] + zombie_fudge;
@@ -230,7 +231,7 @@ pathnode_t* __cdecl Path_NearestNodeNotCrossPlanes_lol(
 		if (!hitNum)
 			return failedNodes[i];
 	}
-	if (isZombieMode())
+	if (T4M::isZombieMode())
 		return 0;
 	closestNode = 0;
 	for (i = 0; i < iNodeCount; ++i)
@@ -297,7 +298,7 @@ void __declspec(naked) Path_NearestNodeNotCrossPlanes_stub()
 }
 
 void PatchT4E_Pathing() {
-	g_t5_pathing = Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
+	g_t5_pathing = T4::Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
 	static auto testingthehack = safetyhook::create_mid(0x55C210, [](SafetyHookContext& ctx) {
 		if (g_t5_pathing->isEnabled()) {
 			ctx.eax = (uintptr_t)Path_NearestNodeNotCrossPlanes_lol(

@@ -11,7 +11,6 @@
 #include "StdInc.h"
 #include "SDLLP.h"
 
-
 const char* SetConsoleVersion()
 {
 	IsUsingVulkan = SDLLP::UseVulkan();

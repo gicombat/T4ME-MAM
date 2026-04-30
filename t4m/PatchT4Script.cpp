@@ -20,23 +20,8 @@
 #include "MemoryMgr.h"
 
 WeaponDef** bg_weaponDefs = (WeaponDef**)0x8F6770;
-const WeaponDef* __cdecl BG_GetWeaponDef(unsigned int weaponIndex) {
-	return bg_weaponDefs[weaponIndex];
-}
 
-bool __cdecl BG_IsOverheatingWeapon(unsigned int weapIndex)
-{
-	return BG_GetWeaponDef(weapIndex)->overheatWeapon != 0;
-}
-
-int BG_GetWeaponIndexForName(const char* name) {
-	if (*(bool*)0x018F6DB8);
-	return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
-
-	return ((int(__cdecl*)(const char*))0x41D470)(name);
-}
-
-int __cdecl Scr_GetNumParam(scriptInstance_t inst);
+// Scr_GetNumParam forward decl already provided by T4.h (T4M::Scr_GetNumParam).
 
 dvar_t** developer = (dvar_t**)0x01F55288;
 dvar_t** developer_script = (dvar_t**)0x01F9646C;
@@ -74,6 +59,27 @@ typedef struct
 } scr_funcdef_t;
 
 
+namespace T4M
+{
+	const WeaponDef* __cdecl BG_GetWeaponDef(unsigned int weaponIndex) 
+	{
+		return bg_weaponDefs[weaponIndex];
+	}
+
+	bool __cdecl BG_IsOverheatingWeapon(unsigned int weapIndex)
+	{
+		return BG_GetWeaponDef(weapIndex)->overheatWeapon != 0;
+	}
+
+	int BG_GetWeaponIndexForName(const char* name) 
+	{
+		if (*(bool*)0x018F6DB8);
+		return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
+
+		return ((int(__cdecl*)(const char*))0x41D470)(name);
+	}
+}
+
 #pragma region setupFunctions
 static std::map<std::string, scr_funcdef_t> scriptFunctions;
 
@@ -105,7 +111,7 @@ void Scr_DeclareFunction(const char* name, scr_function_t func, bool developerOn
 #pragma endregion setupFunctions
 
 #pragma region engineFunctions
-int __cdecl Scr_GetNumParam(scriptInstance_t inst)
+int __cdecl T4M::Scr_GetNumParam(scriptInstance_t inst)
 {
 	DWORD *value = (DWORD *)0x03BD471C; // getNumParamArray location
 	return value[4298 * inst];
@@ -117,7 +123,7 @@ RefString *__cdecl GetRefString(scriptInstance_t inst, unsigned int stringValue)
 	return (RefString *)&(&gScrMemTreePub)[3 * stringValue + 1];
 }
 
-char *__cdecl SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst)
+char *__cdecl T4M::SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst)
 {
 	char *v3;
 	if (stringValue)
@@ -165,17 +171,17 @@ void(__cdecl *__cdecl Scr_GetFunction_Hook(const char **pName, int *type))()
 	void(__cdecl *function)();
 	// check if the function passed is part of our custom funcs
 	if (!(scriptFunctions.find(std::string(*pName)) != scriptFunctions.end()))
-		function = (void(__cdecl *)())Scr_GetFunction(pName, type);
+		function = (void(__cdecl *)())T4::Scr_GetFunction(pName, type);
 	else
 		function = (void(__cdecl *)())Scr_GetCustomFunction(pName, type);
 
 	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[GSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+		T4::Com_Printf(0, "[GSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
 
 	return function;
 }
 
-int Scr_GetMethod(int *type, const char **pName)
+int T4::Scr_GetMethod(int *type, const char **pName)
 {
 	// also aids and again do not care. #3
 	int function;
@@ -219,7 +225,7 @@ void __declspec(naked) Scr_GetMethod_Hook(int *type, const char **pName)
 	{
 		push esi // pName
 		push edi // type
-		call Scr_GetMethod
+		call T4::Scr_GetMethod
 		add esp, 8
 		retn
 	}
@@ -263,10 +269,10 @@ void(__cdecl *__cdecl CScr_GetFunction_Hook(const char **pName, int *type))()
 	// also if running debugger and a customf func is executed the debugger will instadie
 	void(__cdecl *function)();
 
-	function = (void(__cdecl *)())CScr_GetFunction(pName, type);
+	function = (void(__cdecl *)())T4::CScr_GetFunction(pName, type);
 
 	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[CSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+		T4::Com_Printf(0, "[CSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
 
 	return function;
 }
@@ -276,19 +282,19 @@ void(__cdecl *__cdecl CScr_GetMethod_Hook(const char **pName, int *type))()
 	// aids #3 woo!
 	void(__cdecl *function)();
 
-	function = (void(__cdecl *)())CScr_GetMethod(pName, type);
+	function = (void(__cdecl *)())T4::CScr_GetMethod(pName, type);
 
 	if (developer_funcdump->current.boolean && function != 0)
-		Com_Printf(0, "[CSC] Method: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
+		T4::Com_Printf(0, "[CSC] Method: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
 
 	return function;
 }
 #pragma endregion engineHKFunctions
 
 void PlayerWeaponOverheatUpdate(gentity_s* ent, uint32_t weapon_index, float amount) {
-	if (!BG_IsOverheatingWeapon(weapon_index))
+	if (!T4M::BG_IsOverheatingWeapon(weapon_index))
 		return;
-	auto weapon = BG_GetWeaponDef(weapon_index);
+	auto weapon = T4M::BG_GetWeaponDef(weapon_index);
 	float &current_heat = ent->client->ps.heatpercent[weapon->iHeatIndex];
 	bool &current_overheat  = ent->client->ps.overheating[weapon->iHeatIndex];
 	current_heat = amount;
@@ -300,10 +306,10 @@ gentity_s* g_entities = (gentity_s*)0x0176C6F0;
 void GScr_PrintLnConsole(scr_entref_t entity)
 {
 	// gets amount of parameters
-	if (Scr_GetNumParam(SCRIPTINSTANCE_SERVER) == 1)
-		Com_Printf(0, "^3Have one!\n");
+	if (T4M::Scr_GetNumParam(SCRIPTINSTANCE_SERVER) == 1)
+		T4::Com_Printf(0, "^3Have one!\n");
 	else
-		Com_Printf(0, "^1the cake is a lie\n\n");
+		T4::Com_Printf(0, "^1the cake is a lie\n\n");
 	// iz ded af
 	//Scr_AddInt(Scr_GetNumParam(SCRIPTINSTANCE_SERVER), SCRIPTINSTANCE_SERVER);
 }
@@ -327,7 +333,7 @@ int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
 // for zombies this is applied on each zombie spawn in _spawner
 int __stdcall DisablePushPlayer() {
 
-	if ((isZombieMode() && g_disable_zombie_grab->current.integer == 1) || g_disable_zombie_grab->current.integer >= 2) {
+	if ((T4M::isZombieMode() && g_disable_zombie_grab->current.integer == 1) || g_disable_zombie_grab->current.integer >= 2) {
 		return 0;
 	}
 	else
@@ -337,21 +343,21 @@ int __stdcall DisablePushPlayer() {
 
 void PatchT4_Script()
 {
-	developer_funcdump = Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
+	developer_funcdump = T4::Dvar_RegisterBool(0, "developer_funcdump", 0, "Dump script function information (engine)");
 
-	cg_drawHealthCount = Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)"); // requires NZ remastererd mod
-	cg_drawHealthCountCoop = Dvar_RegisterBool(0, "cg_drawHealthCountCoop", 0, "Draw developer health counter in co-op (requires map restart)"); // requires NZ remastererd mod 
-	cg_drawGamepadHUD = Dvar_RegisterBool(0, "cg_drawGamepadHUD", 0, "Draw gamepad style HUD optimized for controller use"); // requires NZ remastererd mod
-	cg_drawDpadLogos = Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad background textures"); // requires NZ remastererd mod
-	cg_lowerGun = Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
-	cg_SoloScoreColorWhite = Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
-	cg_drawTimers = Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
-	cg_drawTrapTimers = Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
-	zombiemode_dev = Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
+	cg_drawHealthCount = T4::Dvar_RegisterBool(0, "cg_drawHealthCount", 0, "Draw developer health counter in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawHealthCountCoop = T4::Dvar_RegisterBool(0, "cg_drawHealthCountCoop", 0, "Draw developer health counter in co-op (requires map restart)"); // requires NZ remastererd mod 
+	cg_drawGamepadHUD = T4::Dvar_RegisterBool(0, "cg_drawGamepadHUD", 0, "Draw gamepad style HUD optimized for controller use"); // requires NZ remastererd mod
+	cg_drawDpadLogos = T4::Dvar_RegisterBool(1, "cg_drawDpadLogos", 0, "Draw D-pad background textures"); // requires NZ remastererd mod
+	cg_lowerGun = T4::Dvar_RegisterBool(0, "cg_lowerGun", 0, "Enable weapon lowering while moving in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_SoloScoreColorWhite = T4::Dvar_RegisterBool(0, "cg_SoloScoreColorWhite", 0, "Force white score color in solo (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTimers = T4::Dvar_RegisterBool(0, "cg_drawTimers", 0, "Draw game and round timers (requires map restart)"); // requires NZ remastererd mod
+	cg_drawTrapTimers = T4::Dvar_RegisterBool(0, "cg_drawTrapTimers", 0, "Draw trap timers (requires map restart)"); // requires NZ remastererd mod
+	zombiemode_dev = T4::Dvar_RegisterBool(0, "zombiemode_dev", 0, "Enable experimental developer features for Nazi Zombies remastered mod (requires map restart)"); // requires NZ remastererd mod
 
-	g_disable_zombie_grab = Dvar_RegisterInt(0, "g_disable_zombie_grab", 0, 2, DVAR_FLAG_CHEAT, "Disables pushPlayer() from executing\n1 = Disable when playing zombies\n2 = always disabled");
+	g_disable_zombie_grab = T4::Dvar_RegisterInt(0, "g_disable_zombie_grab", 0, 2, DVAR_FLAG_CHEAT, "Disables pushPlayer() from executing\n1 = Disable when playing zombies\n2 = always disabled");
 
-	g_fix_tesla_bug = Dvar_RegisterBool(0, "g_fix_tesla_bug",DVAR_FLAG_CHEAT, "Applies same wunderwaffe's 'fix' as seen in Black Ops 1");
+	g_fix_tesla_bug = T4::Dvar_RegisterBool(0, "g_fix_tesla_bug",DVAR_FLAG_CHEAT, "Applies same wunderwaffe's 'fix' as seen in Black Ops 1");
 
 	Memory::VP::InjectHook(0x4DDA72, DisablePushPlayer);
 
@@ -362,14 +368,14 @@ void PatchT4_Script()
 
 
 
-	g_fix_health_sets_max = Dvar_RegisterBool(0, "g_fix_health_sets_max", DVAR_FLAG_CHEAT, "Stops health also changing maxhealth");
+	g_fix_health_sets_max = T4::Dvar_RegisterBool(0, "g_fix_health_sets_max", DVAR_FLAG_CHEAT, "Stops health also changing maxhealth");
 
 	static auto fix_health_sets_max = safetyhook::create_mid(0x005309C0, [](SafetyHookContext& ctx) {
 		if (g_fix_health_sets_max->current.boolean)
 			ctx.eip = 0x5309C6;
 		});
 
-	static dvar_t* gsc_OverheatMaxAmmo = Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
+	static dvar_t* gsc_OverheatMaxAmmo = T4::Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 
 	// [GSC]
 	Detours::X86::DetourFunction((uintptr_t)0x00682DAF, (uintptr_t)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);

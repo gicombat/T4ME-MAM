@@ -20,7 +20,7 @@ void PatchT4E_Weapons()
 
 	// Double Tap 2.0- like BO2, implementation from https://github.com/Nukem9/LinkerMod
 
-	perk_weapRateEnhanced = Dvar_RegisterInt(0,"perk_weapRateEnhanced", 0, 1, DVAR_FLAG_CHEAT, "Double tap will shoot 2x the bullets for every shot");
+	perk_weapRateEnhanced = T4::Dvar_RegisterInt(0,"perk_weapRateEnhanced", 0, 1, DVAR_FLAG_CHEAT, "Double tap will shoot 2x the bullets for every shot");
 
 	static auto DoubleTap20_Bullet_Fire = safetyhook::create_mid(0x004E6868, [](SafetyHookContext& ctx) {
 
@@ -28,16 +28,16 @@ void PatchT4E_Weapons()
 
 		int& shotCount = *(int*)(ctx.esp + 0x10);
 
-		if (isZombieMode() && perk_weapRateEnhanced->isEnabled() && attacker->s.eType == ET_PLAYER) {
+		if (T4M::isZombieMode() && perk_weapRateEnhanced->isEnabled() && attacker->s.eType == ET_PLAYER) {
 			if (BG_HasPerk(&attacker->client->ps.perks, PERK_SPECIALTY_ROF))
 				shotCount *= 2;
 		}
 
 		});
 
-	static auto* perks_phdflopper_engine = Dvar_RegisterBool(false, "perks_phdflopper_engine", 0);
+	static auto* perks_phdflopper_engine = T4::Dvar_RegisterBool(false, "perks_phdflopper_engine", 0);
 
-	static auto* perks_phdflopper_engine_enum = Dvar_RegisterInt(PERK_SPECIALTY_DETECTEXPLOSIVE,"perks_phdflopper_engine_enum",0, PERK_COUNT - 1,0,"Which perk enum to apply PHD engine edits implementation to");
+	static auto* perks_phdflopper_engine_enum = T4::Dvar_RegisterInt(PERK_SPECIALTY_DETECTEXPLOSIVE,"perks_phdflopper_engine_enum",0, PERK_COUNT - 1,0,"Which perk enum to apply PHD engine edits implementation to");
 
 	static auto crashland_test = safetyhook::create_mid(0x4153A5, [](SafetyHookContext& ctx) {
 
@@ -67,7 +67,7 @@ void PatchT4E_Weapons()
 
 		int& shotCount = *(int*)(ctx.esp + 0x1C);
 
-		if (isZombieMode() && perk_weapRateEnhanced->isEnabled()) {
+		if (T4M::isZombieMode() && perk_weapRateEnhanced->isEnabled()) {
 			if (BG_HasPerk(&ps->perks, 4))
 				shotCount *= 2;
 		}

@@ -2,7 +2,7 @@
 // T4M project
 //
 // Component: clientdll
-// Purpose:   Temporary / experimental detour installer isolated
+// Purpose:   Temporary / experimental detour and recreation of original function
 //            for easy enable/disable during debugging.
 //
 //   The experimental functions themselves live in T4.cpp. This
@@ -362,7 +362,7 @@ extern "C" void __cdecl Material_InitDefault()
 // ===========================================================================
 extern "C" void __cdecl R_Init()
 {
-	Com_Printf(8, "----- R_Init -----\n");
+	T4::Com_Printf(8, "----- R_Init -----\n");
 
 	// var_4 is a local word; asm sets byte[var_4] = 1, byte[var_4+1] = 0
 	// then compares the word with 1 → taken branch always (fullscreen path).
@@ -405,7 +405,7 @@ extern "C" void __cdecl R_Init()
 
 	if (!sunOK)
 	{
-		Com_Printf(8, "Sun sprite occlusion query calibration failed.\n");
+		T4::Com_Printf(8, "Sun sprite occlusion query calibration failed.\n");
 		Engine::R_ResetToDefault();       // sub_72D000
 	}
 
@@ -553,7 +553,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		"1", "7", 0x4EF, "350073", "JADAMS2", "Thu Oct 29 15:43:55 2009");
 	(void)banner;
 
-	Com_Printf(0x10, "%s %s build %s %s\n",
+	T4::Com_Printf(0x10, "%s %s build %s %s\n",
 		"COD_WaW", "win-x86", "7", "Oct 29 2009");
 
 	// ---- Preliminaries ----------------------------------------------------
@@ -576,7 +576,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		&& (*G::dvar_singlethreadRender)->current.boolean)
 	{
 		Engine::Hunk_InitMemory();                       // sub_5F5480
-		Com_Printf(7, "begin $init\n");
+		T4::Com_Printf(7, "begin $init\n");
 
 		*G::g_comInitDone = 1;
 		if (*G::g_initHasStart == 0)
@@ -679,9 +679,9 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i)
 		{
 			if (Engine::Cmd_Exists(entries[i].name))
-				Com_Printf(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
+				T4::Com_Printf(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
 			else
-				Cmd_AddCommand(entries[i].name, entries[i].func);
+				T4M::Cmd_AddCommand(entries[i].name, entries[i].func);
 		}
 	}
 
@@ -730,7 +730,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		Engine::Com_PrintError(0x10, "WARNING: Winsock initialization failed, returned %d\n", wsaRc);
 	else
 	{
-		Com_Printf(0x10, "Winsock Initialized\n");
+		T4::Com_Printf(0x10, "Winsock Initialized\n");
 		*G::g_46E50B0_netUp = 1;
 		Engine::Cinema_Init();                            // sub_600CC0
 		Engine::Cinema_SetInitialized(1);                 // sub_600ED0 (eax=1)
@@ -782,19 +782,19 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		else if (rec <= 10) workers = rec - 2;
 		else                workers = 8;
 
-		Com_Printf(0x10, "%s %d\n",
+		T4::Com_Printf(0x10, "%s %d\n",
 			"Number of worker threads", workers);
 
 		*G::g_smpWorkerThreads = (DWORD)Engine::Dvar_RegisterString(
 			"r_smp_worker_threads", 5, (void*)(uintptr_t)workers, (const char*)2);
 	}
 
-	Com_Printf(8, "Trying SMP acceleration...\n");
+	T4::Com_Printf(8, "Trying SMP acceleration...\n");
 	if (!Engine::Sys_SpawnRenderThread())
 		Engine::Com_Error(0, "Failed to create render thread");
 
 	Engine::UI_LoadCinematic();                           // sub_71EFC0
-	Com_Printf(8, "...succeeded.\n");
+	T4::Com_Printf(8, "...succeeded.\n");
 
 	// ---- Video post-init ---------------------------------------------------
 	Com_PostInit_Video();                                 // sub_644BE0
@@ -863,9 +863,9 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 		{
 			if (*G::g_48AE4D4_inCgame == 0)
 				Com_PostInit_Video();                     // sub_644BE0
-			Sys_SyncDatabase();                            // sub_6F6CE0
+			T4::Sys_SyncDatabase();                            // sub_6F6CE0
 			Engine::Com_PostInit2();                      // sub_644E60
-			Sys_WakeDatabase();                            // sub_6F6D60
+			T4::Sys_WakeDatabase();                            // sub_6F6D60
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
@@ -892,7 +892,7 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 
 // sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val
 // Equivalent to _snprintf(dest, size, fmt, val).
-static void T4M_Com_sprintf(char* dest, int size, const char* fmt, DWORD val)
+static void T4M_Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
 {
     const void* fn = (const void*)0x005F6D00;
     __asm {
@@ -900,7 +900,7 @@ static void T4M_Com_sprintf(char* dest, int size, const char* fmt, DWORD val)
         push edi
         push val
         push fmt
-        mov  esi, size
+        mov  esi, nBytes
         mov  edi, dest
         call fn
         add  esp, 8
@@ -1020,14 +1020,14 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
     T4M_Key_SplitBindCmd(inputCmd, cmd_name, args);
 
     // Phase 3 — FAKE_INTRO_SECONDS
-    if (T4M_Q_stricmpn(cmd_name, "FAKE_INTRO_SECONDS", 0x7FFFFFFF) == 0)
+    if (T4M::Q_stricmpn(cmd_name, "FAKE_INTRO_SECONDS", 0x7FFFFFFF) == 0)
     {
         T4_Key_FormatIntroSeconds(args, outBuf);
         return;
     }
 
     // Phase 4 — "gocrouch" alias
-    if (T4M_Q_stricmpn(cmd_name, "gocrouch", 0x7FFFFFFF) == 0)
+    if (T4M::Q_stricmpn(cmd_name, "gocrouch", 0x7FFFFFFF) == 0)
     {
         binding = T4M_Key_GetBinding(ctx, "togglecrouch");
         if (!binding)

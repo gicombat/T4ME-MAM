@@ -27,7 +27,7 @@ void PatchT4_Script();
 void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
 void PatchT4_Load();
-void PatchT4_Override();
+void PatchT4MAM_Override();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -64,7 +64,7 @@ void PatchT4()
 	PatchT4_NoBorder();
 	PatchT4_Script();
 	PatchT4_Load();
-	PatchT4_Override(); 
+	PatchT4MAM_Override(); 
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();
@@ -81,14 +81,14 @@ void PatchT4()
 		loadGameOverlay();
 }
 
-void *T4M_Sys_MemCpyFix(void *a1, void **a2, int len)
+void* T4M::Sys_MemCpyFix(void *a1, void **a2, int len)
 {
 	return memcpy(a1, a2, len);
 }
 
 void PatchT4_PreLoad()
 {
-	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&T4M_Sys_MemCpyFix);
+	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&T4M::Sys_MemCpyFix);
 	nop(0x0059D6F4, 5); // disable Com_DvarDump from Com_Init_Try_Block_Function
 	nop(0x005FF743, 5); // disable Sys_CreateSplash
 	//nop(0x005FF698, 5); // disable Sys_CheckCrashOrRerun
@@ -130,7 +130,7 @@ void PatchT4_SteamDRM()
 
 void PatchT4_Menus()
 {
-	dvar_t* enable_scoreboard = Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+	dvar_t* enable_scoreboard = T4::Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
 
 	if (enable_scoreboard->current.value)
 	{
@@ -138,18 +138,19 @@ void PatchT4_Menus()
 		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
 	}
 
-	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(0x004379D0, [](SafetyHookContext& ctx) {
-		if (isZombieMode())
+	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(0x004379D0, [](SafetyHookContext& ctx) 
+	{
+		if (T4M::isZombieMode())
 			ctx.eip = retptr;
-		});
+	});
+
 	//nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
 	//nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
-	static auto onlinegame_dvar_check = safetyhook::create_mid(0x006680CE, [](SafetyHookContext& ctx) {
-		if (isZombieMode())
+	static auto onlinegame_dvar_check = safetyhook::create_mid(0x006680CE, [](SafetyHookContext& ctx) 
+	{
+		if (T4M::isZombieMode())
 			ctx.eip = 0x006680D4;
-		});
-
-
+	});
 
 	//static auto MapRestart1 = safetyhook::create_mid(0x0062B7C0, [](SafetyHookContext& ctx) {
 	//	cdecl_call<int>(0x435D80);
@@ -157,15 +158,17 @@ void PatchT4_Menus()
 
 	Memory::VP::Nop(0x00438875, 10);
 
-	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) {
+	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) 
+	{
 		game::cg_s* cgArray = (game::cg_s*)0x034732B8;
 
-		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == game::pmtype_t::PM_INTERMISSION) {
+		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == game::pmtype_t::PM_INTERMISSION) 
+		{
 			ctx.eip = 0x006680DD;
 			return;
 		}
 
-		});
+	});
 
 }
 

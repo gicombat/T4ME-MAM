@@ -3,6 +3,7 @@
 #include "T4.h"
 
 #include "safetyhook.hpp"
+
 #include <unordered_set>
 #include <d3dx9shader.h>
 #pragma comment(lib, "include/dxsdk/d3dx9.lib")
@@ -11,9 +12,6 @@
 
 SafetyHookInline Material_Register_FastFileD;
 std::unordered_set<std::string> materials_found;
-
-
-
 
 static unsigned int* g_compiledPostfxBytecode = nullptr;
 static DWORD g_compiledPostfxSize = 0;
@@ -114,13 +112,13 @@ float4 main(PS_INPUT input) : COLOR0
 	{
 		if (errors)
 		{
-			Com_Printf(0, "HLSL compilation failed:\n%s\n", (char*)errors->GetBufferPointer());
+			T4::Com_Printf(0, "HLSL compilation failed:\n%s\n", (char*)errors->GetBufferPointer());
 			errors->Release();
 		}
 		return;
 	}
 
-	Com_Printf(0, "HLSL shader compiled successfully! Size: %d bytes\n", shader->GetBufferSize());
+	T4::Com_Printf(0, "HLSL shader compiled successfully! Size: %d bytes\n", shader->GetBufferSize());
 
 	g_compiledPostfxSize = shader->GetBufferSize();
 	g_compiledPostfxBytecode = (unsigned int*)malloc(g_compiledPostfxSize);
@@ -131,7 +129,7 @@ float4 main(PS_INPUT input) : COLOR0
 	}
 	else
 	{
-		Com_Printf(0, "Reusing already compiled shader\n");
+		T4::Com_Printf(0, "Reusing already compiled shader\n");
 	}
 
 	MaterialTechniqueSet* techSet = material->techniqueSet;
@@ -164,7 +162,7 @@ float4 main(PS_INPUT input) : COLOR0
 					pass->pixelShader->prog.loadDef.program = g_compiledPostfxBytecode;
 					pass->pixelShader->prog.loadDef.programSize = (unsigned short)g_compiledPostfxSize;
 
-					Com_Printf(0, "Injected cached shader into pass %d\n", j);
+					T4::Com_Printf(0, "Injected cached shader into pass %d\n", j);
 				}
 			}
 		}
@@ -172,12 +170,7 @@ float4 main(PS_INPUT input) : COLOR0
 }
 
 Material* __cdecl Material_Register_FastFile(const char* name)
-{
-	if (strcmp(name, "zombie_electric_shock_overlay") == 0)
-	{
-		Com_Printf(0, "d'la merde");
-	}
-	
+{	
 	Material* loaded_m = Material_Register_FastFileD.unsafe_ccall<Material*>(name);
 
 	if (strcmp(name, "postfx_color") == 0)
@@ -259,8 +252,8 @@ void PatchT4E_Shaders() {
 
 		});
 
-	r_gamma_x360 = Dvar_RegisterBool(false, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
-	r_gamma_windowed = Dvar_RegisterInt(0, "r_gamma_alt",0,2, DVAR_FLAG_ARCHIVE,"Applies r_gamma in post-fx, 1 is for Windowed mode only, 2 is for both Windowed and Fullscreen and ignores old DX9 Gamma");
+	r_gamma_x360 = T4::Dvar_RegisterBool(false, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
+	r_gamma_windowed = T4::Dvar_RegisterInt(0, "r_gamma_alt",0,2, DVAR_FLAG_ARCHIVE,"Applies r_gamma in post-fx, 1 is for Windowed mode only, 2 is for both Windowed and Fullscreen and ignores old DX9 Gamma");
 
 	Material_Register_FastFileD = safetyhook::create_inline(0x6E9C00, &Material_Register_FastFile);
 

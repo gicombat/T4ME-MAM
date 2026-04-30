@@ -199,11 +199,11 @@ void CG_DrawMemoryfunc(float* y) {
 		//			- 50.0;
 
 
-		*y += CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
+		*y += T4::CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
 
 		sprintf_s(buffer,"Virtual Memory: %5.2f / %5.2f (%5.2f free)",
 			v_total - v_free, v_total, v_free);
-		*y += CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
+		*y += T4::CG_CornerDebugPrint(buffer, x, *y, 0.f, (char*)0x00840FF0, (float*)0x008397F0);
 	}
 
 }
@@ -211,8 +211,8 @@ void CG_DrawMemoryfunc(float* y) {
 
 inline void Add_User_Fov() {
 
-	cg_fov_user = (game::dvar_s*)Dvar_RegisterFloat("cg_fov_user", 65.f, 1.f, 160.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890514);
-	cg_fovscale_user = (game::dvar_s*)Dvar_RegisterFloat("cg_fovscale_user", 1.f, 0.2f, 2.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890540);
+	cg_fov_user = (game::dvar_s*)T4::Dvar_RegisterFloat("cg_fov_user", 65.f, 1.f, 160.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890514);
+	cg_fovscale_user = (game::dvar_s*)T4::Dvar_RegisterFloat("cg_fovscale_user", 1.f, 0.2f, 2.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890540);
 
 	static auto cg_fovscale_hook = safetyhook::create_mid(0x0042DF29, [](SafetyHookContext& ctx) {
 		Update_cg_fovscale_user(&ctx.xmm0.f32[0]);
@@ -244,13 +244,13 @@ void PatchT4E_Render() {
 		}
 		});
 
-	cg_fovComp_fovscale = Dvar_RegisterBool(false, "cg_fovComp_fovscale", DVAR_FLAG_ARCHIVE, "Takes into account fovscale for cg_fovComp");
+	cg_fovComp_fovscale = T4::Dvar_RegisterBool(false, "cg_fovComp_fovscale", DVAR_FLAG_ARCHIVE, "Takes into account fovscale for cg_fovComp");
 
-	cg_fovComp_enable = Dvar_RegisterBool(false, "cg_fovComp_enable", DVAR_FLAG_ARCHIVE, "Enables backported fovComp behaviour from Black Ops 1");
+	cg_fovComp_enable = T4::Dvar_RegisterBool(false, "cg_fovComp_enable", DVAR_FLAG_ARCHIVE, "Enables backported fovComp behaviour from Black Ops 1");
 
-	cg_fov_default = Dvar_RegisterFloat("cg_fov_default", 65.f, 10.f, 160.f, DVAR_FLAG_ARCHIVE, "User default field of view angle in degrees");
+	cg_fov_default = T4::Dvar_RegisterFloat("cg_fov_default", 65.f, 10.f, 160.f, DVAR_FLAG_ARCHIVE, "User default field of view angle in degrees");
 
-	cg_fovCompMax = Dvar_RegisterFloat(
+	cg_fovCompMax = T4::Dvar_RegisterFloat(
 		"cg_fovCompMax",
 		85.0,
 		1.0,
@@ -258,21 +258,21 @@ void PatchT4E_Render() {
 		0,
 		"The maximum field of view to compensate for gun placement");
 
-	cg_gun_fovcomp_x = Dvar_RegisterFloat(
+	cg_gun_fovcomp_x = T4::Dvar_RegisterFloat(
 		"cg_gun_fovcomp_x",
 		-2.0,
 		-FLT_MAX,
 		FLT_MAX,
 		0,
 		"x position FOV offset compensation of the viewmodel");
-	cg_gun_fovcomp_y = Dvar_RegisterFloat(
+	cg_gun_fovcomp_y = T4::Dvar_RegisterFloat(
 		"cg_gun_fovcomp_y",
 		0.0,
 		-FLT_MAX,
 		FLT_MAX,
 		0,
 		"y position FOV offset compensation of the viewmodel");
-	cg_gun_fovcomp_z = Dvar_RegisterFloat(
+	cg_gun_fovcomp_z = T4::Dvar_RegisterFloat(
 		"cg_gun_fovcomp_z",
 		0.0,
 		-FLT_MAX,
@@ -282,20 +282,20 @@ void PatchT4E_Render() {
 
 	// Units are MB. Minimums correspond to original game buffer sizes.
 	// Defaults are 2x original to provide a meaningful increase.
-	r_buf_skinnedCacheVb        = Dvar_RegisterInt(12, "r_buf_skinnedCacheVb",        6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
-	r_buf_tempSkin              = Dvar_RegisterInt(12, "r_buf_tempSkin",              6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
-	r_buf_dynamicVertexBuffer   = Dvar_RegisterInt(2,  "r_buf_dynamicVertexBuffer",   1,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 1 MB
-	r_buf_dynamicIndexBuffer    = Dvar_RegisterInt(4,  "r_buf_dynamicIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
-	r_buf_preTessIndexBuffer    = Dvar_RegisterInt(4,  "r_buf_preTessIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
+	r_buf_skinnedCacheVb        = T4::Dvar_RegisterInt(12, "r_buf_skinnedCacheVb",        6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
+	r_buf_tempSkin              = T4::Dvar_RegisterInt(12, "r_buf_tempSkin",              6,  64, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 6 MB
+	r_buf_dynamicVertexBuffer   = T4::Dvar_RegisterInt(2,  "r_buf_dynamicVertexBuffer",   1,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 1 MB
+	r_buf_dynamicIndexBuffer    = T4::Dvar_RegisterInt(4,  "r_buf_dynamicIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
+	r_buf_preTessIndexBuffer    = T4::Dvar_RegisterInt(4,  "r_buf_preTessIndexBuffer",    2,  16, DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH); // orig: 2 MB
 
-	r_increase_render_buffers = Dvar_RegisterBool(true, "r_increase_render_buffers", DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH, "increasing rendering buffers");
+	r_increase_render_buffers = T4::Dvar_RegisterBool(true, "r_increase_render_buffers", DVAR_FLAG_ARCHIVE | DVAR_FLAG_LATCH, "increasing rendering buffers");
 
 	InterceptCall(0x6D594D, R_CreateDynamicBuffers, R_CreateDynamicBuffers_hook);
 
-	static dvar_t* CG_DrawMemory = Dvar_RegisterBool(false, "cg_drawMemory", DVAR_FLAG_ARCHIVE);
+	static dvar_t* CG_DrawMemory = T4::Dvar_RegisterBool(false, "cg_drawMemory", DVAR_FLAG_ARCHIVE);
 
 
-	Dvar_RegisterInt(0, "debug_show_viewpos", 0, 1, DVAR_FLAG_ARCHIVE);
+	T4::Dvar_RegisterInt(0, "debug_show_viewpos", 0, 1, DVAR_FLAG_ARCHIVE);
 
 	static auto debug_print = safetyhook::create_mid(0x00439613, [](SafetyHookContext& ctx) {
 		if(CG_DrawMemory->isEnabled())
