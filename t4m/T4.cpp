@@ -29,6 +29,8 @@ namespace T4
 		Com_Printf_t Com_Printf = (Com_Printf_t)0x0059A2C0;
 		Com_PrintMessage_t Com_PrintMessage = (Com_PrintMessage_t)0x59A170;
 		Com_PrintfChannel_t Com_PrintfChannel = (Com_PrintfChannel_t)0x59A2C0;
+		Com_PrintError_t   Com_PrintError    = (Com_PrintError_t)0x0059A440;
+		Com_sscanf_t       Com_sscanf        = (Com_sscanf_t)0x007AB559;
 
 		CScr_GetFunction_t CScr_GetFunction = (CScr_GetFunction_t)0x0066EA30;
 		CScr_GetMethod_t CScr_GetMethod = (CScr_GetMethod_t)0x00671110;
@@ -134,6 +136,7 @@ namespace T4
 		XAssetEntryPoolEntry* g_assetEntryPool = (XAssetEntryPoolEntry *)0x00A51C50;
 		XZoneName* g_zoneNames = (XZoneName *)0x00D04CB0;
 		unsigned __int16 * db_hashTable = (unsigned __int16 *)0x00987088;
+		unsigned int* com_frameTime = (unsigned int*)0x00351DF34;
 
 		bool* g_dbInitialized = (bool*)0x46DE3B7;  // byte_46DE3B7  — one-shot init guard
 		bool* g_dbHasLoadedZones = (bool*)0x46DE3B6; // byte_46DE3B6 — "at least one zone loaded" flag
@@ -386,6 +389,26 @@ void T4::Cbuf_AddText(const char* text, int localClientNum)
 		mov eax, text
 		mov ecx, localClientNum
 		call func
+	}
+}
+
+// @wrapper — sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val.
+// Equivalent to _snprintf(dest, size, fmt, val).
+void T4::Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
+{
+	const void* fn = (const void*)0x005F6D00;
+	__asm
+	{
+		push esi
+		push edi
+		push val
+		push fmt
+		mov  esi, nBytes
+		mov  edi, dest
+		call fn
+		add  esp, 8
+		pop  edi
+		pop  esi
 	}
 }
 

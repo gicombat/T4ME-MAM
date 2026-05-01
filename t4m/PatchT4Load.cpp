@@ -389,6 +389,8 @@ namespace T4M
 		T4::db_streamDecompBytesDone = 0;  // 0x9571A4
 		T4::db_streamEnabled = 0;  // 0x957404
 
+		T4M::resetFakeIntroSecondValue = true;
+
 		if ((*T4::fs_game)->current.string[0] != '\0' && FS_ZoneFileExists(mapName, 2))
 		{
 			const char* usermapPath = va("%s/%s", "usermaps", mapName); // sub_5F6D80

@@ -134,6 +134,26 @@ bool FileExists(const char* file)
 	return (stat(file, &st) == 0);
 }
 
-bool isSubstr(std::string s, std::string sub) {
+bool isSubstr(std::string s, std::string sub) 
+{
 	return s.find(sub) != std::string::npos;
+}
+
+std::vector<std::string> split(const char* stringToSplit, const char* delemiter)
+{
+	std::vector<std::string> toReturn;
+
+	std::string str(stringToSplit);
+
+	auto pos = str.find(delemiter);
+	int lastPos = 0;
+
+	while (pos != std::string::npos)
+	{
+		toReturn.push_back(str.substr(lastPos, pos));
+		lastPos = pos;
+		pos = str.find(delemiter);
+	}
+
+	return toReturn;
 }

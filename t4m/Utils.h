@@ -9,6 +9,7 @@ std::string GetBinaryResource(int name);
 
 bool FileExists(const char *pchFile);
 bool isSubstr(std::string s, std::string sub);
+std::vector<std::string> split(const char* stringToSplit, const char* delemiter);
 
 #define DBG(x,...) OutputDebugStringA(va(x, __VA_ARGS__))
 

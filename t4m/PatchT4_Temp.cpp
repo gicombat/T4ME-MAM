@@ -884,31 +884,6 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 // Com_Error, etc., which means they MUST NOT be called from Sys_RunInit.
 // ---------------------------------------------------------------------------
 
-// ===========================================================================
-// Call helpers — __usercall callees used by sub_44B7E0 / sub_44B8E0.
-// Each thin wrapper fixes up registers before the call and restores them
-// after, so the body reconstructions can be written as plain __cdecl.
-// ===========================================================================
-
-// sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val
-// Equivalent to _snprintf(dest, size, fmt, val).
-static void T4M_Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
-{
-    const void* fn = (const void*)0x005F6D00;
-    __asm {
-        push esi
-        push edi
-        push val
-        push fmt
-        mov  esi, nBytes
-        mov  edi, dest
-        call fn
-        add  esp, 8
-        pop  edi
-        pop  esi
-    }
-}
-
 // sub_5C7530  __usercall: eax=ctx, edx=cmd, [esp+4]=0, [esp+8]=0  → binding handle
 // Returns non-zero if cmd is currently bound to a key.
 static int T4M_Key_GetBinding(void* ctx, const char* cmd)
@@ -962,43 +937,13 @@ static void T4M_Key_SplitBindCmd(const char* inputCmd, char* cmdNameBuf, char* a
 }
 
 // ===========================================================================
-// 7. sub_44B7E0 — FAKE_INTRO_SECONDS argument formatter  (0x44B7E0)
-// @faithful  __usercall: eax=argStr, [esp+4]=outBuf (4-byte dest)
-//
-// Parses an integer from argStr via sub_7AB559 ("%d").
-// Validates range [0,40]; out-of-range: Com_PrintError + clamp to 0.
-// Adds elapsed seconds (dword_351DF34 / 1000) from the frame timer.
-// Formats result as "%02d" into outBuf via sub_5F6D00.
-// ===========================================================================
-static void __cdecl T4_Key_FormatIntroSeconds(const char* argStr, char* outBuf)  // @faithful
-{
-    int value = 0;
-    {
-        typedef int(__cdecl* ScanInt_t)(const char*, const char*, int*);
-        ((ScanInt_t)0x007AB559)(argStr, (const char*)0x0084AF48 /* "%d" */, &value);
-    }
-
-    if (value < 0 || value > 40)
-    {
-        Engine::Com_PrintError(1,
-            "Argument \"%s\" given for FAKE_INTRO_SECONDS is outside the acceptable range of (%d,%d).",
-            argStr, 0, 40);
-        value = 0;
-    }
-
-    value += (int)(*(DWORD*)0x00351DF34 / 1000u);  // dword_351DF34 — frame timer ms
-
-    T4M_Com_sprintf(outBuf, 4, "%02d", (DWORD)value);
-}
-
-// ===========================================================================
 // 8. sub_44B8E0 — Key binding display string  (0x44B8E0)
 // @faithful  __usercall: eax=outBuf, ecx=ctx, [esp+4]=inputCmd
 //
 // Resolution order:
 //   1. Direct binding via sub_5C7530 → display string via sub_5BB830.
 //   2. Parse "cmd[:args]" via sub_44B860.
-//   3. "FAKE_INTRO_SECONDS" → T4_Key_FormatIntroSeconds.
+//   3. "FAKE_INTRO_SECONDS" → T4M::Key_FormatIntroSeconds.
 //   4. "gocrouch" alias → try "togglecrouch" then "+movedown" bindings.
 //   5. Fallback → output "\"KEY_UNBOUND\"" via sub_5BB5E0 + sub_5F6D00.
 // ===========================================================================
@@ -1022,7 +967,7 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
     // Phase 3 — FAKE_INTRO_SECONDS
     if (T4M::Q_stricmpn(cmd_name, "FAKE_INTRO_SECONDS", 0x7FFFFFFF) == 0)
     {
-        T4_Key_FormatIntroSeconds(args, outBuf);
+        T4M::Key_FormatIntroSeconds(args, outBuf);
         return;
     }
 
@@ -1041,7 +986,7 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
 
     // Phase 5 — fallback: "KEY_UNBOUND"
     const char* unboundStr = T4M_Key_KeynumToString("KEY_UNBOUND");
-    T4M_Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
+    T4::Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
 }
 
 // =====================================================================
@@ -1052,13 +997,5 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
 // =====================================================================
 void PatchT4_Temp()
 {
-	// Full C++ reconstruction of DB_FindXAssetHeader (sub_48DA30) with
-	// T4M fix: zoneIndex==0 entries return immediately instead of waiting
-	// forever on g_dbWorkerEvent for a promotion that may never come.
-	//
-	// DISABLED — suspected of causing a d3d9.retry hang during R_Init
-	// (Material_InitDefault → Material_RegisterHandle → DB_FindXAssetHeader).
-	// Re-enable to test fixes.
-	//
-	// Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_DB_FindXAssetHeader, Detours::X86Option::USE_JUMP);
+
 }

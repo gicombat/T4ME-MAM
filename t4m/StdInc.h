@@ -26,8 +26,8 @@
 
 // first two number => correspond to T4M Enhanced dll version (current r49 on github)
 // 0 => separator
-// XX => config file revision, currently b 3
-#define INTERNAL_VERSION_NUMBER 4903
+// XX => config file revision, currently b 5
+#define INTERNAL_VERSION_NUMBER 4905
 #define STRINGIFY(x) #x
 #define TO_STRING(x) STRINGIFY(x)
 
@@ -56,7 +56,6 @@
 #define SHORTVERSION_CONFIG_BETA_STR "T4MAM " VERSION "" BETA ""
 #define SHORTVERSION_CONFIG_STR "T4MAM " VERSION 
 
-//#define VERSION COMMIT
 #define VERSION_T4ME 49
 
 #define force_gamma_update true

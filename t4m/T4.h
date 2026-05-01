@@ -318,6 +318,8 @@ namespace T4
 		typedef void(*Com_Printf_t)(int channel, const char* format, ...);
 		typedef void(__cdecl * Com_PrintMessage_t)(int channel, const char *fmt, int error);
 		typedef void(__cdecl* Com_PrintfChannel_t)(int channel, const char* fmt, ...);
+		typedef void(__cdecl* Com_PrintError_t)(int channel, const char* fmt, ...);
+		typedef int (__cdecl* Com_sscanf_t)(const char* src, const char* fmt, ...);
 		typedef const char *(__cdecl * DB_EnumXAssets_t)(XAssetType type, void(__cdecl *func)(XAssetHeader, void *), void *inData, bool includeOverride);
 		typedef void(__cdecl * DB_EnumXAssets_FastFile_t)(XAssetType type, void(__cdecl *func)(XAssetHeader, void *), void *inData);
 		typedef void(*DB_LoadXAssets_t)(XZoneInfo* data, int count, int sync);
@@ -373,6 +375,8 @@ namespace T4
 		extern Com_Printf_t Com_Printf;
 		extern Com_PrintMessage_t Com_PrintMessage;
 		extern Com_PrintfChannel_t Com_PrintfChannel;
+		extern Com_PrintError_t Com_PrintError;        // sub_59A440
+		extern Com_sscanf_t Com_sscanf;                // sub_7AB559 (static-CRT sscanf)
 		extern DB_EnumXAssets_t DB_EnumXAssets;
 		extern DB_EnumXAssets_FastFile_t DB_EnumXAssets_FastFile;
 		// DB_FindXAssetHeader (sub_48DA30) is DETOURED — see T4_Reconstructed::DB_FindXAssetHeader.
@@ -452,6 +456,7 @@ namespace T4
 		extern int*                  g_dbWriterCount;
 		extern bool*                 g_assetsDirty;
 		extern unsigned __int16*     db_hashTable;
+		extern unsigned int*         com_frameTime;          // 0x00351DF34 — process-wide ms timer (timeGetTime), monotonic
 
 		// ── DB load queue (consumed by DB_ProcessZoneQueue / sub_48F260) ──────
 		extern XZoneQueueEntry*      g_zoneLoadQueue;        // 0x9592B8 — load queue (max 32, stride 0x44)
@@ -497,6 +502,9 @@ namespace T4
 		extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description = "");
 		extern dvar_t* Dvar_RegisterInt(int default_value, const char* name, int min, int max, int flags, const char* description = "");
 		extern dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description);
+		// sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val.
+		// Equivalent to _snprintf(dest, size, fmt, val).
+		extern void Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val);
 
 		// ── Scr_GetMethod — defined in PatchT4Script.cpp:178 ───────────────────
 		extern int Scr_GetMethod(int *type, const char **pName);
@@ -589,6 +597,16 @@ namespace T4M
 		// @modified — detour of sub_7AFFC0 (optimised memmove → CRT memcpy fix)
 		void* Sys_MemCpyFix(void* dst, void** src, int len);
 
+		extern bool resetFakeIntroSecondValue;
+		extern int timeAtMapStart;
+
+		// @modified — detour of sub_44B7E0 (FAKE_INTRO_SECONDS formatter,
+		//   uses cl.serverTime instead of vanilla com_frameTime so the value
+		//   resets between scenes). Hooked via Key_FormatIntroSeconds_Wrapper.
+		void Key_FormatIntroSeconds(const char* argStr, char* outBuf);
+
+		void Key_FormatIntroHourMinSec(const char* argStr, char* outBuf);
+
 		// ── Debug utilities (PatchT4MAM_Override.cpp) — all @new ───────────────
 		void DB_DumpOverrideChain(int type, const char* name);
 		void DB_DumpHashBucket(unsigned int bucket);
@@ -596,9 +614,10 @@ namespace T4M
 
 		// ── __usercall → __cdecl wrappers (PatchT4MAM_Override.cpp) — @wrapper ─
 		// (naked qualifier only on the definition, not on the declaration)
-		void DB_FindDefaultAsset_Wrapper();   // → T4_Reconstructed::DB_FindDefaultAsset
-		void DB_FindXAssetByName_Wrapper();   // → T4_Reconstructed::DB_FindXAssetByName
-		void DB_LinkXAssetEntry_Wrapper();    // → T4_Reconstructed::DB_LinkXAssetEntry
+		void DB_FindDefaultAsset_Wrapper();      // → T4_Reconstructed::DB_FindDefaultAsset
+		void DB_FindXAssetByName_Wrapper();      // → T4_Reconstructed::DB_FindXAssetByName
+		void DB_LinkXAssetEntry_Wrapper();       // → T4_Reconstructed::DB_LinkXAssetEntry
+		void Key_FormatIntroSeconds_Wrapper();   // → T4M::Key_FormatIntroSeconds
 
 		// ── Project C++ helpers (unprefixed in the legacy convention) ──────────
 		int           __cdecl Scr_GetNumParam(scriptInstance_t inst);
