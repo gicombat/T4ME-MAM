@@ -9,7 +9,7 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 
 ## New Features/Fixes
 
-- Fixed the command `FAKE_INTRO_SECONDS' in localized string having his timer not reset causing value going over 60 seconds (MAM-1.0)
+- Fixed the command `FAKE_INTRO_SECONDS` in localized string having his timer not reset causing value going over 60 seconds (MAM-1.0)
 - When loading a map, two new ff can be loaded : `localized_XXX_mapname` depending on the language of the game, and `mapname_patch_ex` - It's to extend and bypass already existing _patch to add more thing without using mod.ff (MAM-1.0)
 - When loading a mod, 3 new ff can be loaded : `mod_patch`, `mod_ex_patch` and `localized_XXX_mod` depending on the language of the game (MAM-1.0)
 - Fix bug when increase the max Images count to 4096 (MAM-1.0)
