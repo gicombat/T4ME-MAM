@@ -282,7 +282,10 @@ enum weaponstate_t : __int32
 	WEAPON_BREAKING_DOWN = 0x1C,
 	WEAPON_SWIM_IN = 0x1D,
 	WEAPON_SWIM_OUT = 0x1E,
-	WEAPONSTATES_NUM = 0x1F,
+	WEAPON_LOWREADY_START = 0x1F,// new state to mimic BO1 low ready stance
+	WEAPON_LOWREADY_LOOP = 0x20,// new state to mimic BO1 low ready stance
+	WEAPON_LOWREADY_END = 0x21,// new state to mimic BO1 low ready stance
+	WEAPONSTATES_NUM = 0x22, // originial 0x1F
 };
 
 /* objectiveState_t */

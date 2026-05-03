@@ -28,6 +28,7 @@ void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
+void PatchT4MAM_WeaponState();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -64,7 +65,8 @@ void PatchT4()
 	PatchT4_NoBorder();
 	PatchT4_Script();
 	PatchT4_Load();
-	PatchT4MAM_Override(); 
+	PatchT4MAM_Override();
+	PatchT4MAM_WeaponState();
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

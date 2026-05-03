@@ -182,6 +182,7 @@ popd</Command>
     <ClCompile Include="PatchT4E_Weapons.cpp" />
     <ClCompile Include="PatchT4FileDebug.cpp" />
     <ClCompile Include="PatchT4Load.cpp" />
+    <ClCompile Include="PatchT4MAM_WeaponState.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
