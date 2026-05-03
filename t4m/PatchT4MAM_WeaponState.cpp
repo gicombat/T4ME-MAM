@@ -73,22 +73,6 @@ static inline WeaponDef* GetWeaponDef(unsigned int idx)
 
 
 // =====================================================================
-// Forward decls for _Impl entry points used by naked wrappers below.
-// =====================================================================
-
-extern "C"
-{
-    char PM_Weapon_CanForceFire_Impl(pmove_t* pm);
-    char PM_Weapon_FireRefresh_Impl(playerState_s* ps, int arg_0);
-    void PM_Weapon_DetonateCheck_Impl(pmove_t* pm);
-    void PM_Weapon_OffhandStateBridge_Impl(pmove_t* pm);
-    char PM_Weapon_DefaultGate_Impl(pmove_t* pm, int arg_0);
-    void PM_Weapon_AnimSyncCleanup_Impl(pmove_t* pm, int arg_0);
-    void PM_Weapon_DetonateTransition_Impl(playerState_s* ps, int arg_0);
-}
-
-
-// =====================================================================
 // Multi-caller / complex-mono helpers — register-preserving shims.
 // All shims save+restore esi/edi/ebx around the vanilla call to honor cdecl.
 // =====================================================================
@@ -485,21 +469,8 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimCmdStateInit(pmove_t* pm)
 
 // @faithful — sub_421A30 (entry 0x00421A30). __usercall(edi=pm); returns bool.
 //   Force-fire check for melee/RPG weapons.
-extern "C" __declspec(naked) char T4_Reconstructed::PM_Weapon_CanForceFire(pmove_t* /*pm*/)
-{
-    // We use a naked wrapper around a C++ body to simplify edi handling.
-    __asm {
-        push    edi
-        mov     edi, [esp+8]                  ; edi = pm (input)
-        push    edi
-        call    PM_Weapon_CanForceFire_Impl
-        add     esp, 4
-        pop     edi
-        ret
-    }
-}
-
-extern "C" char PM_Weapon_CanForceFire_Impl(pmove_t* pm)
+//   Mono-caller from PM_Weapon (our reconstruction) → plain cdecl.
+extern "C" char T4_Reconstructed::PM_Weapon_CanForceFire(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     if (ps->weapon == 0) return 0;
@@ -508,14 +479,16 @@ extern "C" char PM_Weapon_CanForceFire_Impl(pmove_t* pm)
     if (weaponClass != 1 && weaponClass != 6) return 0;
     if (raw_int(w, 0x6B8) != 0) return 0;
 
-    // call sub_420500() — __usercall, no args, returns bit mask in eax
+    // sub_420500 is __usercall(eax=weaponIdx); returns bit mask in eax.
     int mask;
+    int weaponIdx = ps->weapon;
     __asm {
         push    esi
         push    edi
         push    ebx
-        mov     eax, 0x00420500
-        call    eax
+        mov     eax, weaponIdx
+        mov     edx, 0x00420500
+        call    edx
         mov     mask, eax
         pop     ebx
         pop     edi
@@ -530,21 +503,8 @@ extern "C" char PM_Weapon_CanForceFire_Impl(pmove_t* pm)
 
 // @faithful — sub_421940 (entry 0x00421940). __usercall(eax=ps, [esp+4]=pm); returns bool.
 //   Fire-refresh / weapon-time decrement check.
-extern "C" __declspec(naked) char T4_Reconstructed::PM_Weapon_FireRefresh(playerState_s* /*ps*/, int /*arg_0*/)
-{
-    __asm {
-        push    edi
-        mov     edi, [esp+8]                  ; ps (1st arg, +4 + 4 shift = +8)
-        push    [esp+0Ch]                      ; arg_0 (2nd arg, +8 + 4 shift = +0xC)
-        push    edi                             ; ps
-        call    PM_Weapon_FireRefresh_Impl
-        add     esp, 8
-        pop     edi
-        ret
-    }
-}
-
-extern "C" char PM_Weapon_FireRefresh_Impl(playerState_s* ps, int arg_0)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" char T4_Reconstructed::PM_Weapon_FireRefresh(playerState_s* ps, int arg_0)
 {
     int edx_state = raw_int(ps, 0x10) & 2;
     int weaponIdx;
@@ -589,25 +549,27 @@ extern "C" char PM_Weapon_FireRefresh_Impl(playerState_s* ps, int arg_0)
     // loc_4219BB — post-decrement check
     if (raw_int(ps, 0x48) > 0) return 0;     // still pending → bail
 
-    // Timer just expired: queue notify 0x56 with low-16-bits of weaponIdx
+    // Timer just expired: queue notify 0x56 with low-16-bits of [ps+0xFC] (offhand idx).
+    // Vanilla unconditionally loads eax = [edi+0FCh] at loc_4219BB regardless of edx_state.
+    int offhandIdx = raw_int(ps, 0xFC);
     int head = raw_int(ps, 0xD0) & 3;
     raw_iref(ps, 0x48) = -1;
     raw_iref(ps, 0xD4 + head * 4) = 0x56;
     int head2 = raw_int(ps, 0xD0) & 3;
-    raw_iref(ps, 0xE4 + head2 * 4) = weaponIdx & 0xFFFF;     // movzx ecx, ax in vanilla
+    raw_iref(ps, 0xE4 + head2 * 4) = offhandIdx & 0xFFFF;     // movzx ecx, ax in vanilla
     raw_iref(ps, 0xD0) = (raw_int(ps, 0xD0) + 1) & 0xFF;
 
     if (raw_int(ps, 0x4C) != 0x3FF || (raw_byte(ps, 0x8E8) & 1) != 0) {
         return 1;  // loc_421A2C: mov al, 1; pop edi; retn
     }
 
-    // Call sub_41E5E0(esi = 1, push 0)
-    int dummy = 0;
+    // sub_41E5E0 is __usercall(edi=ps, esi=cap, [esp+4]=offhandIdx).
     __asm {
         push    esi
         push    edi
         push    ebx
-        push    dummy                         ; arg_0 = 0
+        push    offhandIdx                    ; arg_0 = ps[+0xFC]
+        mov     edi, ps
         mov     esi, 1
         mov     eax, 0x0041E5E0
         call    eax
@@ -622,20 +584,8 @@ extern "C" char PM_Weapon_FireRefresh_Impl(playerState_s* ps, int arg_0)
 
 // @faithful — sub_421A80 (entry 0x00421A80). __usercall(esi=pm).
 //   If weapon supports detonation AND state is non-busy, transition to DETONATING.
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_DetonateCheck(pmove_t* /*pm*/)
-{
-    __asm {
-        push    esi
-        mov     esi, [esp+8]                  ; pm
-        push    esi
-        call    PM_Weapon_DetonateCheck_Impl
-        add     esp, 4
-        pop     esi
-        ret
-    }
-}
-
-extern "C" void PM_Weapon_DetonateCheck_Impl(pmove_t* pm)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" void T4_Reconstructed::PM_Weapon_DetonateCheck(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     if (ps->weapon == 0) return;
@@ -661,15 +611,16 @@ extern "C" void PM_Weapon_DetonateCheck_Impl(pmove_t* pm)
     raw_iref(ps, 0x40) = raw_int(w, 0x458);
     raw_iref(ps, 0x44) = raw_int(w, 0x444);
 
-    // call sub_41D420(0x1B)
+    // sub_41D420 is __usercall(eax=ps, [esp+4]=new_vm_state).
     __asm {
         push    esi
         push    edi
         push    ebx
         push    1Bh
-        mov     eax, 0x0041D420
-        call    eax
-        pop     ecx
+        mov     eax, ps
+        mov     edx, 0x0041D420
+        call    edx
+        add     esp, 4
         pop     ebx
         pop     edi
         pop     esi
@@ -679,20 +630,8 @@ extern "C" void PM_Weapon_DetonateCheck_Impl(pmove_t* pm)
 // @faithful — sub_421B40 (entry 0x00421B40). __usercall(edi=pm).
 //   Bridges from OFFHAND_PREPARE to OFFHAND_END (via shared chunk @ 0x421630)
 //   or finalizes auto-fire chain.
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* /*pm*/)
-{
-    __asm {
-        push    edi
-        mov     edi, [esp+8]
-        push    edi
-        call    PM_Weapon_OffhandStateBridge_Impl
-        add     esp, 4
-        pop     edi
-        ret
-    }
-}
-
-extern "C" void PM_Weapon_OffhandStateBridge_Impl(pmove_t* pm)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     int state = ps->weaponstate;
@@ -721,14 +660,15 @@ extern "C" void PM_Weapon_OffhandStateBridge_Impl(pmove_t* pm)
 
     // call sub_4225D0(eax = ps)
     call_PM_Weapon_FinalizeStateExit(ps);
-    // call sub_41D420(1)
+    // sub_41D420 is __usercall(eax=ps, [esp+4]=new_vm_state).
     __asm {
         push    esi
         push    edi
         push    ebx
         push    1
-        mov     eax, 0x0041D420
-        call    eax
+        mov     eax, ps
+        mov     edx, 0x0041D420
+        call    edx
         add     esp, 4
         pop     ebx
         pop     edi
@@ -737,21 +677,8 @@ extern "C" void PM_Weapon_OffhandStateBridge_Impl(pmove_t* pm)
 }
 
 // @faithful — sub_420530 (entry 0x00420530). __usercall(esi=pm, [esp+4]=arg_0); returns bool.
-extern "C" __declspec(naked) char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* /*pm*/, int /*arg_0*/)
-{
-    __asm {
-        push    esi
-        mov     esi, [esp+8]                  ; pm (1st arg, +4 + 4 shift = +8)
-        push    [esp+0Ch]                      ; arg_0 (2nd arg, +8 + 4 shift = +0xC)
-        push    esi                             ; pm
-        call    PM_Weapon_DefaultGate_Impl
-        add     esp, 8
-        pop     esi
-        ret
-    }
-}
-
-extern "C" char PM_Weapon_DefaultGate_Impl(pmove_t* pm, int arg_0)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* pm, int arg_0)
 {
     auto* ps = *(playerState_s**)pm;
     const WeaponDef* w = GetWeaponDef(ps->weapon);
@@ -793,11 +720,12 @@ extern "C" char PM_Weapon_DefaultGate_Impl(pmove_t* pm, int arg_0)
     if (bl != 0 || al != 0) return 1;
 
     if (ps->weaponstate == 5) {
-        // call sub_41D440(edx = 0)
+        // sub_41D440 is __usercall(ecx=ps, edx=new_vm_anim_state).
         __asm {
             push    esi
             push    edi
             push    ebx
+            mov     ecx, ps
             xor     edx, edx
             mov     eax, 0x0041D440
             call    eax
@@ -813,25 +741,8 @@ extern "C" char PM_Weapon_DefaultGate_Impl(pmove_t* pm, int arg_0)
 
 // @faithful — sub_421110 (entry 0x00421110). __thiscall(ecx=pm, [esp+4]=arg_0).
 //   Anim sync cleanup after sub_41FED0 returned false.
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* /*pm*/, int /*arg_0*/)
-{
-    __asm {
-        push    edi
-        push    esi
-        push    ebx
-        mov     ecx, [esp+10h]                ; pm (1st arg, +4 + 12 shift = +0x10)
-        push    [esp+14h]                      ; arg_0 (2nd arg, +8 + 12 shift = +0x14)
-        push    ecx                             ; pm
-        call    PM_Weapon_AnimSyncCleanup_Impl
-        add     esp, 8
-        pop     ebx
-        pop     esi
-        pop     edi
-        ret
-    }
-}
-
-extern "C" void PM_Weapon_AnimSyncCleanup_Impl(pmove_t* pm, int arg_0)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* pm, int arg_0)
 {
     auto* ps = *(playerState_s**)pm;
     if (raw_int(ps, 0x944) >= 3) return;
@@ -870,13 +781,13 @@ extern "C" void PM_Weapon_AnimSyncCleanup_Impl(pmove_t* pm, int arg_0)
 
     if (state > 0 && state <= 4) return;
 
-    // loc_4211F6: call sub_419F20(); call sub_420E70(esi=ps).
-    // Vanilla pushes esi (= ps) — sub_420E70 reads [ebp+0Ch] = pm_flags, [ebp+104h] = weapon.
-    // sub_420E70 is the function that transitions weaponstate → MELEE_CHARGE (0xC).
+    // loc_4211F6: call sub_419F20(__thiscall ecx=pm); call sub_420E70(cdecl arg_0=ps).
+    // sub_420E70 reads [ps+0xC] = pm_flags, [ps+0x104] = weapon — transitions to MELEE_CHARGE.
     __asm {
         push    esi
         push    edi
         push    ebx
+        mov     ecx, pm
         mov     eax, 0x00419F20
         call    eax
         push    [ps]                          ; arg_0 = ps (NOT pm)
@@ -891,21 +802,8 @@ extern "C" void PM_Weapon_AnimSyncCleanup_Impl(pmove_t* pm, int arg_0)
 
 // @faithful — sub_421BC0 (entry 0x00421BC0). __usercall(eax=ps, [esp+arg_0]).
 //   DETONATING handler: queue notify or reset weapon state.
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_DetonateTransition(playerState_s* /*ps*/, int /*arg_0*/)
-{
-    __asm {
-        push    edi
-        mov     eax, [esp+8]                  ; ps (1st arg, +4 + 4 shift = +8)
-        push    [esp+0Ch]                      ; arg_0 (2nd arg, +8 + 4 shift = +0xC)
-        push    eax                             ; ps
-        call    PM_Weapon_DetonateTransition_Impl
-        add     esp, 8
-        pop     edi
-        ret
-    }
-}
-
-extern "C" void PM_Weapon_DetonateTransition_Impl(playerState_s* ps, int arg_0)
+//   Mono-caller from PM_Weapon → plain cdecl.
+extern "C" void T4_Reconstructed::PM_Weapon_DetonateTransition(playerState_s* ps, int arg_0)
 {
     if (arg_0 == 0 || ps->weapon == 0) {
         // loc_421C0A — finalize (no-op end)
@@ -1296,12 +1194,14 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pmove_t* pm)
 
     // sum != 0 (loc_4215FF)
     if ((raw_byte(ps, 0x8E8) & 1) == 0) {
-        int dummy = 0;
+        // sub_41E5E0 is __usercall(edi=ps, esi=cap, [esp+4]=offhandIdx).
+        int offhandIdx = raw_int(ps, 0xFC);
         __asm {
             push    esi
             push    edi
             push    ebx
-            push    dummy                      ; arg_0 = 0
+            push    offhandIdx                 ; arg_0 = ps[+0xFC]
+            mov     edi, ps
             mov     esi, 1
             mov     eax, 0x0041E5E0
             call    eax
@@ -1623,7 +1523,6 @@ dispatch_setup:
             T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(ps);
             return;
         case WEAPON_DETONATING:
-            // Vanilla uses ebx (= animSync after SECTION 4 overwrite), not callValidation.
             T4_Reconstructed::PM_Weapon_DetonateTransition(ps, animSync);
             return;
         case WEAPON_SPRINT_RAISE:
