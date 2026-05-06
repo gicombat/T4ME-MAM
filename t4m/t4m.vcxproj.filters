@@ -48,6 +48,12 @@
     <ClCompile Include="PatchT4MemoryLimits.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_WeaponDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_LowReady.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PatchT4FileDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -1952,6 +1952,20 @@ struct WeaponDef
 	void* flameTableThirdPersonPtr;
 	FxEffectDef* tagFx_preparationEffect;
 	FxEffectDef* tagFlash_preparationEffect;
+
+	// T4M low-ready stance (BO1 port; absent in vanilla WaW)
+	int   iLowReadyInTime;
+	int   iLowReadyLoopTime;
+	int   iLowReadyOutTime;
+	float lowReadyOfsF;
+	float lowReadyOfsR;
+	float lowReadyOfsU;
+	float lowReadyRotP;
+	float lowReadyRotY;
+	float lowReadyRotR;
+	const char* slowReadyInAnim;
+	const char* slowReadyLoopAnim;
+	const char* slowReadyOutAnim;
 };
 
 struct entityShared_s

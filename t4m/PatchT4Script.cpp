@@ -82,6 +82,7 @@ namespace T4M
 
 #pragma region setupFunctions
 static std::map<std::string, scr_funcdef_t> scriptFunctions;
+static std::map<std::string, scr_funcdef_t> scriptMethods;
 
 scr_function_t Scr_GetCustomFunction(const char** name, int* isDeveloper)
 {
@@ -98,6 +99,19 @@ scr_function_t Scr_GetCustomFunction(const char** name, int* isDeveloper)
 		return NULL;
 }
 
+scr_function_t Scr_GetCustomMethod(const char** name, int* type)
+{
+	scr_funcdef_t method = scriptMethods[*name];
+
+	if (method.functionName)
+	{
+		*name = method.functionName;
+		*type = 0;
+		return method.functionCall;
+	}
+	return NULL;
+}
+
 
 void Scr_DeclareFunction(const char* name, scr_function_t func, bool developerOnly = false)
 {
@@ -107,6 +121,15 @@ void Scr_DeclareFunction(const char* name, scr_function_t func, bool developerOn
 	funcDef.developerOnly = (developerOnly) ? 1 : 0;
 
 	scriptFunctions[name] = funcDef;
+}
+
+void Scr_DeclareMethod(const char* name, scr_function_t func)
+{
+	scr_funcdef_t methodDef;
+	methodDef.functionName = name;
+	methodDef.functionCall = func;
+	methodDef.developerOnly = 0;
+	scriptMethods[name] = methodDef;
 }
 #pragma endregion setupFunctions
 
@@ -205,7 +228,11 @@ int T4::Scr_GetMethod(int *type, const char **pName)
 					{
 						function = Actor_GetMethod(pName);
 						if (!function)
+						{
 							function = BuiltIn_GetMethod(pName, type);
+							if (!function)
+								function = (int)Scr_GetCustomMethod(pName, type);
+						}
 					}
 				}
 			}
@@ -302,6 +329,13 @@ void PlayerWeaponOverheatUpdate(gentity_s* ent, uint32_t weapon_index, float amo
 		current_overheat = false;
 }
 gentity_s* g_entities = (gentity_s*)0x0176C6F0;
+
+int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index);
+
+namespace T4M {
+    void SetLowReadyIntent(playerState_s* ps, bool enable);
+}
+
 #pragma region customFunctions
 void GScr_PrintLnConsole(scr_entref_t entity)
 {
@@ -312,6 +346,22 @@ void GScr_PrintLnConsole(scr_entref_t entity)
 		T4::Com_Printf(0, "^1the cake is a lie\n\n");
 	// iz ded af
 	//Scr_AddInt(Scr_GetNumParam(SCRIPTINSTANCE_SERVER), SCRIPTINSTANCE_SERVER);
+}
+
+void GScr_SetLowReady(scr_entref_t entref)
+{
+	if (T4M::Scr_GetNumParam(SCRIPTINSTANCE_SERVER) < 1)
+		return;
+	int enable = Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
+
+	unsigned int idx = entref.entnum;
+	if (idx >= 1024)
+		return;
+	gentity_s* ent = &g_entities[idx];
+	if (!ent->client)
+		return;
+
+	T4M::SetLowReadyIntent(&ent->client->ps, enable != 0);
 }
 #pragma endregion customFunctions
 
@@ -381,6 +431,7 @@ void PatchT4_Script()
 	Detours::X86::DetourFunction((uintptr_t)0x00682DAF, (uintptr_t)&Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
 	Detours::X86::DetourFunction((uintptr_t)0x00683043, (uintptr_t)&Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 	Scr_DeclareFunction("printlnconsole", GScr_PrintLnConsole);
+	Scr_DeclareMethod("setlowready", GScr_SetLowReady);
 
 	// i hate asm and safetyhook midhook ftw -clippy95
 	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(0x4EE157, [](SafetyHookContext& ctx) {

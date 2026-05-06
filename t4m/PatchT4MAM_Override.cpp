@@ -1,23 +1,3 @@
-// ==========================================================
-// T4M project
-//
-// Component: clientdll
-// Purpose: Installation of T4M detours for the asset DB system
-//          + debug utilities (override-chain dumpers).
-//
-// The C++ reconstructions of the DB functions (T4_Reconstructed::DB_HashAssetName,
-// T4_Reconstructed::DB_AllocXAssetEntry, T4_Reconstructed::DB_FindXAssetByName,
-// T4_Reconstructed::DB_FindDefaultAsset, T4_Reconstructed::DB_LinkXAssetEntry,
-// T4_Reconstructed::DB_LinkXAssetEntryOverrideAware, T4_Reconstructed::DB_PromoteOverride,
-// T4_Reconstructed::DB_UnloadZoneAssets) live in T4.cpp.
-//
-// Here: naked wrappers for __usercall functions, debug dumpers, and
-// PatchT4_Override() (the installer).
-//
-// Sources: CoDWaW_analysis.md §"Système d'override des assets",
-//          CoDWaW LanFixed.exe.asm.
-// ==========================================================
-
 #include "StdInc.h"
 #include "T4.h"
 #include "MemoryMgr.h"

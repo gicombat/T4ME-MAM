@@ -23,6 +23,8 @@ void PatchT4_Dvars();
 void PatchT4_Menus();
 void PatchT4_NoBorder();
 void PatchT4_PreLoad();
+void PatchT4MAM_WeaponDef();
+void PatchT4MAM_LowReady();
 void PatchT4_Script();
 void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
@@ -57,6 +59,8 @@ void PatchT4()
 	//*(const char**)0x00840FF0 = "raw";
 	PatchT4_SteamDRM();
 	PatchT4_PreLoad();
+	// SetLowReady — WeaponDef extension (size + parser) must run before MemoryLimits.
+	PatchT4MAM_WeaponDef();
 	PatchT4_MemoryLimits();
 	PatchT4_Branding();
 	PatchT4_Console();
@@ -66,7 +70,8 @@ void PatchT4()
 	PatchT4_Script();
 	PatchT4_Load();
 	PatchT4MAM_Override();
-	PatchT4MAM_WeaponState();
+	PatchT4MAM_WeaponState(); 
+	PatchT4MAM_LowReady(); 
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

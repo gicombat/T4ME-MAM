@@ -38,6 +38,10 @@ void PatchT4_Dvars()
 	//MODS: Clear cheat flag, set archive flag
 	*(WORD*)0x707D74 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
+	//DVAR: ui_hud_hardcore
+	//MODS: Clear cheat flag, set archive flag
+	*(WORD*)0x5D0C2C ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+
 	//DVAR: fs_basegame
 	//MODS: Clear cheat flag, set archive flag
 	//*(WORD*)0x005DDEDD ^= DVAR_FLAG_INIT;
