@@ -1,5 +1,7 @@
 #pragma once
 
+#include "hexrays_defs.h"   // _BYTE, _WORD, _DWORD, _QWORD typedefs
+
 #ifndef __cplusplus
 #define ASSERT_STRUCT_SIZE(structure, size) static_assert(sizeof(structure) == size, "sizeof(" #structure ") != " #size);
 #define ASSERT_STRUCT_OFFSET(structure, member, offset) static_assert(offsetof(structure, member) == offset, "offsetof(" #structure ", " #member ") != " #offset);
@@ -24,7 +26,7 @@ ASSERT_STRUCT_SIZE(CRITICAL_SECTION, 0x18);
 #ifdef __cplusplus
 #include "xasset.hpp"
 
-namespace game
+namespace T4
 {
 #endif
 	struct XAnimTree_s;
@@ -62,18 +64,20 @@ namespace game
 	ASSERT_STRUCT_OFFSET(corpseInfo_t, proneInfo, 0x8);
 
 #ifdef __cplusplus
+
+
 }
 
 #include "clientscript/clientscript_public.hpp"
 
-namespace game
+namespace T4
 {
 #endif
 
 	struct client_s;
 	struct NitrousVehicle;
 	struct DObjModel_s;
-	struct z_stream_s;
+	struct t4z_stream_s;
 	struct flameGeneric_s;
 	struct flameStream_s;
 	struct phys_free_list_NitrousVehicle_T_internal;
@@ -3683,14 +3687,14 @@ namespace game
 	ASSERT_STRUCT_OFFSET(dvar_s, domain, 0x50);
 	ASSERT_STRUCT_OFFSET(dvar_s, hashNext, 0x58);
 
-	struct cmd_function_s
-	{
-		cmd_function_s * next; //OFS: 0x0 SIZE: 0x4
-		const char * name; //OFS: 0x4 SIZE: 0x4
-		const char * autoCompleteDir; //OFS: 0x8 SIZE: 0x4
-		const char * autoCompleteExt; //OFS: 0xC SIZE: 0x4
-		void (__cdecl *function)(); //OFS: 0x10 SIZE: 0x4
-	};
+	typedef struct cmd_function_s
+{
+	struct cmd_function_s *next;
+	char *name;
+	char *autocomplete1;
+	char *autocomplete2;
+	void (__cdecl *function)(void);   // xcommand_t typedef lives in T4.h (function pointer typedefs not migrated to cod/)
+};
 	ASSERT_STRUCT_SIZE(cmd_function_s, 0x14);
 	ASSERT_STRUCT_OFFSET(cmd_function_s, next, 0x0);
 	ASSERT_STRUCT_OFFSET(cmd_function_s, name, 0x4);
@@ -4169,6 +4173,7 @@ namespace game
 	ASSERT_STRUCT_OFFSET(cgVehicle_s, materialTime, 0x28);
 	ASSERT_STRUCT_OFFSET(cgVehicle_s, vehicle_cache, 0x2C);
 
+	// Merged 2026-05-06: layout from t4_headers.h (named bitfields), pointer types from cod/.
 	struct centity_s
 	{
 		cpose_t pose; //OFS: 0x0 SIZE: 0xD0
@@ -4191,7 +4196,19 @@ namespace game
 		float originError[3]; //OFS: 0x2B4 SIZE: 0xC
 		float anglesError[3]; //OFS: 0x2C0 SIZE: 0xC
 		int firstAnimationTime; //OFS: 0x2CC SIZE: 0x4
-		__int16 _bf_2d0; //OFS: 0x2D0 SIZE: 0x2
+		// Bitfield block //OFS: 0x2D0 SIZE: 0x4
+		unsigned __int32 applyLeftHandIK : 1;
+		unsigned __int32 nextValid : 1;
+		unsigned __int32 bMuzzleFlash : 1;
+		unsigned __int32 bTrailMade : 1;
+		unsigned __int32 isBurning : 1;
+		unsigned __int32 skipBloodImpacts : 1;
+		unsigned __int32 scriptThreaded : 1;
+		unsigned __int32 clientRumbleLoop : 1;
+		unsigned __int32 leftFootstep : 1;
+		unsigned __int32 rightFootstep : 1;
+		unsigned __int32 didOverheatFx : 1;
+		unsigned __int32 originAnglesError : 1;
 	};
 	ASSERT_STRUCT_SIZE(centity_s, 0x2D4);
 	ASSERT_STRUCT_OFFSET(centity_s, pose, 0x0);
@@ -6550,13 +6567,20 @@ namespace game
 	ASSERT_STRUCT_OFFSET(serverStaticHeader_s, savedEntities, 0xEC);
 
 	struct CmdArgs
-	{
-		int nesting; //OFS: 0x0 SIZE: 0x4
-		int localClientNum[8]; //OFS: 0x4 SIZE: 0x20
-		int controllerIndex[8]; //OFS: 0x24 SIZE: 0x20
-		int argc[8]; //OFS: 0x44 SIZE: 0x20
-		char ** argv[8]; //OFS: 0x64 SIZE: 0x20
-	};
+{
+	int nesting;
+	int localClientNum[8];
+	int controllerIndex[8];
+	//itemDef_s *itemDef[8];
+	int argshift[8];
+	int argc[8];
+	const char **argv[8];
+	char textPool[8192];
+	const char *argvPool[512];
+	int usedTextPool[8];
+	int totalUsedArgvPool;
+	int totalUsedTextPool;
+};
 	ASSERT_STRUCT_SIZE(CmdArgs, 0x84);
 	ASSERT_STRUCT_OFFSET(CmdArgs, nesting, 0x0);
 	ASSERT_STRUCT_OFFSET(CmdArgs, localClientNum, 0x4);
@@ -8046,7 +8070,7 @@ namespace game
 
 	struct deflate_state
 	{
-		z_stream_s * strm; //OFS: 0x0 SIZE: 0x4
+		t4z_stream_s * strm; //OFS: 0x0 SIZE: 0x4
 		int status; //OFS: 0x4 SIZE: 0x4
 		unsigned __int8 * pending_buf; //OFS: 0x8 SIZE: 0x4
 		unsigned int pending_buf_size; //OFS: 0xC SIZE: 0x4
@@ -8311,7 +8335,7 @@ namespace game
 
 	typedef inflate_block_mode inflate_mode;
 
-	struct internal_state
+	struct t4z_internal_state
 	{
 		inflate_mode mode; //OFS: 0x0 SIZE: 0x4
 		internal_state_sub sub; //OFS: 0x4 SIZE: 0x8
@@ -8319,21 +8343,21 @@ namespace game
 		unsigned int wbits; //OFS: 0x10 SIZE: 0x4
 		inflate_blocks_state * blocks; //OFS: 0x14 SIZE: 0x4
 	};
-	ASSERT_STRUCT_SIZE(internal_state, 0x18);
-	ASSERT_STRUCT_OFFSET(internal_state, mode, 0x0);
-	ASSERT_STRUCT_OFFSET(internal_state, sub, 0x4);
-	ASSERT_STRUCT_OFFSET(internal_state, nowrap, 0xC);
-	ASSERT_STRUCT_OFFSET(internal_state, wbits, 0x10);
-	ASSERT_STRUCT_OFFSET(internal_state, blocks, 0x14);
+	ASSERT_STRUCT_SIZE(t4z_internal_state, 0x18);
+	ASSERT_STRUCT_OFFSET(t4z_internal_state, mode, 0x0);
+	ASSERT_STRUCT_OFFSET(t4z_internal_state, sub, 0x4);
+	ASSERT_STRUCT_OFFSET(t4z_internal_state, nowrap, 0xC);
+	ASSERT_STRUCT_OFFSET(t4z_internal_state, wbits, 0x10);
+	ASSERT_STRUCT_OFFSET(t4z_internal_state, blocks, 0x14);
 
 	union deflate_or_inflate_state
 	{
 		deflate_state * deflate_state; //OFS: 0x0 SIZE: 0x4
-		internal_state * inflate_state; //OFS: 0x1 SIZE: 0x4
+		t4z_internal_state * inflate_state; //OFS: 0x1 SIZE: 0x4
 	};
 	ASSERT_STRUCT_SIZE(deflate_or_inflate_state, 0x4);
 
-	struct z_stream_s
+	struct t4z_stream_s
 	{
 		unsigned __int8 * next_in; //OFS: 0x0 SIZE: 0x4
 		unsigned int avail_in; //OFS: 0x4 SIZE: 0x4
@@ -8349,20 +8373,20 @@ namespace game
 		int data_type; //OFS: 0x2C SIZE: 0x4
 		int adler; //OFS: 0x30 SIZE: 0x4
 	};
-	ASSERT_STRUCT_SIZE(z_stream_s, 0x34);
-	ASSERT_STRUCT_OFFSET(z_stream_s, next_in, 0x0);
-	ASSERT_STRUCT_OFFSET(z_stream_s, avail_in, 0x4);
-	ASSERT_STRUCT_OFFSET(z_stream_s, total_in, 0x8);
-	ASSERT_STRUCT_OFFSET(z_stream_s, next_out, 0xC);
-	ASSERT_STRUCT_OFFSET(z_stream_s, avail_out, 0x10);
-	ASSERT_STRUCT_OFFSET(z_stream_s, total_out, 0x14);
-	ASSERT_STRUCT_OFFSET(z_stream_s, msg, 0x18);
-	ASSERT_STRUCT_OFFSET(z_stream_s, state, 0x1C);
-	ASSERT_STRUCT_OFFSET(z_stream_s, zalloc, 0x20);
-	ASSERT_STRUCT_OFFSET(z_stream_s, zfree, 0x24);
-	ASSERT_STRUCT_OFFSET(z_stream_s, opaque, 0x28);
-	ASSERT_STRUCT_OFFSET(z_stream_s, data_type, 0x2C);
-	ASSERT_STRUCT_OFFSET(z_stream_s, adler, 0x30);
+	ASSERT_STRUCT_SIZE(t4z_stream_s, 0x34);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, next_in, 0x0);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, avail_in, 0x4);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, total_in, 0x8);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, next_out, 0xC);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, avail_out, 0x10);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, total_out, 0x14);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, msg, 0x18);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, state, 0x1C);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, zalloc, 0x20);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, zfree, 0x24);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, opaque, 0x28);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, data_type, 0x2C);
+	ASSERT_STRUCT_OFFSET(t4z_stream_s, adler, 0x30);
 
 	struct DB_LoadData
 	{
@@ -8371,7 +8395,7 @@ namespace game
 		XBlock * blocks; //OFS: 0x8 SIZE: 0x4
 		int outstandingReads; //OFS: 0xC SIZE: 0x4
 		_OVERLAPPED overlapped; //OFS: 0x10 SIZE: 0x14
-		z_stream_s stream; //OFS: 0x24 SIZE: 0x34
+		t4z_stream_s stream; //OFS: 0x24 SIZE: 0x34
 		char * compressBufferStart; //OFS: 0x58 SIZE: 0x4
 		void * compressBufferEnd; //OFS: 0x5C SIZE: 0x4
 		void (__cdecl *interrupt)(); //OFS: 0x60 SIZE: 0x4
@@ -9592,7 +9616,7 @@ namespace game
 		bool compress_enabled; //OFS: 0x22 SIZE: 0x1
 		bool rle_enabled; //OFS: 0x23 SIZE: 0x1
 		bool is_writing; //OFS: 0x24 SIZE: 0x1
-		z_stream_s stream; //OFS: 0x28 SIZE: 0x34
+		t4z_stream_s stream; //OFS: 0x28 SIZE: 0x34
 		unsigned __int8 cacheBuffer[32760]; //OFS: 0x5C SIZE: 0x7FF8
 	};
 	ASSERT_STRUCT_SIZE(MemoryFile, 0x8054);
@@ -12788,7 +12812,7 @@ namespace game
 	struct file_in_zip_read_info_s
 	{
 		char * read_buffer; //OFS: 0x0 SIZE: 0x4
-		z_stream_s stream; //OFS: 0x4 SIZE: 0x34
+		t4z_stream_s stream; //OFS: 0x4 SIZE: 0x34
 		unsigned int pos_in_zipfile; //OFS: 0x38 SIZE: 0x4
 		unsigned int stream_initialised; //OFS: 0x3C SIZE: 0x4
 		unsigned int offset_local_extrafield; //OFS: 0x40 SIZE: 0x4

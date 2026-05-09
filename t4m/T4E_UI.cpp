@@ -247,7 +247,7 @@ float get_cg_scoreboardTextOffset_per_player(int client) {
 
 }
 
-int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale);
+int __cdecl UI_TextWidth(const char* text, int maxChars, T4::Font_s* font, float scale);
 
 dvar_t* cg_drawAmmoClipOffset{};
 
@@ -262,8 +262,8 @@ const char* cg_drawAmmoModStrings[] = { "off","offset only","better anchor & off
 void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) {
     float* x = (float*)ctx.esp;
     float* scale = (float*)(ctx.esp + 0x8);
-    game::Font_s* current_font = (game::Font_s*)ctx.ebp;
-    game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+    T4::Font_s* current_font = (T4::Font_s*)ctx.ebp;
+    T4::rectDef_s* rect = (T4::rectDef_s*)ctx.esi;
     const char* current_text = lowclip ? (const char*)ctx.edx : (const char*)ctx.eax;
 
     //// Skip leading spaces
@@ -448,8 +448,8 @@ void PatchT4E_UI() {
     static auto cg_draw_ammo_reserve = safetyhook::create_mid(0x0044F3AA, [](SafetyHookContext& ctx) {
         float* x = (float*)ctx.esp;
         float* scale = (float*)(ctx.esp + 0x8);
-        game::Font_s* current_font = (game::Font_s*)ctx.ebp;
-        game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+        T4::Font_s* current_font = (T4::Font_s*)ctx.ebp;
+        T4::rectDef_s* rect = (T4::rectDef_s*)ctx.esi;
         const char* current_text = (const char*)(ctx.esp + 0x154);
 
         if (cg_drawAmmoMod->current.integer == 2) {

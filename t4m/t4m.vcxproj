@@ -155,7 +155,6 @@ popd</Command>
     <ClInclude Include="SDLLP.h" />
     <ClInclude Include="StdInc.h" />
     <ClInclude Include="T4.h" />
-    <ClInclude Include="t4_headers.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -185,6 +184,7 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_WeaponState.cpp" />
     <ClCompile Include="PatchT4MAM_WeaponDef.cpp" />
     <ClCompile Include="PatchT4MAM_LowReady.cpp" />
+    <ClCompile Include="PatchT4MAM_CentityPropagator.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />

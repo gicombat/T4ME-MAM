@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<char* (scriptInstance_t inst, int unused, char* filename, const char* codepos, int archive)>Scr_ReadFile_FastFile{ 0x0, 0x68AE30 };
 	WEAK symbol<char* (scriptInstance_t inst, int unused_arg1, const char* filename, const char* codepos, int archive)>Scr_ReadFile_LoadObj{ 0x0, 0x68AED0 };

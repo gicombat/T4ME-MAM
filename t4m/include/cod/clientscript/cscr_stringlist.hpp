@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<unsigned int(const char* str, scriptInstance_t inst)>SL_FindLowercaseString{ 0x0, 0x68DD50 };
 	WEAK symbol<unsigned int(scriptInstance_t inst, const char* string, unsigned int user, unsigned int len)>SL_GetStringOfSize{ 0x0, 0x68DE50 };
@@ -61,5 +61,5 @@ namespace game
 	int SL_ConvertFromString(scriptInstance_t inst, const char* str);
 	int SL_ConvertFromRefString(scriptInstance_t inst, RefString* refString);
 	RefString* GetRefString_0(scriptInstance_t inst, const char* str);
-	const char* SL_ConvertToStringSafe(unsigned int id, game::scriptInstance_t inst);
+	const char* SL_ConvertToStringSafe(unsigned int id, T4::scriptInstance_t inst);
 }

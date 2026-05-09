@@ -2,7 +2,7 @@
 
 
 
-namespace game
+namespace T4
 {
 	gamemode current = reinterpret_cast<const char*>(0x88A5DC) != "CoDWaW.exe"
 		? gamemode::multiplayer

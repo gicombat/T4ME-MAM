@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdio>      // FILE
+#include <csetjmp>     // jmp_buf, longjmp, setjmp
+
 #define VAR_STAT_FREE 0
 #define VAR_STAT_MASK 0x60
 #define VAR_STAT_MOVABLE 0x20
@@ -20,11 +23,11 @@
 #define VARIABLELIST_CHILD_BEGIN 0x6000
 
 #define IsObject(__parentValue__) \
-	((__parentValue__->w.status & VAR_MASK) >= game::VAR_THREAD) \
+	((__parentValue__->w.status & VAR_MASK) >= T4::VAR_THREAD) \
 
 #define MT_NODE_BITS 16
-#define MT_NODE_SIZE sizeof(game::MemoryNode)
-#define MT_SIZE sizeof(game::scrMemTreeGlob_t::nodes)
+#define MT_NODE_SIZE sizeof(T4::MemoryNode)
+#define MT_SIZE sizeof(T4::scrMemTreeGlob_t::nodes)
 #define MT_NODE_COUNT (1 << MT_NODE_BITS)
 #define MT_NUM_BUCKETS 256
 
@@ -39,7 +42,7 @@
 #define MAX_VM_STACK_DEPTH 30
 
 #ifdef __cplusplus
-namespace game
+namespace T4
 {
 #endif
 
@@ -901,9 +904,10 @@ namespace game
 	ASSERT_STRUCT_OFFSET(ContinueStatementInfo, next, 0x8);
 
 	struct scr_localVar_t
-	{
-		unsigned int name; //OFS: 0x0 SIZE: 0x4
-	};
+{
+	unsigned int name;
+	unsigned int sourcePos;
+};
 	ASSERT_STRUCT_SIZE(scr_localVar_t, 0x4);
 	ASSERT_STRUCT_OFFSET(scr_localVar_t, name, 0x0);
 
@@ -2334,7 +2338,8 @@ namespace game
 
 #pragma region "functions"
 	WEAK symbol<int(jmp_buf buf, int count)>_setjmp3{ 0x0, 0x7E1894 };
-	WEAK symbol<void(jmp_buf Buf, int Value)>longjmp{ 0x0, 0x7AD57C };
+	// CONFLICT_STDLIB — commented: T4::longjmp collides with ::longjmp from <csetjmp>.
+	// WEAK symbol<void(jmp_buf Buf, int Value)>longjmp{ 0x0, 0x7AD57C };
 
 	inline void* CScr_SetEntityField_ADDR() { return CALL_ADDR(0x0, 0x671470); }
 	int CScr_SetEntityField(int ofs, int entnum, unsigned int clientnum, void* call_addr = CScr_SetEntityField_ADDR());

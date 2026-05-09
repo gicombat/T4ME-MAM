@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<int()>yyparse{ 0x0, 0x69AEC0 };
 	WEAK symbol<int()>yylex{ 0x0, 0x69C0D0 };

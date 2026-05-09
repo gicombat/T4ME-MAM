@@ -6,6 +6,15 @@
 //#include "StdInc.h"
 #include "SDLLP.h"
 #include <map>
+
+// Pre-emptive declaration of Direct3DCreate9 WITH __declspec(dllexport) BEFORE T4.h is
+// included. T4.h transitively pulls in <d3d9.h> via cod/xasset.hpp, which forward-declares
+// `Direct3DCreate9` without dllexport. Defining it later with dllexport then triggers
+// C2375 ("redefinition; different linkage"). Declaring it here first makes dllexport
+// "sticky" — when d3d9.h re-declares without an attribute, MSVC keeps the export.
+struct IDirect3D9;
+extern "C" __declspec(dllexport) IDirect3D9* __stdcall Direct3DCreate9(UINT SDKVersion);
+
 #include "T4.h"
 
 // Macro to declare an export
@@ -198,9 +207,12 @@ extern "C"
 		__asm { jmp function }
 	}
 	
+	// Signature must match the d3d9.h declaration (`IDirect3D9* WINAPI Direct3DCreate9(UINT)`)
+	// because cod/xasset.hpp transitively pulls in <d3d9.h>. Body is __declspec(naked) — the
+	// signature only matters for linker compliance; the asm jmp bypasses any prologue.
 	__declspec(naked)
 		__declspec(dllexport)
-		void Direct3DCreate9()
+		IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion)
 	{
 		static FARPROC function = 0;
 		IsUsingVulkan = SDLLP::UseVulkan();
@@ -216,3 +228,8 @@ extern "C"
 		__asm { jmp function }
 	}
 }
+
+// Alias the decorated stdcall export `_Direct3DCreate9@4` to the plain undecorated name
+// `Direct3DCreate9` that CoDWaW.exe imports. d3d9.dll itself exports it undecorated via a
+// .def file; we replicate that here without needing one.
+#pragma comment(linker, "/EXPORT:Direct3DCreate9=_Direct3DCreate9@4")

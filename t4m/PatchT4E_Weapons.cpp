@@ -1,5 +1,9 @@
 import T4E_items;
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "StdInc.h"
 #include <safetyhook.hpp>
 
@@ -53,9 +57,9 @@ void PatchT4E_Weapons()
 
 		gclient_s* client = (gclient_s*)ctx.esi;
 
-		game::meansOfDeath_t mod = *(game::meansOfDeath_t*)(ctx.esp + 0x3C);
+		T4::meansOfDeath_t mod = *(T4::meansOfDeath_t*)(ctx.esp + 0x3C);
 
-		if (perks_phdflopper_engine->isEnabled() && (mod >= game::MOD_GRENADE && (mod <= game::MOD_PROJECTILE_SPLASH || mod == game::MOD_EXPLOSIVE) ) && BG_HasPerk(&client->ps.perks, perks_phdflopper_engine_enum->current.integer)) {
+		if (perks_phdflopper_engine->isEnabled() && (mod >= T4::MOD_GRENADE && (mod <= T4::MOD_PROJECTILE_SPLASH || mod == T4::MOD_EXPLOSIVE) ) && BG_HasPerk(&client->ps.perks, perks_phdflopper_engine_enum->current.integer)) {
 			ctx.ebx = 0;
 		}
 

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<int(const void * info1, const void * info2)>ThreadInfoCompare{ 0x0, 0x68EB50};
 	WEAK symbol<void(scriptInstance_t scriptInstance)>Scr_DumpScriptThreads{ 0x0, 0x68EBA0};

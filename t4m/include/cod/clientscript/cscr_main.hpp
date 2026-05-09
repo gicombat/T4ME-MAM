@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<unsigned int(scriptInstance_t inst, const char* file, PrecacheEntry* entries, int entriesCount)> Scr_LoadScriptInternal { 0x0, 0x689980 };
 	WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadScripts { 0x0, 0x689C80 };

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	inline void* FindVariableIndexInternal2_ADDR() { return CALL_ADDR(0x0, 0x68BC20); }
 	unsigned int FindVariableIndexInternal2(scriptInstance_t inst, unsigned int name, unsigned int index, void* call_addr = FindVariableIndexInternal2_ADDR());

@@ -1,8 +1,9 @@
 #pragma once
 
-namespace game
+namespace T4
 {
-	WEAK symbol<void(scriptInstance_t inst, VariableValue* value)>RemoveRefToValue{ 0x0, 0x67EB70 };
+	// CONFLICT_T4_H — commented: T4.h declares `extern RemoveRefToValue_t RemoveRefToValue;` (incompatible types).
+	// WEAK symbol<void(scriptInstance_t inst, VariableValue* value)>RemoveRefToValue{ 0x0, 0x67EB70 };
 	WEAK symbol<void(scriptInstance_t inst, OpcodeVM op, int offset, int callType)>EmitOpcode{ 0x0, 0x67ECA0 };
 	WEAK symbol<int(scriptInstance_t inst, unsigned int name, sval_u sourcePos, int create, scr_block_s* block)>Scr_FindLocalVarIndex{ 0x0, 0x67F500 };
 	WEAK symbol<void(scriptInstance_t inst, scr_block_s* block)>EmitCreateLocalVars{ 0x0, 0x67F730 };
@@ -13,9 +14,11 @@ namespace game
 	WEAK symbol<void(scriptInstance_t inst, sval_u sourcePos)>EmitCastFieldObject{ 0x0, 0x681720 };
 	WEAK symbol<void(scriptInstance_t inst, sval_u expr, scr_block_s* block)>EmitVariableExpression{ 0x0, 0x681990 };
 	WEAK symbol<int(scriptInstance_t inst, sval_u exprlist, scr_block_s* block)>EmitExpressionList{ 0x0, 0x681AD0 };
-	WEAK symbol<int(scriptInstance_t inst, int func)>AddFunction{ 0x0, 0x682040 };
+	// CONFLICT_T4_H — commented: T4.h declares `extern AddFunction_t AddFunction;` (incompatible types).
+	// WEAK symbol<int(scriptInstance_t inst, int func)>AddFunction{ 0x0, 0x682040 };
 	WEAK symbol<void(scriptInstance_t inst, sval_u func, int param_count, int bMethod, sval_u nameSourcePos)>EmitPostScriptFunction{ 0x0, 0x6820B0 };
-	WEAK symbol<void(scriptInstance_t inst, sval_u expr, sval_u func_name, sval_u params, sval_u methodSourcePos, int bStatement, scr_block_s* block)>EmitMethod{ 0x0, 0x682F40 };
+	// CONFLICT_T4_H — commented: T4.h declares `extern EmitMethod_t EmitMethod;` (incompatible types).
+	// WEAK symbol<void(scriptInstance_t inst, sval_u expr, sval_u func_name, sval_u params, sval_u methodSourcePos, int bStatement, scr_block_s* block)>EmitMethod{ 0x0, 0x682F40 };
 	WEAK symbol<void(scriptInstance_t inst, unsigned int posId, unsigned int name, unsigned int sourcePos)>CheckThreadPosition{ 0x0, 0x683580 };
 	WEAK symbol<bool(scriptInstance_t inst, sval_u exprlist, sval_u sourcePos, VariableCompileValue* constValue)>EvalPrimitiveExpressionList{ 0x0, 0x6837C0 };
 	WEAK symbol<bool(scriptInstance_t inst, sval_u expr, VariableCompileValue* constValue)>EvalPrimitiveExpression{ 0x0, 0x683B50 };
@@ -275,7 +278,8 @@ namespace game
 	unsigned int Scr_GetBuiltin(scriptInstance_t inst, sval_u func_name);
 	int Scr_GetUncacheType(int type);
 	int Scr_GetCacheType(int type);
-	BuiltinFunction Scr_GetFunction(const char** pName, int* type);
+	// CONFLICT_T4_H — commented: T4.h declares `extern Scr_GetFunction_t Scr_GetFunction;` (incompatible types).
+	// BuiltinFunction Scr_GetFunction(const char** pName, int* type);
 	BuiltinFunction GetFunction(scriptInstance_t inst, const char** pName, int* type);
 	BuiltinMethod GetMethod(scriptInstance_t inst, const char** pName, int* type);
 	unsigned int GetVariableName(scriptInstance_t inst, unsigned int id);

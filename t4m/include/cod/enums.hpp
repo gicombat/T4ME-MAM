@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
-namespace game
+namespace T4
 {
 #endif
 
@@ -16,7 +16,7 @@ namespace game
 		DVAR_FLAG_LATCH = 0x20,
 		DVAR_FLAG_ROM = 0x40,
 		DVAR_FLAG_CHEAT = 0x80,
-		DVAR_FLAG_CONFIG = 0x100,
+		DVAR_FLAG_DEVELOPER = 0x100,
 		DVAR_FLAG_SAVED = 0x200,
 		DVAR_FLAG_NORESTART = 0x400,
 		DVAR_FLAG_UNK3 = 0x800,
@@ -37,7 +37,10 @@ namespace game
 		DVAR_TYPE_ENUM = 0x6,
 		DVAR_TYPE_STRING = 0x7,
 		DVAR_TYPE_COLOR = 0x8,
-		DVAR_TYPE_COUNT = 0x9,
+		DVAR_TYPE_INT64 = 0x9,
+		DVAR_TYPE_LINEAR_COLOR_RGB = 0xA,
+		DVAR_TYPE_COLOR_XYZ = 0xB,
+		DVAR_TYPE_COUNT = 0xC,
 	};
 
 	enum DvarSetSource : __int32

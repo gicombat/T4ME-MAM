@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<void(scriptInstance_t inst)>Scr_InitAllocNode{ 0x0, 0x68B870};
 	WEAK symbol<sval_u()>node0{ 0x0, 0x68B900};

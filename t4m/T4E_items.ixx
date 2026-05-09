@@ -39,7 +39,7 @@ export enum perks_e
     PERK_COUNT
 };
 
-export namespace game {
+export namespace T4 {
 
 	WeaponDef** bg_weaponDefs = reinterpret_cast<WeaponDef**>(0x008F6770);
 	AimAssistGlobals* aaGlobArray = reinterpret_cast<AimAssistGlobals*>(0x008E8690);
@@ -116,14 +116,14 @@ void vectoangles(const float* vec, float* angles)
     }
 }
 
-game::dvar_s* __cdecl Dvar_RegisterVariant(
+T4::dvar_s* __cdecl Dvar_RegisterVariant(
     const char* name,
-    game::dvarType32_t type,
-    game::DvarFlags32 flags,
-    game::DvarValue dval,
-    game::DvarLimits dom,
+    T4::dvarType32_t type,
+    T4::DvarFlags32 flags,
+    T4::DvarValue dval,
+    T4::DvarLimits dom,
     const char* desc) {
-    return cdecl_call<game::dvar_s*>(0x5EED90, name, type, flags, dval, dom, desc);
+    return cdecl_call<T4::dvar_s*>(0x5EED90, name, type, flags, dval, dom, desc);
 }
 
 }

@@ -278,7 +278,7 @@ dvar_t* T4::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const ch
 }
 
 // @wrapper — asm usercall to sub_6E8DA0
-int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
+int R_TextWidth(const char* text, int maxChars, T4::Font_s* font)
 {
 	int result;
 	static uintptr_t textwidth_addr = 0x6E8DA0;
@@ -295,12 +295,12 @@ int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
 	return result;
 }
 
-inline float R_NormalizedTextScale(game::Font_s* font, float scale) 
+inline float R_NormalizedTextScale(T4::Font_s* font, float scale) 
 {
 	return scale * 48.0 / (double)font->pixelHeight;
 }
 
-int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale)
+int __cdecl UI_TextWidth(const char* text, int maxChars, T4::Font_s* font, float scale)
 {
 	float v4; // xmm0_4
 	float actualScale; // [esp+10h] [ebp-4h]

@@ -1,4 +1,8 @@
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "StdInc.h"
 #include "MemoryMgr.h"
 #include <safetyhook.hpp>
@@ -79,14 +83,14 @@ dvar_t* cg_fovComp_enable;
 dvar_t* cg_fovComp_fovscale;
 
 
-game::dvar_s* cg_fov_user;
-game::dvar_s* cg_fovscale_user;
+T4::dvar_s* cg_fov_user;
+T4::dvar_s* cg_fovscale_user;
 
 
 void Update_cg_fov_user(float* cg_fov_value) {
-	game::dvar_s* cg_fov_min = *(game::dvar_s**)0x0339CBE0;
+	T4::dvar_s* cg_fov_min = *(T4::dvar_s**)0x0339CBE0;
 
-	game::dvar_s* cg_fov = *(game::dvar_s**)0x0368EB70;
+	T4::dvar_s* cg_fov = *(T4::dvar_s**)0x0368EB70;
 
 	float mult = cg_fov_user->current.value / 65.f;
 	*cg_fov_value = std::clamp(*cg_fov_value * mult, cg_fov_min->current.value, cg_fov_user->domain.value.max);
@@ -94,7 +98,7 @@ void Update_cg_fov_user(float* cg_fov_value) {
 }
 
 void Update_cg_fovscale_user(float* cg_fovscale_value) {
-	game::dvar_s* cg_fovscale = *(game::dvar_s**)0x03688A04;
+	T4::dvar_s* cg_fovscale = *(T4::dvar_s**)0x03688A04;
 	float mult = cg_fovscale_user->current.value / 1.f;
 	*cg_fovscale_value = std::clamp(*cg_fovscale_value * mult, cg_fovscale->domain.value.min, cg_fovscale->domain.value.max);
 
@@ -159,18 +163,7 @@ void __cdecl CG_CalculateWeaponMovement_Debug(const cg_s* cgameGlob, float* orig
 }
 
 
-struct ScreenPlacement
-{
-	float scaleVirtualToReal[2];
-	float scaleVirtualToFull[2];
-	float scaleRealToVirtual[2];
-	float virtualViewableMin[2];
-	float virtualViewableMax[2];
-	float realViewportSize[2];
-	float realViewableMin[2];
-	float realViewableMax[2];
-	float subScreen[2];
-};
+// ScreenPlacement defined in cod/structs.hpp under T4::, exposed via `using namespace T4;` from T4.h.
 
 constexpr auto MEGABYTE = 1048576.0;
 
@@ -211,8 +204,8 @@ void CG_DrawMemoryfunc(float* y) {
 
 inline void Add_User_Fov() {
 
-	cg_fov_user = (game::dvar_s*)T4::Dvar_RegisterFloat("cg_fov_user", 65.f, 1.f, 160.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890514);
-	cg_fovscale_user = (game::dvar_s*)T4::Dvar_RegisterFloat("cg_fovscale_user", 1.f, 0.2f, 2.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890540);
+	cg_fov_user = (T4::dvar_s*)T4::Dvar_RegisterFloat("cg_fov_user", 65.f, 1.f, 160.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890514);
+	cg_fovscale_user = (T4::dvar_s*)T4::Dvar_RegisterFloat("cg_fovscale_user", 1.f, 0.2f, 2.f, DVAR_FLAG_ARCHIVE, (const char*)0x00890540);
 
 	static auto cg_fovscale_hook = safetyhook::create_mid(0x0042DF29, [](SafetyHookContext& ctx) {
 		Update_cg_fovscale_user(&ctx.xmm0.f32[0]);

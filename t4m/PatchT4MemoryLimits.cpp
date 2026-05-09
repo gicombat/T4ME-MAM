@@ -21,6 +21,30 @@
 #define ENTITY_BASE_DWORD   0x18F5D8CU  // dword_18F5D8C: runtime entity-base ptr
 #define NEW_MAX_LOCALIZED   4096
 
+// Shared with the WEAPON asset pool reallocation. cg_weaponInfo MUST be
+// at least this large or the loop in sub_465200/sub_465160/sub_465270
+// will OOB-read into the dvar registration globals at 0x3466040+.
+#define NEW_MAX_WEAPONS     512
+
+// External T4M-side globals that hardcode the OLD vanilla table addresses.
+// We update these to the new heap base after relocation so T4M reconstructions
+// (PM_Weapon, BG_GetWeaponDef, viewmodel pose, etc.) read from the same table
+// vanilla .text writes to. Without this fix-up, T4M code reads the now-empty
+// OLD BSS region → null pointers → crashes in PM_Weapon and friends.
+extern T4::WeaponDef** bg_weaponDefs;  // defined in PatchT4Script.cpp
+
+// Defined in this file (below). Other files extern-declare it to access the
+// runtime-resolved cg_weaponInfo base after SetupCgWeaponInfoTable runs.
+namespace T4M { BYTE* cg_weaponInfo = (BYTE*)0x03463C40; }
+
+// Per-weapon companion tables — vanilla 128-sized OOB targets relocated by
+// SetupBgWeaponDefsTable. T4M code that hardcoded the OLD bases must read these
+// runtime pointers after PatchT4_MemoryLimits has run.
+namespace T4M {
+    void** g_dword8F44A8  = (void**)0x008F44A8;   // per-weapon item-slot table
+    void** g_dword35D0DC8 = (void**)0x035D0DC8;   // per-weapon display name cache
+}
+
 // =====================================================================
 // G_Entity pool expansion
 //
@@ -96,6 +120,357 @@ namespace T4M
 				   newBase, patched);
 	}
 
+	// =====================================================================
+	// cg_weaponInfo table relocation (vanilla 0x3463C40, 128 entries, stride 0x48).
+	//
+	// Vanilla sized for BG_MAX_WEAPONS = 128. With T4M raising the WEAPON
+	// asset pool to NEW_MAX_WEAPONS (= 512), maps with > 128 weapons hit
+	// catastrophic OOB into the dvar globals at 0x3466040+ (written by sub_65ED80).
+	// Result: dvar_t* gets read as a model, eventually crashes in sub_608D80 meld.
+	//
+	// Fix: VirtualAlloc 512 entries, then patch every .text occurrence of the
+	// 8 IDA-labeled addresses inside the table (the only values that appear as
+	// 4-byte immediates in instruction streams). Range scanning is unsafe — too
+	// many false positives (random instruction byte sequences can fall inside
+	// the 0x2400-byte range and get incorrectly rewritten).
+	// =====================================================================
+	static BYTE* g_newCgWeaponInfo = nullptr;
+
+	// Distinct addresses inside cg_weaponInfo[] that appear as immediates in
+	// .text. List from grep on the IDA dump (`^(dword|unk)_3463C[0-9A-F]+`):
+	//   0x3463C40 (base)              0x3463C88 (entry 1 + 0x00 = base+0x48)
+	//   0x3463C70 (entry 0 + 0x30)    0x3463C98 (entry 1 + 0x10 = base+0x58)
+	//   0x3463C74 (entry 0 + 0x34)    0x3463CB4 (entry 1 + 0x6C? — base+0x74)
+	//   0x3463C7C (entry 0 + 0x3C)    0x3463CB8 (entry 1 + 0x70? — base+0x78)
+	// Each one gets shifted by the same delta so that all field offsets stay
+	// consistent with the new base.
+	static const DWORD k_cgWeaponInfoAddrs[] = {
+		0x3463C40, 0x3463C70, 0x3463C74, 0x3463C7C,
+		0x3463C88, 0x3463C98, 0x3463CB4, 0x3463CB8,
+	};
+
+	static void SetupCgWeaponInfoTable()
+	{
+		if (g_newCgWeaponInfo) return;
+
+		const DWORD OLD_TABLE_BASE = 0x03463C40;
+		const DWORD ENTRY_STRIDE   = 0x48;
+
+		g_newCgWeaponInfo = (BYTE*)VirtualAlloc(
+			NULL,
+			(SIZE_T)NEW_MAX_WEAPONS * ENTRY_STRIDE,
+			MEM_COMMIT | MEM_RESERVE,
+			PAGE_READWRITE);
+
+		if (!g_newCgWeaponInfo) return;
+
+		// BSS-equivalent zero init.
+		memset(g_newCgWeaponInfo, 0, (SIZE_T)NEW_MAX_WEAPONS * ENTRY_STRIDE);
+
+		const DWORD newBase = (DWORD)g_newCgWeaponInfo;
+		const DWORD delta   = newBase - OLD_TABLE_BASE;
+
+		const DWORD TEXT_START = 0x00401000U;
+		const DWORD TEXT_END   = 0x00800000U;
+		DWORD oldProt;
+		VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+		               PAGE_EXECUTE_READWRITE, &oldProt);
+
+		// Exact-match scan: only shift values that exactly equal one of the
+		// 8 known table addresses. Full 32-bit constants are extremely unlikely
+		// to appear as random instruction bytes by coincidence.
+		for (BYTE* bp = (BYTE*)TEXT_START; bp < (BYTE*)(TEXT_END - 3); ++bp) {
+			DWORD v = *(DWORD*)bp;
+			for (DWORD known : k_cgWeaponInfoAddrs) {
+				if (v == known) {
+					*(DWORD*)bp = v + delta;
+					break;
+				}
+			}
+		}
+
+		// Update T4M's runtime pointer for code paths that hardcoded the OLD
+		// base inline (e.g., PatchT4MAM_LowReady.cpp).
+		T4M::cg_weaponInfo = g_newCgWeaponInfo;
+
+		// Intentionally leave .text writable — see comment in main body.
+	}
+
+	// =====================================================================
+	// Per-weapon pointer tables relocation (7 tables, vanilla 128 × 4 bytes each).
+	//
+	// `sub_41D2A0` (BG init) populates 5 separate per-weapon arrays at indices 0
+	// with the same default weapon pointer:
+	//   0x8F6570 (count: 0x8F64FC)  — purpose TBD
+	//   0x8F6770 (count: 0x8F6B74)  — bg_weaponDefs (primary def pointers)
+	//   0x8F6970 (count: 0x8F6B70)  — alt def variant
+	//   0x8F6B78 (count: 0x8F6FA8)  — alt def variant
+	//   0x8F6FB0 (count: ?)          — alt def variant
+	// Two more 128×4 companions are populated by CG_RegisterWeapon (sub_464BF0):
+	//   0x8F44A8                    — per-weapon item-slot ptr (cgw[+0x38])
+	//   0x35D0DC8                   — per-weapon display name cache
+	//
+	// All are sized for vanilla BG_MAX_WEAPONS = 128. With T4M raising WEAPON
+	// pool, indices ≥ 128 OOB into adjacent tables/structs, causing weapons to
+	// read each other's data (wrong names, missing ammo, "(NULL)" weapon names),
+	// and clobbering adjacent globals in the case of 0x8F44A8 / 0x35D0DC8 — the
+	// suspected source of HUD/stance/hitmarker image corruption per
+	// plan_weapons_full_detour.md §3.A.
+	//
+	// 0x8F6770 has an extra alias 0x8F6758 (= base - 0x18) used in 2 sites
+	// (sub_451180, sub_451310) where the weapon index is pre-shifted by +6.
+	// The 2 new tables (8F44A8, 35D0DC8) have no known shifted alias.
+	// =====================================================================
+	struct PerWeaponTable {
+		DWORD oldBase;
+		BYTE** newBasePtr;       // out: where to store the heap allocation
+		bool hasAliasMinus18;    // true for 0x8F6770 only
+	};
+
+	static BYTE* g_newTable8F6570  = nullptr;
+	static BYTE* g_newBgWeaponDefs = nullptr;  // 0x8F6770
+	static BYTE* g_newTable8F6970  = nullptr;
+	static BYTE* g_newTable8F6B78  = nullptr;
+	static BYTE* g_newTable8F6FB0  = nullptr;
+	static BYTE* g_newTable8F44A8  = nullptr;  // per-weapon item-slot ptr
+	static BYTE* g_newTable35D0DC8 = nullptr;  // per-weapon display name cache
+
+	static PerWeaponTable g_perWeaponTables[] = {
+		// All 5 per-weapon tables initialized by sub_41D2A0. With 200+ weapons,
+		// every one OOBs into adjacent BSS — and crucially, dword_8F6570 ends
+		// EXACTLY at bg_weaponDefs (0x8F6770), so its OOB writes corrupt
+		// bg_weaponDefs[0..]. dword_8F6970 ends at the next table, etc.
+		// Confirmed crash 2026-05-08 in sub_41CEF0 at offset 0x57:
+		//   "mov edx, [edx+410h]" with edx=1 from dword_8F6570[ebx*4] OOB read.
+		{ 0x008F6770, &g_newBgWeaponDefs, true  },
+		{ 0x008F6570, &g_newTable8F6570,  false },
+		{ 0x008F6970, &g_newTable8F6970,  false },
+		{ 0x008F6B78, &g_newTable8F6B78,  false },
+		{ 0x008F6FB0, &g_newTable8F6FB0,  false },
+		// 2 OOB companions (dword_8F44A8, dword_35D0DC8) DISABLED 2026-05-09 —
+		// brute-force .text scan caused a false-positive replacement that
+		// crashed sub_41D310 stride-0x200 init loop on a vanilla idx<128 map.
+		// Re-introduce only with an explicit known-address list (see
+		// SetupCgWeaponInfoTable's k_cgWeaponInfoAddrs[] for the pattern), once
+		// the actual ref sites have been enumerated from the IDA dump.
+		// { 0x008F44A8, &g_newTable8F44A8,  false },
+		// { 0x035D0DC8, &g_newTable35D0DC8, false },
+	};
+
+	static void SetupBgWeaponDefsTable()
+	{
+		if (g_newBgWeaponDefs) return;
+
+		const DWORD ENTRY_STRIDE = 0x4;
+		const SIZE_T ALLOC_SIZE  = (SIZE_T)NEW_MAX_WEAPONS * ENTRY_STRIDE;
+
+		// 1. Allocate a fresh heap buffer for each table.
+		for (auto& t : g_perWeaponTables) {
+			BYTE* buf = (BYTE*)VirtualAlloc(NULL, ALLOC_SIZE,
+			                                MEM_COMMIT | MEM_RESERVE,
+			                                PAGE_READWRITE);
+			if (!buf) return;  // partial init is OK — leftover tables stay vanilla
+			memset(buf, 0, ALLOC_SIZE);
+			*t.newBasePtr = buf;
+		}
+
+		// 2. Single .text scan that handles all 5 tables + the one alias.
+		const DWORD TEXT_START = 0x00401000U;
+		const DWORD TEXT_END   = 0x00800000U;
+		DWORD oldProt;
+		VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+		               PAGE_EXECUTE_READWRITE, &oldProt);
+
+		for (BYTE* bp = (BYTE*)TEXT_START; bp < (BYTE*)(TEXT_END - 3); ++bp) {
+			DWORD v = *(DWORD*)bp;
+			bool matched = false;
+			for (auto& t : g_perWeaponTables) {
+				if (v == t.oldBase) {
+					*(DWORD*)bp = (DWORD)*t.newBasePtr;
+					matched = true;
+					break;
+				}
+				if (t.hasAliasMinus18 && v == t.oldBase - 0x18) {
+					*(DWORD*)bp = (DWORD)*t.newBasePtr - 0x18;
+					matched = true;
+					break;
+				}
+			}
+			(void)matched;
+		}
+		// Leave .text writable — see SetupCgWeaponInfoTable for rationale.
+
+		// 3. Update T4M-side runtime pointers for hardcoded inline casts.
+		::bg_weaponDefs    = (T4::WeaponDef**)g_newBgWeaponDefs;
+		// dword_8F44A8 / dword_35D0DC8 are NOT in this brute-scan because they
+		// have collateral patches (stride 0x200, shl 7, mask 0x7F) that need
+		// coordinated edits — handled by their own dedicated setup functions.
+	}
+
+	// =====================================================================
+	// dword_8F44A8 — vanilla 16 sub-tables × 128 weapons × 4 bytes = 8 KB struct.
+	// (NOT a simple per-weapon table — see analysis/dword_8F44A8_and_35D0DC8_RE.md.)
+	// Sub-table 0 = "weapon registered" bitmap (cmp at sub_51A4BD, write at sub_41D310).
+	// Sub-tables 1..15 = misc per-weapon flags, written by sub_41D310 init loop with
+	// stride 0x200 = 128 entries × 4 bytes per sub-table.
+	//
+	// To support 512 weapons we extend the layout to 16 × 512 × 4 = 32 KB. The
+	// composite encoding becomes `slot*512 + weapon_idx` (was `slot*128 + weapon_idx`).
+	// Sites to patch (PHASE A — byte-level immediates):
+	//   13 base addresses (`lea/cmp/sub` references to 0x008F44A8) → newBase
+	//   2 rep-stosd targets (`mov edi, 0x008F44AC`) → newBase + 4
+	//   1 init count (`mov ecx, 0x7FF` in sub_41D2A0) → 0x1FFF
+	//   1 init stride (`add eax, 0x200` in sub_41D310 loop) → 0x800
+	//   3 composite indexers (`shl reg, 7` in sub_40FAA0, sub_4FDF90, sub_50E3A0) → shl 9
+	//
+	// PHASE B (function-level detours, NOT in this file): sub_4FD500, sub_4FD590,
+	// sub_4FEAB0 reverse-mappers — they sign-extend from 7 bits using `or reg, 0xFFFFFF80`
+	// in 3-byte short form `83 CX 80`, which can't expand to 9-bit form `81 CX 00 FE FF FF`
+	// in place. Reconstructed in C++ — see PatchT4MAM_Dword8F44A8_Detours.cpp.
+	// =====================================================================
+	static BYTE* g_newDword8F44A8 = nullptr;
+
+	// 13 base addresses where 0x008F44A8 appears as a 4-byte immediate / disp32.
+	// Each VA points at the first byte of the 4-byte field within the instruction.
+	// Source : PE binary scan + IDA xref cross-check (audit doc §1.9).
+	static const DWORD k_dword8F44A8_BaseSites[] = {
+		0x0040FAD1,  // sub_40FAA0 — composite indexer (after shl esi,7)
+		0x0041D331,  // sub_41D310 — init loop entry
+		0x00464C4B,  // sub_464BF0 (CG_RegisterWeapon) — write itemSlotPtr
+		0x004F2B2C,  // sub_4F2B25 — direct subtable_0 lookup
+		0x004FD50F,  // sub_4FD500 — reverse-map (Phase B detours this whole fn)
+		0x004FD5A0,  // sub_4FD590 — reverse-map (Phase B detours this whole fn)
+		0x004FDFEB,  // sub_4FDF90 — composite indexer (after shl ebp,7)
+		0x004FEAB1,  // sub_4FEAB0 — reverse-map (Phase B detours this whole fn)
+		0x0050E43D,  // sub_50E3A0 — composite indexer
+		0x0050E446,  // sub_50E3A0 — pointer→idx (returns composite, no mask)
+		0x0051A4E2,  // sub_51A4BD — "Item entity is not a weapon" check
+		0x00522D76,  // sub_522D6F — direct subtable_0 lookup
+		0x005460F0,  // sub_5460B0 — direct subtable_0 lookup
+	};
+
+	// 2 sites with 0x008F44AC immediate (rep stosd target = base + 4).
+	static const DWORD k_dword8F44A8_RepStosdSites[] = {
+		0x0041D2F6,  // sub_41D2A0 — main BG init zero-pass
+		0x0041D3C7,  // sub_41D3A0 — secondary init
+	};
+
+	// 3 sites with `shl reg, 7` (composite encoding * 128). Each VA points at the
+	// imm8 (third byte of `C1 EX 07` encoding). Patched 0x07 → 0x09 (= shift by 9 = * 512).
+	static const DWORD k_dword8F44A8_Shl7Sites[] = {
+		0x0040FACB,  // sub_40FAA0 — `shl esi, 7`
+		0x004FDFE3,  // sub_4FDF90 — `shl ebp, 7`
+		0x0050E437,  // sub_50E3A0 — `shl esi, 7`
+	};
+
+	// 3 sites with `and reg, 0x8000007F` (low-7-bit mask + sign bit) paired with
+	// the sub-form base patch in reverse-mappers. Each VA points at the imm32.
+	// Patched 0x8000007F → 0x800001FF (low 9 bits + sign bit, supports idx 0..511).
+	// The follow-on `or reg, 0xFFFFFF80` sign-ext block is DEAD CODE in our setup
+	// (composite_idx is always ≥ 0 for ptrs within our buffer → JNS taken → block
+	// skipped) so it does NOT need patching despite being encoded in 3-byte short form.
+	static const DWORD k_dword8F44A8_AndMaskSites[] = {
+		0x004FD517,  // sub_4FD500 — `25 [imm32]` form (and eax)
+		0x004FD64B,  // sub_4FD590 — `81 E7 [imm32]` form (and edi)
+		0x004FEABE,  // sub_4FEAB0 — `81 E5 [imm32]` form (and ebp)
+	};
+
+	// 2 sites with `sar eax, 7` (composite >> 7 = slot extraction in 16x128 layout)
+	// in reverse-mappers that need slot indexing. Patched 7 → 9 (= composite >> 9
+	// for 16x512 layout). imm8 at +2 of `C1 F8 07`.
+	// Note: the prior `and edx, 0x7Fh` is dead code (cdq produces edx=0 for non-
+	// negative composite, masking 0 yields 0, no correction needed) — skipped.
+	static const DWORD k_dword8F44A8_Sar7Sites[] = {
+		0x004FD648,  // sub_4FD590 — slot extract
+		0x004FEADF,  // sub_4FEAB0 — slot extract
+	};
+
+	static void SetupDword8F44A8Table()
+	{
+		// 16 sub-tables × NEW_MAX_WEAPONS × 4 bytes = 32 KB for NEW_MAX_WEAPONS=512.
+		const SIZE_T ALLOC_SIZE = 16 * (SIZE_T)NEW_MAX_WEAPONS * 4;
+		g_newDword8F44A8 = (BYTE*)VirtualAlloc(NULL, ALLOC_SIZE,
+		                                       MEM_COMMIT | MEM_RESERVE,
+		                                       PAGE_READWRITE);
+		if (!g_newDword8F44A8) return;
+		memset(g_newDword8F44A8, 0, ALLOC_SIZE);
+
+		const DWORD newBase = (DWORD)g_newDword8F44A8;
+
+		// All immediate patches need .text writable. We unprotect the smallest
+		// span covering every site, in one shot, and leave it writable (project
+		// convention — see SetupCgWeaponInfoTable).
+		const DWORD TEXT_START = 0x00401000U;
+		const DWORD TEXT_END   = 0x00800000U;
+		DWORD oldProt;
+		VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+		               PAGE_EXECUTE_READWRITE, &oldProt);
+
+		// (1) 13 base patches — replace 0x008F44A8 immediate with newBase.
+		for (DWORD va : k_dword8F44A8_BaseSites) {
+			*(DWORD*)va = newBase;
+		}
+
+		// (2) 2 rep-stosd target patches — replace 0x008F44AC with newBase + 4.
+		for (DWORD va : k_dword8F44A8_RepStosdSites) {
+			*(DWORD*)va = newBase + 4;
+		}
+
+		// (3) Init count — `mov ecx, 0x7FF` → `mov ecx, 0x1FFF` (rep stosd zeros 32 KB - 4).
+		*(DWORD*)0x0041D2F1 = 0x00001FFF;
+
+		// (4) Init stride — `add eax, 0x200` → `add eax, 0x800` (sub_41D310 loop).
+		*(DWORD*)0x0041D347 = 0x00000800;
+
+		// (5) 3 composite-encoder shifts — `shl reg, 7` → `shl reg, 9`.
+		for (DWORD va : k_dword8F44A8_Shl7Sites) {
+			*(BYTE*)va = 0x09;
+		}
+
+		// (6) 3 reverse-mapper masks — `and reg, 0x8000007F` → `0x800001FF`.
+		for (DWORD va : k_dword8F44A8_AndMaskSites) {
+			*(DWORD*)va = 0x800001FF;
+		}
+
+		// (7) 2 slot-extract shifts — `sar eax, 7` → `sar eax, 9`.
+		for (DWORD va : k_dword8F44A8_Sar7Sites) {
+			*(BYTE*)va = 0x09;
+		}
+
+		// .text intentionally left writable — see SetupCgWeaponInfoTable comment.
+
+		T4M::g_dword8F44A8 = (void**)g_newDword8F44A8;
+	}
+
+	// =====================================================================
+	// dword_35D0DC8 — per-weapon localized display name cache (vanilla 128 × 4 = 512 B).
+	// Single .text writer at VA 0x00464E52 (sub_464BF0 / CG_RegisterWeapon, loc_464E4F):
+	//   89 04 B5 C8 0D 5D 03   mov [esi*4 + 0x035D0DC8], eax
+	// Adjacent .data at 0x35D0FCC..0x35D0FFC stores HUD material/font handles
+	// registered by sub_6621B0 and read by sub_44FC10 (HUD render). At idx≥129
+	// the OOB write clobbers those handles → image corruption (HUD/stance/
+	// hitmarker show wrong sprites). Reloc target = NEW_MAX_WEAPONS × 4 = 2 KB.
+	// See analysis/dword_8F44A8_and_35D0DC8_RE.md §2.
+	// =====================================================================
+	static void SetupDword35D0DC8Table()
+	{
+		const SIZE_T ALLOC_SIZE = (SIZE_T)NEW_MAX_WEAPONS * 4;
+		BYTE* buf = (BYTE*)VirtualAlloc(NULL, ALLOC_SIZE,
+		                                MEM_COMMIT | MEM_RESERVE,
+		                                PAGE_READWRITE);
+		if (!buf) return;
+		memset(buf, 0, ALLOC_SIZE);
+
+		// Patch the single immediate (4-byte disp32 inside the mov instruction).
+		const DWORD IMM_VA = 0x00464E52;
+		DWORD oldProt;
+		VirtualProtect((LPVOID)IMM_VA, 4, PAGE_EXECUTE_READWRITE, &oldProt);
+		*(DWORD*)IMM_VA = (DWORD)buf;
+		// Leave .text writable — see SetupCgWeaponInfoTable for rationale.
+
+		T4M::g_dword35D0DC8 = (void**)buf;
+	}
+
 	static SafetyHookMid GEntityPool_hook;
 
 	static void PatchT4_GEntityPool()
@@ -120,7 +495,22 @@ namespace T4M
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_IMAGE, 8192);
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_LOADED_SOUND, 4096);
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_MATERIAL, 4096);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_WEAPON, 512);
+		T4M::DB_ReallocXAssetPool(ASSET_TYPE_WEAPON, NEW_MAX_WEAPONS);
+		// CG-side per-weapon table (cg_weaponInfo[128] vanilla) must match the
+		// raised WEAPON pool size or sub_465200's iterator OOBs into adjacent
+		// dvar registration globals at 0x3466040+. See SetupCgWeaponInfoTable().
+		T4M::SetupCgWeaponInfoTable();
+		// dword_35D0DC8 — per-weapon localized display name cache (1 .text site).
+		// Adjacent HUD material handles get clobbered for idx≥129 → image
+		// corruption. Trivial single-immediate patch.
+		T4M::SetupDword35D0DC8Table();
+		// dword_8F44A8 — vanilla 8 KB struct (16 sub-tables × 128 × 4) extended
+		// to 32 KB (16 × 512 × 4). 25 byte-level patches in-place — see
+		// SetupDword8F44A8Table() and analysis/dword_8F44A8_and_35D0DC8_RE.md.
+		T4M::SetupDword8F44A8Table();
+		// bg_weaponDefs[128] vanilla — pointer table read by sub_402940 etc.
+		// Must match NEW_MAX_WEAPONS too. See SetupBgWeaponDefsTable().
+		T4M::SetupBgWeaponDefsTable();
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_XMODEL, 4096);
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_RAWFILE, 2048);
 		T4M::DB_ReallocXAssetPool(ASSET_TYPE_PHYSCONSTRAINTS, 256);
@@ -153,7 +543,6 @@ namespace T4M
 		// pool_base + 0x7FFF0, and other variables follow immediately after.
 		// Must allocate a new pool and patch all 24 code references.
 		// =====================================================================
-
 
 		// Allocate new pool (persists for lifetime of process)
 		static XAssetEntryPoolEntry* newPool = (XAssetEntryPoolEntry*)VirtualAlloc(

@@ -3,7 +3,7 @@
 #define WEAK __declspec(selectany)
 #define NAKED __declspec(naked)
 
-#define SELECT(mp, sp) (game::environment::t4mp() ? mp : sp)
+#define SELECT(mp, sp) (T4::environment::t4mp() ? mp : sp)
 #define ASSIGN(type, mp, sp) reinterpret_cast<type>(SELECT(mp, sp))
 #define CALL_ADDR(mp, sp) ASSIGN(void*, mp, sp)
 
@@ -11,7 +11,7 @@
 	((sizeof(arrayn)) / (sizeof(arrayn[0])))
 
 
-namespace game
+namespace T4
 {
 	enum gamemode
 	{

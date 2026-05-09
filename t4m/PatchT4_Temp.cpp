@@ -13,6 +13,8 @@
 
 #include "StdInc.h"
 #include "T4.h"
+#include "MemoryMgr.h"
+#include <safetyhook.hpp>
 
 // WSAStartup / WSADATA used by the Com_Init_Inner reconstruction.  StdInc.h
 // sets WIN32_LEAN_AND_MEAN, so winsock is not pulled in by <windows.h>.
@@ -22,6 +24,22 @@
 // timeGetTime — same include pattern as T4.cpp.
 #include <Timeapi.h>
 #pragma comment(lib, "winmm.lib")
+
+// fopen_s / fprintf / vfprintf for the meld diagnostic logger.
+#include <cstdio>
+#include <cstdarg>
+
+// bg_weaponDefs is the relocated weapon-defs pointer table (defined in
+// PatchT4Script.cpp, updated to the new heap by SetupBgWeaponDefsTable in
+// PatchT4MemoryLimits.cpp). We dereference [bg_weaponDefs[idx] + 0] to get
+// the weapon's internal name for diagnostic logs.
+extern T4::WeaponDef** bg_weaponDefs;
+namespace T4M { extern void** g_dword8F44A8; extern void** g_dword35D0DC8; }
+
+// cg_weaponInfo is the relocated CG-side per-weapon table (see
+// SetupCgWeaponInfoTable in PatchT4MemoryLimits.cpp). Used by the
+// CG_RegisterWeapon reconstruction at the bottom of this file.
+namespace T4M { extern BYTE* cg_weaponInfo; }
 
 // ==========================================================
 // Faithful C++ reconstructions of 6 engine functions identified from
@@ -989,13 +1007,783 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
     T4::Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
 }
 
+// Persistent meld diagnostic logger — writes to t4m_meld_diag.log next to the
+// .exe. Console scrolls past, this file does not. File-scope so the static
+// FILE* survives across hook callbacks and static auto initialization.
+static FILE* g_meld_log = nullptr;
+static void MeldLog(const char* fmt, ...)
+{
+    if (!g_meld_log) {
+        fopen_s(&g_meld_log, "t4m_meld_diag.log", "a");
+        if (g_meld_log) {
+            fprintf(g_meld_log, "\n=== T4M meld diag (new session) ===\n");
+        }
+    }
+    if (!g_meld_log) return;
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(g_meld_log, fmt, ap);
+    va_end(ap);
+    fflush(g_meld_log);
+}
+
+// Hardware watchpoint on `unk_351FFFC + 0x1B0` (= absolute 0x352101AC). This
+// is the centity_t.weapon field that the FP draw path reads via sub_4697A0
+// and that ends up truncated to 7 bits (165 → 37) for high-idx weapons.
+//
+// Strategy:
+//   - VEH catches EXCEPTION_SINGLE_STEP raised by Dr0 on write.
+//   - Dr7 enables Dr0 with R/W=01 (write), LEN=11 (4 bytes).
+//   - On hit, log EIP + the value being stored. Set RF in EFlags so the
+//     offending instruction is allowed to complete without re-trigger.
+//   - Dr0 is armed lazily on the first invocation of the FP draw midhook
+//     (= we're on the game thread there, so SetThreadContext(self) covers it).
+// Step 1 was 0x035201AC (= unk_351FFFC + 0x1B0). Writer found at 0x004106C2:
+//   movzx edx, byte ptr [eax+104h]   ; eax=cg=0x0351DF50, so source = 0x0351E054
+//   mov   [ecx+0E0h], edx            ; ecx+0xE0 = unk_351FFFC + 0x1B0
+// edx already arrives = 0x25 (=37). Truncation is upstream — chase it by
+// watching the SOURCE byte at 0x0351E054 (= cg + 0x104).
+constexpr DWORD WEAPON_WATCH_ADDR = 0x0351E054;  // = cg_state + 0x104 (ps.weapon byte)
+
+static LONG CALLBACK WeaponWriteWatchVEH(EXCEPTION_POINTERS* ep)
+{
+    if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+        if (ep->ContextRecord->Dr6 & 0x1) {
+            DWORD eip = ep->ContextRecord->Eip;
+            DWORD curVal = *(volatile DWORD*)WEAPON_WATCH_ADDR;
+            MeldLog("[WriteWatch] EIP=0x%08X  postVal=%u  eax=0x%08X ebx=0x%08X ecx=0x%08X edx=0x%08X esi=0x%08X edi=0x%08X ebp=0x%08X\n",
+                eip, curVal,
+                ep->ContextRecord->Eax, ep->ContextRecord->Ebx, ep->ContextRecord->Ecx,
+                ep->ContextRecord->Edx, ep->ContextRecord->Esi, ep->ContextRecord->Edi,
+                ep->ContextRecord->Ebp);
+            ep->ContextRecord->Dr6 &= ~0xFu;
+            ep->ContextRecord->EFlags |= 0x10000u;  // RF: don't re-trigger on instruction restart
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+// Worker-thread payload: suspends the captured game thread, sets DR0, resumes.
+// SetThreadContext on GetCurrentThread() silently no-ops for debug registers
+// on x86 user mode, so we *must* operate from a different thread.
+static DWORD WINAPI ArmWeaponWatchWorker(LPVOID lpParam)
+{
+    DWORD gameTid = (DWORD)(uintptr_t)lpParam;
+    MeldLog("[WriteWatch] worker started, gameTid=%u\n", gameTid);
+    HANDLE h = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, gameTid);
+    if (!h) {
+        MeldLog("[WriteWatch] OpenThread tid=%u failed err=%u\n", gameTid, GetLastError());
+        return 1;
+    }
+    if (SuspendThread(h) == (DWORD)-1) {
+        MeldLog("[WriteWatch] SuspendThread failed err=%u\n", GetLastError());
+        CloseHandle(h);
+        return 1;
+    }
+    CONTEXT c = {0};
+    c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+    if (!GetThreadContext(h, &c)) {
+        MeldLog("[WriteWatch] GetThreadContext failed err=%u\n", GetLastError());
+        ResumeThread(h);
+        CloseHandle(h);
+        return 1;
+    }
+    c.Dr0 = WEAPON_WATCH_ADDR;
+    c.Dr1 = 0;
+    c.Dr2 = 0;
+    c.Dr3 = 0;
+    c.Dr6 = 0;
+    c.Dr7 = (1u << 0) | (1u << 16) | (3u << 18);  // L0, R/W=write, LEN=4
+    BOOL ok = SetThreadContext(h, &c);
+    DWORD setErr = ok ? 0 : GetLastError();
+    ResumeThread(h);
+    CloseHandle(h);
+    if (!ok) {
+        MeldLog("[WriteWatch] SetThreadContext failed err=%u\n", setErr);
+        return 1;
+    }
+    MeldLog("[WriteWatch] DR0 armed at 0x%08X on tid=%u (write, 4 bytes)\n", WEAPON_WATCH_ADDR, gameTid);
+    return 0;
+}
+
+static void EnableWeaponWriteWatch()
+{
+    static bool s_armed = false;
+    if (s_armed) return;
+    s_armed = true;
+    DWORD gameTid = GetCurrentThreadId();
+    MeldLog("[WriteWatch] arming requested, gameTid=%u\n", gameTid);
+    HANDLE worker = CreateThread(nullptr, 0, ArmWeaponWatchWorker, (LPVOID)(uintptr_t)gameTid, 0, nullptr);
+    if (!worker) {
+        MeldLog("[WriteWatch] CreateThread failed err=%u\n", GetLastError());
+    } else {
+        CloseHandle(worker);
+    }
+}
+
 // =====================================================================
 // PatchT4_Temp — installs experimental / temporary detours.
 //
-// Not called by default. To activate, add `PatchT4_Temp();` inside
-// PatchT4() (PatchT4.cpp) and uncomment the detour line(s) below.
+// Currently holds two byte-level patches that emerged from the 158-weapon
+// debugging session (2026-05-08). Both are wired in by default so that
+// removing PatchT4_Temp() from the init chain disables them cleanly.
 // =====================================================================
+
 void PatchT4_Temp()
 {
+    // Register VEH for the weapon-field write watchpoint. DR0 itself is armed
+    // lazily inside the sub_4697A0 midhook (game thread).
+    AddVectoredExceptionHandler(1, WeaponWriteWatchVEH);
 
+    // =====================================================================
+    // Extend the item_id encoding in sub_440890 from 7-bit to 9-bit weap_idx.
+    //
+    // Vanilla packing: weap_idx = item_id & 0x7F (max 128), model_idx = item_id >> 7.
+    // With WEAPON pool raised to NEW_MAX_WEAPONS (512), user maps spawn items
+    // with item_id >= 128 expecting direct weapon index. The vanilla decode
+    // mis-interprets these as (weap=N&0x7F, model_slot=N>>7), failing the
+    // weaponDef[0]→required_models[1] validation.
+    //
+    // New packing: weap_idx = item_id & 0x1FF (max 512), model_idx = item_id >> 9.
+    // For item_id 0..511 (= every weapon in T4M's expanded pool, model slot 0).
+    // Items packed into model slot 1 (id 512..1023) still work but are
+    // currently unused.
+    //
+    // Caveat: if vanilla content uses item_id 128..255 (= weap=N&0x7F, model=1
+    // under old encoding), they will now be reinterpreted as (weap=128..255,
+    // model=0). Acceptable for this build since we have direct-index items only.
+    //
+    // Patch sites:
+    //   sub_440890+0x37 = 0x4408C7  and ecx, 8000007Fh → and ecx, 800001FFh
+    //   sub_440890+0x51 = 0x4408E1  sar eax, 7         → sar eax, 9
+    // Both encodings are same byte length (6 and 3 bytes resp.), in-place safe.
+    //
+    // The validation jnz at 0x4408EF is intentionally LEFT INTACT — any
+    // item_id that still mis-decodes will fatal-error visibly so we can
+    // diagnose remaining issues instead of silently rendering NULL models.
+    // =====================================================================
+    Memory::VP::Patch(0x004408C7 + 2, (uint32_t)0x800001FF); // displacement of `and ecx, imm32`
+    Memory::VP::Patch<uint8_t>(0x004408E1 + 2, 9);           // shift count of `sar eax, imm8`
+
+    // =====================================================================
+    // Latent vanilla bug fix in sub_464F90 (CG model-attachment array build).
+    //
+    // sub_464F90 builds a 5-entry array of {modelPtr, word, byte} structs at
+    // var_24 (= entry-0x24). Each entry is 8 bytes wide, so 5 entries span
+    // [entry-0x24 .. entry+0x10). But the function only allocates 0x2C bytes
+    // of locals (`sub esp, 2Ch`), so entry [4] (at entry-0x04..entry+0x04)
+    // overlaps the function's OWN return address (corrupting bytes 0..2 of
+    // the saved ret addr).
+    //
+    // The 5th entry is only written when [esi+0x10] (the 4th attachment
+    // slot of the per-weapon table) is non-zero. By forcing ecx=0 at the
+    // [esi+0x10] check, we make the jz fall-through and skip the entry [4]
+    // write block + the `add eax,1` after it. Cap is now 4 attachments.
+    //
+    // Patch site: sub_464F90+0xFF = 0x46508F
+    //   Original: 8B 4E 10        mov  ecx, [esi+10h]   (3 bytes)
+    //   Patched:  33 C9 90        xor  ecx, ecx ; nop   (3 bytes)
+    // ebx is reliably 0 from `xor ebx, ebx` at function start, so the
+    // following `cmp ecx, ebx` always tests 0 == 0 → jz taken.
+    // =====================================================================
+    Memory::VP::Patch(0x0046508F, { 0x33, 0xC9, 0x90 });
+
+    // =====================================================================
+    // sub_464F90 (CG attachment-meld builder) — bail when ANY entry.ptr is invalid.
+    //
+    // First crash (2026-05-08): array[0].ptr = NULL (cached cg_weaponInfo+0x4
+    // was 0). Fixed by NULL guard.
+    // Second crash (2026-05-08): array[1].ptr = 5 (small-integer garbage in
+    // `[ebp+0]` = WeaponDef.someArray[edi] read). NULL guard didn't catch.
+    //
+    // Generalized guard: validate ALL `count` entries (count = eax at loc_4650AD).
+    // Any pointer < 0x10000 (= null page, invalid on Win32) → bail to loc_4650F6.
+    //
+    // Layout at loc_4650AD: var_24..var_E is a count×8 byte array. Entry i has
+    //   .ptr at  [esp + 0x18 + i*8]
+    //   .word at [esp + 0x1C + i*8]
+    //   .byte at [esp + 0x1E + i*8]
+    // count is in eax (set to 2..5 by the upstream branches).
+    //
+    // The crash data showed weapon names like "viewmodel_weapon_usa_springfielda3a4"
+    // in the stack at the time, so the failing path is per-weapon attachment
+    // resolution where one of the model pointers is corrupted.
+    // =====================================================================
+    // sub_4697A0 entry diag — captures weapon idx from arg_8 and arg_C structs.
+    // sub_4697A0 reads:
+    //   esi = [arg_8+0xFC]   (some weapon idx field)
+    //   esi = [arg_C+0x1B0]  (alt weapon idx field, when first branch not taken)
+    // Then bg_weaponDefs[esi*4] for the weapon def. If esi here is truncated
+    // (= 37 for thompson 165), we've found the truncation downstream of all
+    // our previous hooks.
+    static auto sub_4697A0_diag = safetyhook::create_mid(0x004697A0, [](SafetyHookContext& ctx) {
+        EnableWeaponWriteWatch();  // arm DR0 on game thread (no-op after first call)
+        static DWORD lastIdx = 0xFFFFFFFF;
+        DWORD arg_0 = *(DWORD*)(ctx.esp + 4);
+        DWORD arg_4 = *(DWORD*)(ctx.esp + 8);
+        DWORD arg_8 = *(DWORD*)(ctx.esp + 0xC);
+        DWORD arg_C = *(DWORD*)(ctx.esp + 0x10);
+        DWORD arg_10 = *(DWORD*)(ctx.esp + 0x14);
+
+        DWORD idx_FC = 0;
+        DWORD idx_1B0 = 0;
+        if (arg_8 > 0x10000) idx_FC = *(DWORD*)(arg_8 + 0xFC);
+        if (arg_C > 0x10000) idx_1B0 = *(DWORD*)(arg_C + 0x1B0);
+
+        DWORD reportIdx = idx_FC;
+        if (reportIdx == lastIdx) return;
+        lastIdx = reportIdx;
+
+        const char* nmFC = "<n/a>";
+        const char* nm1B0 = "<n/a>";
+        if (idx_FC < 512 && ::bg_weaponDefs && ::bg_weaponDefs[idx_FC]) {
+            const char* n = *(const char**)::bg_weaponDefs[idx_FC];
+            if (n && (uintptr_t)n > 0x10000) nmFC = n;
+        }
+        if (idx_1B0 < 512 && ::bg_weaponDefs && ::bg_weaponDefs[idx_1B0]) {
+            const char* n = *(const char**)::bg_weaponDefs[idx_1B0];
+            if (n && (uintptr_t)n > 0x10000) nm1B0 = n;
+        }
+        MeldLog("[Render4697A0] arg_8+0xFC=%u(%s)  arg_C+0x1B0=%u(%s)  arg_0=0x%08X arg_4=0x%08X arg_8=0x%08X arg_C=0x%08X arg_10=0x%08X\n",
+            idx_FC, nmFC, idx_1B0, nm1B0,
+            arg_0, arg_4, arg_8, arg_C, arg_10);
+    });
+
+    // sub_465CE0 entry diag — captures actual weapon idx from playerState
+    // pointed by edx+0AAC98h (= the cg-side player struct). edx is the input.
+    // The function then does:
+    //   mov eax, [esi+0FCh]    OR [esi+104h]  (= ps.weapon)
+    //   mov ebx, bg_weaponDefs[eax*4]
+    // We log eax to see the EXACT idx used at render.
+    static auto sub_465CE0_diag = safetyhook::create_mid(0x00465CE0, [](SafetyHookContext& ctx) {
+        static DWORD lastIdx = 0xFFFFFFFF;
+        // edx = input (= client struct ptr)
+        char* clientStruct = (char*)ctx.edx;
+        if ((uintptr_t)clientStruct < 0x10000) return;
+        // [edx+0AAC98h] = inner struct (= ps?)
+        char* psPtr = *(char**)((char*)clientStruct + 0x0AAC98 + 0); // wait, let me re-read asm
+        // Actually the asm: mov ecx, [edx+0AAC78h]; lea esi, [edx+0AAC98h]
+        // So esi = edx + 0xAAC98 (= POINTER ARITHMETIC, not deref).
+        char* esi = clientStruct + 0xAAC98;
+        DWORD ps_weapon_FC = *(DWORD*)(esi + 0xFC);   // pseudo "weapon" field
+        DWORD ps_weapon_104 = *(DWORD*)(esi + 0x104);  // ps.weapon-style field
+
+        DWORD curIdx = ps_weapon_104;
+        if (curIdx == lastIdx) return;
+        lastIdx = curIdx;
+
+        const char* nm104 = "<n/a>";
+        const char* nmFC = "<n/a>";
+        if (ps_weapon_104 < 512 && ::bg_weaponDefs && ::bg_weaponDefs[ps_weapon_104]) {
+            const char* n = *(const char**)::bg_weaponDefs[ps_weapon_104];
+            if (n && (uintptr_t)n > 0x10000) nm104 = n;
+        }
+        if (ps_weapon_FC < 512 && ::bg_weaponDefs && ::bg_weaponDefs[ps_weapon_FC]) {
+            const char* n = *(const char**)::bg_weaponDefs[ps_weapon_FC];
+            if (n && (uintptr_t)n > 0x10000) nmFC = n;
+        }
+        MeldLog("[Render465CE0] esi+0x104=%u(%s)  esi+0xFC=%u(%s)  edx=0x%08X\n",
+            ps_weapon_104, nm104, ps_weapon_FC, nmFC, (DWORD)ctx.edx);
+    });
+
+    // sub_469B50 entry diag — dump candidate weapon idx globals AT RENDER
+    // time. When user equips thompson_m1_wet (idx=165) and FP shows colt (37),
+    // we want to see which global has 37 vs 165.
+    //
+    // dword_351DF54 = state flag
+    // dword_351DF50 = weapon control struct (= argument to many sub_46XXXX)
+    // dword_351E04C = MP idx (we saw stuck at 93)
+    // dword_351E054 = SP idx (we saw track correctly)
+    // dword_34732B8 = per-client struct (esi base)
+    // dword_34732E0 = per-client struct + 0x28
+    // dword_34732C4 = ??
+    // dword_34732DC = ??
+    // dword_34732E0 + 0xB5C = the byte we know is per-weapon attach slot
+    //
+    // Logs each frame's idx state. Use rate-limit: log only when [+0x104] of
+    // dword_351DF50 (= playerState_t.weapon) CHANGES.
+    static auto sub_469B50_diag = safetyhook::create_mid(0x00469B50, [](SafetyHookContext& ctx) {
+        static DWORD lastWeap = 0xFFFFFFFF;
+        DWORD* psPtr = (DWORD*)0x0351DF50;
+        if (!psPtr) return;
+        DWORD ps_weapon = *(DWORD*)((char*)psPtr + 0x104);  // read playerState_t.weapon
+        BYTE  ps_weapon_byte = *(BYTE*)((char*)psPtr + 0x104);
+        DWORD mp_idx = *(DWORD*)0x0351E04C;
+        DWORD sp_idx = *(DWORD*)0x0351E054;
+        DWORD client_struct = *(DWORD*)0x034732E0;
+        DWORD c4 = *(DWORD*)0x034732C4;
+        DWORD dc = *(DWORD*)0x034732DC;
+
+        if (ps_weapon == lastWeap) return;
+        lastWeap = ps_weapon;
+
+        const char* nm_full = "<n/a>";
+        const char* nm_byte = "<n/a>";
+        if (ps_weapon < 512 && ::bg_weaponDefs && ::bg_weaponDefs[ps_weapon]) {
+            const char* n = *(const char**)::bg_weaponDefs[ps_weapon];
+            if (n && (uintptr_t)n > 0x10000) nm_full = n;
+        }
+        if (ps_weapon_byte < 512 && ::bg_weaponDefs && ::bg_weaponDefs[ps_weapon_byte]) {
+            const char* n = *(const char**)::bg_weaponDefs[ps_weapon_byte];
+            if (n && (uintptr_t)n > 0x10000) nm_byte = n;
+        }
+        MeldLog("[Render469B50] ps.weapon (full)=%u(%s) ps.weapon (byte)=%u(%s)  mp=%u sp=%u  client=0x%X c4=0x%X dc=0x%X\n",
+            ps_weapon, nm_full, (DWORD)ps_weapon_byte, nm_byte,
+            mp_idx, sp_idx, client_struct, c4, dc);
+    });
+
+    // sub_469AB0 entry diag — log the FP weapon idx whenever it changes, plus
+    // both source globals (dword_351E04C / dword_351E054) and the resolved
+    // weapon name. Goal: see if equipping springfield_scoped (idx=148) makes
+    // esi land on 20 (= 148 & 0x7F) → 7-bit truncation in snapshot path.
+    //
+    // Hook at sub_469AB0+0x38 = 0x00469AE8 = right after esi is loaded with
+    // the selected idx (the jnz fork on byte_351DF60 has resolved by then).
+    static auto sub_469AB0_diag = safetyhook::create_mid(0x00469AE8, [](SafetyHookContext& ctx) {
+        static DWORD lastSeenIdx = 0xFFFFFFFF;
+        DWORD curIdx = (DWORD)ctx.esi;
+        if (curIdx != lastSeenIdx) {
+            lastSeenIdx = curIdx;
+            DWORD mp_idx = *(DWORD*)0x0351E04C;
+            DWORD sp_idx = *(DWORD*)0x0351E054;
+            const char* name = "<n/a>";
+            if (curIdx > 0 && curIdx < 512 && ::bg_weaponDefs) {
+                T4::WeaponDef* d = ::bg_weaponDefs[curIdx];
+                if (d) {
+                    const char* n = *(const char**)d;
+                    if (n && (uintptr_t)n > 0x10000) name = n;
+                }
+            }
+            MeldLog("[FPWeap] esi(used)=%u  ('%s')   mp(351E04C)=%u  sp(351E054)=%u   esi&0x7F=%u\n",
+                curIdx, name, mp_idx, sp_idx, curIdx & 0x7F);
+        }
+    });
+
+    #if 0  // DISABLED — m1garand was actually correct, no cl=1 issue to chase
+    static auto sub_464F90_entry_diag = safetyhook::create_mid(0x00464F90, [](SafetyHookContext& ctx) {
+        DWORD weapIdx = ctx.eax;
+        DWORD cl      = ctx.ecx & 0xFF;
+        DWORD retAddr = *(DWORD*)(ctx.esp);
+        if (weapIdx == 0 || weapIdx >= 512) return;
+        // Only log when cl != 0 (= attachment slot != base). If we see cl=1
+        // for m1garand (71), that explains the bayonet variant rendering.
+        if (cl == 0) return;
+        // Dedupe: 1 bit per (idx, cl<=15) pair = 512*16 bits = 1024 bytes
+        static unsigned char seen[1024] = {0};
+        if (cl > 15) return;
+        unsigned bit = weapIdx * 16 + cl;
+        unsigned byteIdx = bit / 8;
+        unsigned bitMask = 1 << (bit & 7);
+        if (seen[byteIdx] & bitMask) return;
+        seen[byteIdx] |= bitMask;
+
+        const char* weapName = "<n/a>";
+        if (::bg_weaponDefs && ::bg_weaponDefs[weapIdx]) {
+            const char* n = *(const char**)::bg_weaponDefs[weapIdx];
+            if (n && (uintptr_t)n > 0x10000) weapName = n;
+        }
+        MeldLog("[464F90 cl] weap='%s' (idx=%u) cl=%u ret=0x%08X\n",
+            weapName, weapIdx, cl, retAddr);
+    });
+    #endif  // disabled m1garand cl diag
+
+    // sub_464F90 site (per-weapon attachment-meld builder).
+    // Resolves weapon name from bg_weaponDefs[idx] when available so the log
+    // tells us *which* weapon is corrupted, not just its index. When a bail
+    // triggers, dumps bg_weaponDefs[idx].gunXModel[0..15] + cl AT THAT MOMENT
+    // so we can compare against the registration-time snapshot — proves
+    // whether corruption is at parse time (= present at registration) or
+    // dynamic (= clean at registration, garbage at meld time).
+    static auto sub_464F90_meld_null_guard = safetyhook::create_mid(0x004650AD, [](SafetyHookContext& ctx) {
+        DWORD count = (DWORD)ctx.eax;
+        if (count == 0 || count > 5) { ctx.eip = 0x004650F6; return; }
+        DWORD weapIdx = (DWORD)(ctx.edi - 0x800);
+        const char* weapName = "<unknown>";
+        T4::WeaponDef* wpdef = nullptr;
+        if (weapIdx < 512 && ::bg_weaponDefs) {
+            wpdef = ::bg_weaponDefs[weapIdx];
+            if (wpdef) {
+                const char* n = *(const char**)wpdef;
+                if (n && (uintptr_t)n > 0x10000) weapName = n;
+            }
+        }
+        bool didBail = false;
+        for (DWORD i = 0; i < count; i++) {
+            DWORD ptr = *(DWORD*)(ctx.esp + 0x18 + i * 8);
+            if (ptr < 0x10000) {
+                MeldLog("[464F90] BAD ptr: weap='%s' (idx=%u) entry[%u].ptr=0x%08X count=%u  wpdef=0x%08X\n",
+                    weapName, weapIdx, i, ptr, count, (DWORD)wpdef);
+                didBail = true; break;
+            }
+            BYTE numBones = *(BYTE*)(ptr + 4);
+            if (numBones > 128) {
+                const char* name = *(const char**)(ptr + 0);
+                MeldLog("[464F90] CORRUPT model: weap='%s' (idx=%u) entry[%u].ptr=0x%08X numBones=%u modelName='%s'  wpdef=0x%08X\n",
+                    weapName, weapIdx, i, ptr, (DWORD)numBones,
+                    (name && (uintptr_t)name > 0x10000) ? name : "<bad name ptr>",
+                    (DWORD)wpdef);
+                didBail = true; break;
+            }
+        }
+        if (didBail && wpdef) {
+            // cl was stashed in cg_weaponInfo[idx]+0x14 by sub_464F90 itself.
+            BYTE cl = T4M::cg_weaponInfo
+                ? *(BYTE*)(T4M::cg_weaponInfo + (size_t)weapIdx * 0x48 + 0x14)
+                : 0xFF;
+            MeldLog("[464F90]   ↳ NOW (meld-time) wpdef=0x%08X cl(=cgwInfo+0x14)=%u\n",
+                (DWORD)wpdef, (unsigned)cl);
+            for (int i = 0; i < 16; i++) {
+                DWORD v = *(DWORD*)((char*)wpdef + 0x0C + i * 4);
+                if (v == 0) continue;
+                const char* nm = "<bad>";
+                unsigned bn = 0;
+                if (v > 0x10000) {
+                    const char* n = *(const char**)v;
+                    if (n && (uintptr_t)n > 0x10000) nm = n;
+                    bn = *(unsigned char*)(v + 4);
+                }
+                MeldLog("[464F90]      gunXModel[%d] = 0x%08X  (name='%s' bones=%u)\n", i, v, nm, bn);
+            }
+            DWORD handM = *(DWORD*)((char*)wpdef + 0x4C);
+            MeldLog("[464F90]      handXModel    = 0x%08X\n", handM);
+            ctx.eip = 0x004650F6;
+        } else if (didBail) {
+            ctx.eip = 0x004650F6;
+        }
+    });
+
+    // Universal sub_608D80 entry hook — LOG-ONLY (no bypass). Bypass via
+    // `count=0 → loc_60901E` writes [entry+64h] = dword_3702400 (slot 0)
+    // which the destructor (sub_6093C0 → sub_68A750 → sub_68A0E0) can't
+    // handle, causing a delayed crash. Better to let the meld run and crash
+    // here than corrupt cleanup state. Logging tells us which paths beyond
+    // sub_464F90 have bad data so we can guard those specifically.
+    static auto sub_608D80_logger = safetyhook::create_mid(0x00608D80, [](SafetyHookContext& ctx) {
+        DWORD count = *(DWORD*)(ctx.esp + 0xC);
+        char* array = *(char**)(ctx.esp + 8);
+        DWORD retAddr = *(DWORD*)(ctx.esp);
+        if (count == 0 || count > 8 || (uintptr_t)array < 0x10000) return;
+        for (DWORD i = 0; i < count; i++) {
+            DWORD ptr = *(DWORD*)(array + i * 8);
+            if (ptr < 0x10000) {
+                MeldLog("[608D80] BAD ptr (log only): ret=0x%08X entry[%u].ptr=0x%08X count=%u\n",
+                    retAddr, i, ptr, count);
+                return;
+            }
+            BYTE numBones = *(BYTE*)(ptr + 4);
+            if (numBones > 128) {
+                const char* name = *(const char**)(ptr + 0);
+                MeldLog("[608D80] CORRUPT model (log only): ret=0x%08X entry[%u].ptr=0x%08X numBones=%u name='%s'\n",
+                    retAddr, i, ptr, (DWORD)numBones,
+                    (name && (uintptr_t)name > 0x10000) ? name : "<bad name ptr>");
+                return;
+            }
+        }
+    });
+
+    // =====================================================================
+    // CG_RegisterWeapon (sub_464BF0) diagnostic hook — log every registration
+    // with weapon name + both XModel ptrs that the bail logic checks. Goal: see
+    // if the failing weapons (shotgun_1912_wet, springfield_scoped, etc.) have
+    // gunXModel[0] or handXModel = NULL at registration, OR if the pointers are
+    // valid but point to corrupt XModel data (= memory was overwritten between
+    // load and registration).
+    //
+    // Args at function entry: [esp+0]=ret, [esp+4]=arg_0, [esp+8]=arg_4=weapIdx.
+    // For each XModel ptr, also dump XModel.name (offset 0) and numBones (offset
+    // 4) so we know if the underlying XModel struct is intact.
+    // =====================================================================
+    #if 0  // DISABLED — registration log was useful initially but now pollutes file
+    static auto cg_register_weapon_diag = safetyhook::create_mid(0x00464BF0, [](SafetyHookContext& ctx) {
+        // (disabled body)
+    });
+    #endif
 }
+
+// =====================================================================
+// CG_RegisterWeapon (vanilla sub_464BF0) — @faithful reconstruction.
+//
+// NOT detoured — kept as a reference so we can compare against the vanilla
+// asm and later evolve into a @modified version that handles partial-data
+// WeaponDefs (the failure mode causing weap_idx 142, 148, 154, 180, 181, 182
+// to leave cg_weaponInfo[idx]+0x4 = 0).
+//
+// Signature reverse-engineered from sub_4659B0 / sub_469AB0 caller sites:
+//   void CG_RegisterWeapon(int clientNum_or_ctx, int weaponIdx);
+//
+// Key bug surface: at the `[ebx+0Ch] == 0 || [ebx+4Ch] == 0` test, vanilla
+// jumps to the partial-init path (loc_464E40) which still sets
+// `[ebp+34h] = 1` (the "registered" sentinel) so subsequent calls early-out.
+// The unbuilt cache leaves `cg_weaponInfo[idx]+0x4 = 0`, which sub_464F90
+// later reads as a model pointer → NULL deref in the meld.
+//
+// WeaponDef offsets used (vanilla, stride 0x9AC):
+//   +0x00  = const char*  szInternalName            (e.g. "shotgun_1912_wet")
+//   +0x04  = const char*  szDisplayName             (locale key)
+//   +0x08  = const char*  szAIOverlayName
+//   +0x0C  = XModel*      pGunXModel                ← NULL for failing weapons
+//   +0x4C  = XModel*      pHandModel                ← NULL for failing weapons
+//   +0xDC  = const char*  szModeName                (locale key)
+//   +0xE0  = uint16[8]    boneTagNames              (string-id bone names)
+//   +0x3D8 = const char*  szDisplayNameFallback
+//
+// cg_weaponInfo entry layout (stride 0x48, 4096 bytes total post-T4M):
+//   +0x00 = DObj*  meldDObj                         (sub_59E8F0 result)
+//   +0x04 = XModel* attach[0]                       (= WeaponDef.pHandModel)
+//   +0x08 = XModel* attach[1]
+//   +0x0C = XModel* attach[2]
+//   +0x10 = XModel* attach[3]
+//   +0x14 = byte    currentSlot
+//   +0x18 = uint32[4] boneTagBitmask                (8 bones x 4 bits each = 32)
+//   +0x28 = int     someStateInt                    (= 0xFFFFFFFF)
+//   +0x30 = void*   attachmentList                  (sub_464A50 result)
+//   +0x34 = int     registered                      (1 = init done)
+//   +0x38 = void*   itemSlotPtr                     (= &dword_8F44A8[idx*4])
+//   +0x3C = const char* localizedDisplayName
+//   +0x40 = const char* localizedModeName
+//   +0x44 = const char* localizedAIOverlayName
+// =====================================================================
+namespace T4_Reconstructed {
+
+    // Vanilla helper pointers used by CG_RegisterWeapon. Resolved from the asm
+    // at sub_464BF0 — not all of these are typed in T4.h yet.
+    typedef void  (__cdecl* sub_479370_t)(void);                                // pre-init guard
+    typedef void  (__cdecl* sub_464A50_t)(void* arg_0);                         // build attachment list (returns ptr in eax)
+    typedef int   (__cdecl* sub_59E8F0_t)(void* modelArray, int count, int weapIdxBiased, void* arg_8, void* arg_C);  // meld builder (also __usercall via eax)
+    typedef void  (__cdecl* sub_6103E0_t)(void* arg);                           // model attach finalizer
+    typedef void  (__cdecl* sub_611110_t)(int arg_0, int arg_4, int arg_8, float a, float b, float c, int arg_X, int arg_Y);
+    typedef int   (__cdecl* sub_60C420_t)(unsigned int strId, unsigned char* outIdx); // bone tag lookup (returns 0/1)
+    typedef void  (__cdecl* sub_60F990_t)(int dobj, int zero);                  // dobj cleanup
+    typedef void  (__cdecl* sub_610F50_t)(int ctx, int arg);                    // viewmodel anim setup (called via ecx)
+    typedef const char* (__cdecl* sub_5ACD40_t)(const char* key);               // localize lookup (returns NULL if missing)
+    typedef void  (__cdecl* Com_PrintError_t)(int channel, const char* fmt, ...); // sub_59A440
+    typedef void  (__cdecl* Com_Printf_chan_t)(int channel, const char* fmt, ...);// sub_59A380 (warn channel)
+    typedef void  (__cdecl* Com_ErrorMsg_t)(int level, const char* fmt, ...);   // sub_59AC50
+
+    static const sub_479370_t      pSub_479370       = (sub_479370_t)     0x00479370;
+    static const sub_464A50_t      pBuildAttachList  = (sub_464A50_t)     0x00464A50;
+    // sub_59E8F0 is __usercall: weap_idx_biased passed in eax. Use a naked
+    // wrapper at the call site below, not a typedef call.
+    static const sub_6103E0_t      pAttachFinalize   = (sub_6103E0_t)     0x006103E0;
+    static const sub_611110_t      pSub_611110       = (sub_611110_t)     0x00611110;
+    static const sub_60C420_t      pBoneTagLookup    = (sub_60C420_t)     0x0060C420;
+    static const sub_60F990_t      pSub_60F990       = (sub_60F990_t)     0x0060F990;
+    static const sub_5ACD40_t      pLocalize         = (sub_5ACD40_t)     0x005ACD40;
+    static const Com_PrintError_t  pCom_PrintError   = (Com_PrintError_t) 0x0059A440;
+    static const Com_Printf_chan_t pCom_PrintWarn    = (Com_Printf_chan_t)0x0059A380;
+    static const Com_ErrorMsg_t    pCom_ErrorMsg     = (Com_ErrorMsg_t)   0x0059AC50;
+
+    // Vanilla globals referenced.
+    #define DWORD_1F552FC    (*(void**)0x01F552FC)        // some flag struct (mp/sp gate)
+    #define DWORD_1F552D0    (*(void**)0x01F552D0)
+    #define WORD_1F33C5A     (*(uint16_t*)0x01F33C5A)     // template word for entry init
+    #define DWORD_3702390    ((char*)0x03702390)          // string pool base (12-byte stride)
+    #define DWORD_8F44A8     (T4M::g_dword8F44A8)         // per-weapon item-slot table (relocated by SetupBgWeaponDefsTable)
+    #define DWORD_35D0DBC    (*(void**)0x035D0DBC)        // default localized display name
+    #define DWORD_35D0DC8    (T4M::g_dword35D0DC8)        // per-weapon display name cache (relocated by SetupBgWeaponDefsTable)
+    #define DWORD_208B2E8    (*(void**)0x0208B2E8)        // print-warning gate
+    #define DWORD_208B2E4    (*(void**)0x0208B2E4)        // dev-mode gate
+    #define DWORD_8AF370     (*(float*)0x008AF370)        // 1.0f or similar default
+
+    // __usercall wrapper for sub_59E8F0 (eax = weap_idx_biased).
+    extern "C" __declspec(naked) static int Sub_59E8F0_call(
+        void* /*arg_0 modelArray*/, int /*arg_4 count*/, void* /*arg_8*/, char /*arg_C*/, int /*eax weapIdxBiased*/)
+    {
+        __asm {
+            mov     eax, [esp + 14h]   ; eax = 5th arg = weapIdxBiased
+            push    [esp + 10h]        ; push arg_C (byte sized but pushed as dword)
+            push    [esp + 10h]        ; push arg_8
+            push    [esp + 10h]        ; push arg_4 (count)
+            push    [esp + 10h]        ; push arg_0 (modelArray)
+            mov     ecx, 0x0059E8F0
+            call    ecx
+            add     esp, 10h
+            retn
+        }
+    }
+
+    extern "C" void __cdecl CG_RegisterWeapon(void* arg_0_ctx, int weapIdx)
+    {
+        // Early bail: weapon idx 0 is "no weapon".
+        if (weapIdx == 0) return;
+
+        T4::WeaponDef* wpnDef = ::bg_weaponDefs[weapIdx];
+        unsigned char* cgwInfo = (unsigned char*)T4M::cg_weaponInfo + (size_t)weapIdx * 0x48;
+
+        // Already registered? cg_weaponInfo[idx]+0x34 is the sentinel.
+        // Vanilla reads dword_3463C74[ebp*8] which is &cg_weaponInfo[idx]+0x34.
+        if (*(int*)(cgwInfo + 0x34) != 0) return;
+
+        // First-time global init guard (mp/sp gate).
+        if (*(unsigned char*)((char*)DWORD_1F552FC + 0x10) == 0
+         || *(unsigned char*)((char*)DWORD_1F552D0 + 0x10) == 0) {
+            pSub_479370();
+        }
+
+        // Wipe the entry: 0x48 bytes of zero, then re-init the marker fields.
+        // Vanilla calls sub_7AFF40(esi+0, 0, 0x48) but the entry base is at
+        // ebp here, which IS esi+0. Same effect.
+        memset(cgwInfo, 0, 0x48);
+        *(int*)(cgwInfo + 0x34) = 1;                                 // registered
+        *(void**)(cgwInfo + 0x38) = &DWORD_8F44A8[weapIdx];           // itemSlotPtr
+        *(int*)(cgwInfo + 0x28) = -1;
+
+        // ---------------------------------------------------------------
+        // BUG SURFACE: bail if either gun-XModel or hand-XModel is NULL.
+        // For weapons whose .gdt or .iwd lacks one of these fields (= the
+        // 6 weapons crashing the user), vanilla jumps to the partial-init
+        // tail without filling [+0x4] (= cgw.attach[0]). The "registered"
+        // sentinel is already set above, so subsequent rebuild attempts
+        // (sub_465160 / sub_465200 / sub_465270 → sub_464F90) read
+        // [+0x4] = 0 and feed NULL into the meld.
+        // ---------------------------------------------------------------
+        void* pGunXModel  = *(void**)((char*)wpnDef + 0x0C);
+        void* pHandModel  = *(void**)((char*)wpnDef + 0x4C);
+        if (pGunXModel == nullptr || pHandModel == nullptr) {
+            // Vanilla: skip the meld build, fall through to the localize
+            // section at loc_464E40. We replicate that behavior — see below.
+            goto L_localize_strings;
+        }
+
+        {
+            // Build the {handModel, gunXModel} 2-entry array on the local stack
+            // and pass it to the meld constructor. Layout matches sub_464BF0
+            // exactly: entry 0 = pHandModel, entry 1 = pGunXModel.
+            struct MeldEntry { void* model; uint16_t boneId; uint8_t flag1; uint8_t flag2; };
+            MeldEntry models[2];
+            models[0].model = pHandModel;       // [+0x4C]  → cgw.attach[0]
+            models[0].boneId = 0;
+            models[0].flag1 = 0;
+            models[0].flag2 = 0;
+            models[1].model = pGunXModel;       // [+0x0C]
+            models[1].boneId = WORD_1F33C5A;
+            models[1].flag1 = 0;
+            models[1].flag2 = 0;
+
+            // Build the per-weapon attachment dobj list (= sub_464A50).
+            // First arg is &models (used as a build context).
+            pBuildAttachList(&models);
+            void* attachList = nullptr; // sub_464A50 actually returns its result in eax — we'd capture via __asm if we cared at runtime.
+            *(void**)(cgwInfo + 0x30) = attachList;
+
+            // Meld build. weapIdx | 0x800 is the biased index used by sub_59E8F0
+            // (caller stores it in word_1FE58C8 keyed on this hash).
+            int dobj = Sub_59E8F0_call(&models[0], /*count*/2, /*arg_8*/attachList, /*arg_C*/(char)(uintptr_t)arg_0_ctx, weapIdx + 0x800);
+
+            *(void**)(cgwInfo + 0x00) = (void*)(intptr_t)dobj;
+            *(void**)(cgwInfo + 0x04) = pHandModel;             // ← THE cached attach[0] write
+            *(unsigned char*)(cgwInfo + 0x14) = 0;
+        }
+
+        // Run two unconditional pSub_611110 setup calls (anim layers).
+        pSub_611110(/*dobj*/ *(int*)(cgwInfo + 0x00), 0, 1, 1.0f, 0.0f, 0.0f, 0, 0);
+        pSub_611110(/*dobj*/ *(int*)(cgwInfo + 0x00), 0, 1, 1.0f, 0.0f, 0.0f, 0, 1);
+
+        // Optional third pSub_611110 if WeaponDef[+0xD8] (AI overlay name) is
+        // non-empty — handled by the loop in vanilla; abbreviated here.
+
+        // Process bone tag list at WeaponDef[+0xE0..+0xF0] (8 entries × 2 bytes).
+        {
+            uint16_t* tags = (uint16_t*)((char*)wpnDef + 0xE0);
+            for (int i = 0; i < 8; i++) {
+                uint16_t strId = tags[i];
+                if (strId == 0) break;
+                unsigned char boneIdx = 0xFE;
+                int dobj = *(int*)(cgwInfo + 0x00);
+                if (pBoneTagLookup(strId, &boneIdx) == 0) {
+                    const char* tagName = strId
+                        ? (const char*)(DWORD_3702390 + (size_t)strId * 12 + 4)
+                        : nullptr;
+                    pCom_PrintWarn(0x0E, "CG_RegisterWeapon: No such bone tag (%s) in model (%s)\n",
+                        tagName, *(const char**)wpnDef);
+                } else {
+                    // Set bit (0x80000000 >> (boneIdx & 0x1F)) at offset
+                    // 0x18 + (boneIdx >> 5) * 4 in cgwInfo.
+                    uint32_t bit = 0x80000000u >> (boneIdx & 0x1F);
+                    *(uint32_t*)(cgwInfo + 0x18 + (boneIdx >> 5) * 4) |= bit;
+                }
+            }
+            // Final attach-finalize pass with the full tag set.
+            pSub_60F990(*(int*)(cgwInfo + 0x00), 0);
+        }
+
+    L_localize_strings:
+        // ----- partial-init path (and tail of full-init path) -----
+        // Localize szDisplayName, szModeName, szAIOverlayName. Each lookup
+        // either returns the localized string or hits a fallback chain with
+        // a console warning.
+        {
+            const char* loc;
+            // Display name (WeaponDef[+0x04])
+            loc = pLocalize(*(const char**)((char*)wpnDef + 0x04));
+            if (loc) {
+                *(const char**)(cgwInfo + 0x3C) = loc;
+            } else {
+                void* gateA = DWORD_208B2E8;
+                if (*(unsigned char*)((char*)gateA + 0x10) != 0) {
+                    void* gateB = DWORD_208B2E4;
+                    if (*(unsigned char*)((char*)gateB + 0x10) != 0) {
+                        pCom_ErrorMsg(6, "Weapon %s: Could not translate display name '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x04));
+                    } else {
+                        pCom_PrintError(0x11, "WARNING: Weapon %s: Could not translate display name '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x04));
+                    }
+                }
+                *(const char**)(cgwInfo + 0x3C) = *(const char**)((char*)wpnDef + 0x04);
+            }
+
+            // Mode name (WeaponDef[+0xDC])
+            loc = pLocalize(*(const char**)((char*)wpnDef + 0xDC));
+            if (loc) {
+                *(const char**)(cgwInfo + 0x40) = loc;
+            } else {
+                void* gateA = DWORD_208B2E8;
+                if (*(unsigned char*)((char*)gateA + 0x10) != 0) {
+                    void* gateB = DWORD_208B2E4;
+                    if (*(unsigned char*)((char*)gateB + 0x10) != 0) {
+                        pCom_ErrorMsg(6, "Weapon %s: Could not translate mode name '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0xDC));
+                    } else {
+                        pCom_PrintError(0x11, "WARNING: Weapon %s: Could not translate mode name '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0xDC));
+                    }
+                }
+                *(const char**)(cgwInfo + 0x40) = *(const char**)((char*)wpnDef + 0xDC);
+            }
+
+            // AI overlay name (WeaponDef[+0x08])
+            loc = pLocalize(*(const char**)((char*)wpnDef + 0x08));
+            if (loc) {
+                *(const char**)(cgwInfo + 0x44) = loc;
+            } else {
+                void* gateA = DWORD_208B2E8;
+                if (*(unsigned char*)((char*)gateA + 0x10) != 0) {
+                    void* gateB = DWORD_208B2E4;
+                    if (*(unsigned char*)((char*)gateB + 0x10) != 0) {
+                        pCom_ErrorMsg(6, "Weapon %s: Could not translate AI overlay '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x08));
+                        // Vanilla actually returns here without setting [+0x44].
+                        return;
+                    }
+                    pCom_PrintError(0x11, "WARNING: Weapon %s: Could not translate AI overlay '%s'\n",
+                        *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x08));
+                }
+                *(const char**)(cgwInfo + 0x44) = *(const char**)((char*)wpnDef + 0x08);
+            }
+        }
+    }
+
+    #undef DWORD_1F552FC
+    #undef DWORD_1F552D0
+    #undef WORD_1F33C5A
+    #undef DWORD_3702390
+    #undef DWORD_8F44A8
+    #undef DWORD_35D0DBC
+    #undef DWORD_35D0DC8
+    #undef DWORD_208B2E8
+    #undef DWORD_208B2E4
+    #undef DWORD_8AF370
+
+} // namespace T4_Reconstructed

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<int(scriptInstance_t inst, int nodeNum)>MT_GetSubTreeSize{ 0x0, 0x689EF0 };
 	WEAK symbol<void(scriptInstance_t inst)>MT_DumpTree{ 0x0, 0x689F40 };

@@ -54,6 +54,9 @@
     <ClCompile Include="PatchT4MAM_LowReady.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_CentityPropagator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PatchT4FileDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -139,9 +142,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Zydis.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="t4_headers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\mini\ini.h">

@@ -1,39 +1,14 @@
 #pragma once
 
-typedef enum
-{
-	DVAR_FLAG_ARCHIVE = 1 << 0,				// 0x0001
-	DVAR_FLAG_USERINFO = 1 << 1,			// 0x0002
-	DVAR_FLAG_SERVERINFO = 1 << 2,			// 0x0004
-	DVAR_FLAG_SYSTEMINFO = 1 << 3,			// 0x0008
-	DVAR_FLAG_INIT = 1 << 4,				// 0x0010
-	DVAR_FLAG_LATCH = 1 << 5,				// 0x0020
-	DVAR_FLAG_ROM = 1 << 6,					// 0x0040
-	DVAR_FLAG_CHEAT = 1 << 7,				// 0x0080
-	DVAR_FLAG_DEVELOPER = 1 << 8,			// 0x0100
-	DVAR_FLAG_SAVED = 1 << 9,				// 0x0200
-	DVAR_FLAG_NORESTART = 1 << 10,			// 0x0400
-	DVAR_FLAG_CHANGEABLE_RESET = 1 << 12,	// 0x1000
-	DVAR_FLAG_EXTERNAL = 1 << 14,			// 0x4000
-	DVAR_FLAG_AUTOEXEC = 1 << 15,			// 0x8000
-} dvar_flag;
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;  // unqualified access to T4:: types in this header
 
-enum dvarType_t : __int8
-{
-	DVAR_TYPE_BOOL = 0x0,
-	DVAR_TYPE_FLOAT = 0x1,
-	DVAR_TYPE_FLOAT_2 = 0x2,
-	DVAR_TYPE_FLOAT_3 = 0x3,
-	DVAR_TYPE_FLOAT_4 = 0x4,
-	DVAR_TYPE_INT = 0x5,
-	DVAR_TYPE_ENUM = 0x6,
-	DVAR_TYPE_STRING = 0x7,
-	DVAR_TYPE_COLOR = 0x8,
-	DVAR_TYPE_INT64 = 0x9,
-	DVAR_TYPE_LINEAR_COLOR_RGB = 0xA,
-	DVAR_TYPE_COLOR_XYZ = 0xB,
-	DVAR_TYPE_COUNT = 0xC,
-};
+// DVAR_FLAG_* enum DvarFlags defined in cod/enums.hpp under T4::, exposed via `using namespace T4;` below.
+
+using dvarType_t = ::T4::dvarType_t;
 
 
 union dvar_value_t 
@@ -80,57 +55,19 @@ typedef struct __declspec(align(4)) dvar_t
 
 } dvar_t;
 
-enum scriptInstance_t
-{
-	SCRIPTINSTANCE_SERVER = 0x0,
-	SCRIPTINSTANCE_CLIENT = 0x1,
-	SCRIPT_INSTANCE_MAX = 0x2,
-};
+using scriptInstance_t = ::T4::scriptInstance_t;
 
 typedef void(__cdecl * xcommand_t)(void);
 
 #define cmd_functions_ADDR 0x01F416F4
 
-typedef struct cmd_function_s
-{
-	struct cmd_function_s *next;
-	char *name;
-	char *autocomplete1;
-	char *autocomplete2;
-	xcommand_t function;
-};
+using cmd_function_s = ::T4::cmd_function_s;
 
-struct CmdArgs
-{
-	int nesting;
-	int localClientNum[8];
-	int controllerIndex[8];
-	//itemDef_s *itemDef[8];
-	int argshift[8];
-	int argc[8];
-	const char **argv[8];
-	char textPool[8192];
-	const char *argvPool[512];
-	int usedTextPool[8];
-	int totalUsedArgvPool;
-	int totalUsedTextPool;
-};
+using CmdArgs = ::T4::CmdArgs;
 
-struct XZoneInfo 
-{
-	const char* name;
-	int allocFlags;
-	int freeFlags;
-};
+using XZoneInfo = ::T4::XZoneInfo;
 
-struct XZoneLoadedEntry
-{
-	unsigned short zoneFileIndex;
-	unsigned short pad;
-	int            allocFlags;
-	int            memHandle;
-	int            runtimeData[14];
-};
+// XZoneLoadedEntry defined in cod/xasset.hpp under T4::, exposed via `using namespace T4;` above.
 
 // Load queue entry — populated by DB_AddZonesToQueue (sub_48E4C0),
 // drained by DB_ProcessZoneQueue (sub_48F260) on the worker thread.
@@ -177,51 +114,18 @@ struct vec2_t { float x, y; };
 struct vec3_t { float x, y, z; };
 struct vec4_t { float x, y, z, w; };
 
-struct ConDrawInputGlob
-{
-	char autoCompleteChoice[64];
-	int matchIndex;
-	int matchCount;
-	const char *inputText;
-	int inputTextLen;
-	bool hasExactMatch;
-	bool mayAutoComplete;
-	float x;
-	float y;
-	float leftX;
-	float fontHeight;
-};
+using ConDrawInputGlob = ::T4::ConDrawInputGlob;
 
-struct scr_localVar_t
-{
-	unsigned int name;
-	unsigned int sourcePos;
-};
+using scr_localVar_t = ::T4::scr_localVar_t;
 
-struct scr_block_s
-{
-	int abortLevel;
-	int localVarsCreateCount;
-	int localVarsPublicCount;
-	int localVarsCount;
-	char localVarsInitBits[8];
-	scr_localVar_t localVars[64];
-};
+using scr_block_s = ::T4::scr_block_s;
 
-union sval_u
-{
-	char type;
-	unsigned int stringValue;
-	unsigned int idValue;
-	float floatValue;
-	int intValue;
-	sval_u *node;
-	unsigned int sourcePosValue;
-	const char *codePosValue;
-	const char *debugString;
-	scr_block_s *block;
-};
+using sval_u = ::T4::sval_u;
 
+// MT_SIZE is also defined as a #define in clientscript_public.hpp; undef before enum.
+#ifdef MT_SIZE
+#undef MT_SIZE
+#endif
 enum bitsShit
 {
 	MEMORY_NODE_BITS = 0x10,
@@ -230,44 +134,13 @@ enum bitsShit
 	REFSTRING_STRING_OFFSET = 0x4,
 };
 
-struct __declspec(align(4)) RefString
-{
-	union bitsShit;
-	char str[1];
-};
+// RefString defined in cod/clientscript/clientscript_public.hpp under T4::, exposed via `using namespace T4;` above.
+// VariableStackBuffer defined in cod/clientscript/clientscript_public.hpp under T4::, exposed via `using namespace T4;` above.
 
-struct __declspec(align(4)) VariableStackBuffer
-{
-	const char *pos;
-	unsigned __int16 size;
-	unsigned __int16 bufLen;
-	unsigned int localId;
-	char time;
-	char buf[1];
-};
-
-union VariableUnion
-{
-	int intValue;
-	float floatValue;
-	unsigned int stringValue;
-	const float *vectorValue;
-	const char *codePosValue;
-	unsigned int pointerValue;
-	VariableStackBuffer *stackValue;
-	unsigned int entityOffset;
-};
+using VariableUnion = ::T4::VariableUnion;
 
 
-struct XZoneName
-{
-	char name[64];
-	int flags;
-	int fileSize;
-	BYTE dir; //enum FF_DIR
-	bool loaded;
-	BYTE pad[2];
-};
+using XZoneName = ::T4::XZoneName;
 
 struct PMem_Pool
 {
@@ -288,17 +161,10 @@ struct ZoneFileEntry               // stride 0x4C
 	int  fileSource;               // +0x48: file origin (0=direct, 1=main path, 2=fallback)
 };
 
-#include "xasset.h"
-
 // types
 typedef void(__cdecl * CommandCB_t)(void);
 
-struct scr_entref_t
-{
-	unsigned __int16 entnum;
-	unsigned __int16 classnum;
-	unsigned __int16 client;
-};
+// scr_entref_t defined in cod/clientscript/clientscript_public.hpp under T4::, exposed via `using namespace T4;` above.
 
 typedef void(__cdecl * scr_function_t)(scr_entref_t);
 
@@ -622,6 +488,12 @@ namespace T4M
 		// ── Project C++ helpers (unprefixed in the legacy convention) ──────────
 		int           __cdecl Scr_GetNumParam(scriptInstance_t inst);
 		char*         __cdecl SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst);
+		// PatchT4Script.cpp helpers — namespaced T4M:: to avoid clash with cod/* T4:: declarations
+		RefString*    __cdecl GetRefString(scriptInstance_t inst, unsigned int stringValue);
+		void          Scr_ClearOutParams(scriptInstance_t inst);
+		void          __cdecl IncInParam(scriptInstance_t inst);
+		void          __cdecl Scr_AddInt(int value, scriptInstance_t inst);
+		int           __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index);
 		void          Cmd_AddCommand(const char *cmd_name, xcommand_t function);
 		bool          isZombieMode();
 		bool          Com_SessionMode_IsZombiesGame();

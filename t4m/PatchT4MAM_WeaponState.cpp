@@ -1,4 +1,8 @@
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "StdInc.h"
 #include "T4.h"
 #include "MemoryMgr.h"
@@ -9,7 +13,7 @@
 // Forward decls + raw-access helpers
 // =====================================================================
 
-struct pmove_t;  // opaque
+using pmove_t = ::T4::pmove_s;  // alias to typed struct from cod/structs.hpp
 
 namespace T4_Reconstructed
 {
@@ -26,6 +30,7 @@ namespace T4_Reconstructed
         void PM_Weapon_DetonateTransition(playerState_s* ps, int arg_0);    // sub_421BC0
         void PM_Weapon_ReloadStart(pmove_t* pm, int callValidation);        // sub_41F630
         void PM_Weapon_Reloading(pmove_t* pm, int callValidation);          // sub_41F780
+        void PM_Weapon_Dropping(pmove_t* pm, int isQuick);                  // sub_41F010
 
         // Per-state chunk handlers — reconstructed @faithful in this file.
         void PM_Weapon_Tick_MeleeFire(playerState_s* ps);      // chunk #1 @ 0x00420CE0
@@ -73,9 +78,12 @@ static inline float raw_float(const void* base, int offset) { return *(const flo
 static inline unsigned char  raw_byte (const void* base, int offset) { return *((const unsigned char*)base + offset); }
 static inline unsigned char& raw_bref (void* base,       int offset) { return *((unsigned char*)base + offset); }
 
+extern T4::WeaponDef** bg_weaponDefs;  // defined in PatchT4Script.cpp,
+                                       // pointed to relocated table by SetupBgWeaponDefsTable.
+
 static inline WeaponDef* GetWeaponDef(unsigned int idx)
 {
-    return ((WeaponDef**)0x008F6770)[idx];
+    return bg_weaponDefs[idx];
 }
 
 
@@ -373,25 +381,9 @@ static __declspec(naked) int call_PM_Weapon_IsLocked(pmove_t* /*pm*/)
     }
 }
 
-// sub_41F010 — DROPPING handler. __thiscall(ecx=pm, [esp+4]=isQuick). Kept as shim.
-static __declspec(naked) void call_PM_Weapon_TickDrop(pmove_t* /*pm*/, int /*isQuick*/)
-{
-    __asm 
-    {
-        push    esi
-        push    edi
-        push    ebx
-        mov     ecx, [esp+10h]
-        push    [esp+14h]
-        mov     eax, 0x0041F010
-        call    eax
-        add     esp, 4
-        pop     ebx
-        pop     edi
-        pop     esi
-        ret
-    }
-}
+// sub_41F010 (DROPPING handler) is reconstructed in C++ as
+// T4_Reconstructed::PM_Weapon_Dropping (defined below). Direct call from
+// the dispatcher — no shim, no SafetyHook detour.
 
 // Helpers called from PM_Weapon_Reloading / PM_Weapon_ReloadStart reconstructions.
 
@@ -487,15 +479,15 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimCmdStateInit(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    int v = raw_int(w, 0x158);
+    int v = w->fireType;
 
     if (v == 0 || v == 1) 
         return;
 
-    if ((raw_byte(pm, 0x8)  & 1) == 0) 
+    if ((pm->cmd.buttons  & 1) == 0) 
         return;
 
-    if ((raw_byte(pm, 0x40) & 1) != 0) 
+    if ((pm->oldcmd.buttons & 1) != 0) 
         return;
 
     raw_iref(ps, 0x10) |= 0x400;
@@ -512,12 +504,12 @@ extern "C" char T4_Reconstructed::PM_Weapon_CanForceFire(pmove_t* pm)
         return 0;
 
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    int weaponClass = raw_int(w, 0x144);
+    int weaponClass = w->weapType;
 
     if (weaponClass != 1 && weaponClass != 6) 
         return 0;
 
-    if (raw_int(w, 0x6B8) != 0) 
+    if (w->holdButtonToThrow != 0) 
         return 0;
 
     // sub_420500 is __usercall(eax=weaponIdx); returns bit mask in eax.
@@ -537,10 +529,10 @@ extern "C" char T4_Reconstructed::PM_Weapon_CanForceFire(pmove_t* pm)
         pop     esi
     }
 
-    if ((raw_int(pm, 0x8) & mask) == 0) 
+    if ((pm->cmd.buttons & mask) == 0) 
         return 0;
 
-    raw_iref(ps, 0x44) = 1;
+    ps->weaponDelay = 1;
     return 1;
 }
 
@@ -563,7 +555,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_FireRefresh(playerState_s* ps, int a
     }
 
     const WeaponDef* w = GetWeaponDef(weaponIdx);
-    int weaponClass = raw_int(w, 0x144);
+    int weaponClass = w->weapType;
     if (weaponClass != 1 && weaponClass != 6) 
         return 0;
 
@@ -573,7 +565,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_FireRefresh(playerState_s* ps, int a
         return 0;                 // jle loc_4219B7 → return 0
 
     // v48 > 0: maybe decrement
-    bool skip_decrement = (raw_byte(ps, 0x8E8) & 1) != 0 || raw_int(w, 0x5E8) == 0;
+    bool skip_decrement = (raw_byte(ps, 0x8E8) & 1) != 0 || w->bCookOffHold == 0;
 
     if (!skip_decrement) 
     {
@@ -640,12 +632,12 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateCheck(pmove_t* pm)
         return;
 
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    int weaponClass = raw_int(w, 0x144);
+    int weaponClass = w->weapType;
 
     if (weaponClass != 1 && weaponClass != 6) 
         return;
 
-    if (raw_int(w, 0x6AC) == 0) 
+    if (w->hasDetonator == 0) 
         return;
 
     int state = ps->weaponstate;
@@ -662,12 +654,12 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateCheck(pmove_t* pm)
         return;
 
     // loc_421B13
-    if ((raw_byte(pm, 0x8) & 1) == 0) 
+    if ((pm->cmd.buttons & 1) == 0) 
         return;
 
     ps->weaponstate = (weaponstate_t)0x16;     // WEAPON_DETONATING
-    raw_iref(ps, 0x40) = raw_int(w, 0x458);
-    raw_iref(ps, 0x44) = raw_int(w, 0x444);
+    ps->weaponTime = w->iDetonateTime;
+    ps->weaponDelay = w->iDetonateDelay;
 
     // sub_41D420 is __usercall(eax=ps, [esp+4]=new_vm_state).
     __asm 
@@ -698,7 +690,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
     if (state == 0x11) 
     {                      // WEAPON_OFFHAND_PREPARE
         const WeaponDef* w = GetWeaponDef(raw_int(ps, 0xFC));
-        if (raw_int(w, 0x6B8) != 0 && (raw_int(pm, 0x8) & 0xC000) == 0) 
+        if (w->holdButtonToThrow != 0 && (pm->cmd.buttons & 0xC000) == 0) 
         {
             // jmp shared chunk @ 0x00421630 (with eax = ps)
             T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(ps);
@@ -713,7 +705,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
         return;
 
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    int weaponClass = raw_int(w, 0x144);
+    int weaponClass = w->weapType;
 
     if (weaponClass != 1 && weaponClass != 6) 
         return;
@@ -722,10 +714,10 @@ extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
     if (state != 5) 
         return;                   // not WEAPON_FIRING
 
-    if (raw_int(w, 0x6B8) == 0) 
+    if (w->holdButtonToThrow == 0) 
         return;
 
-    if ((raw_byte(pm, 0x8) & 1) != 0) 
+    if ((pm->cmd.buttons & 1) != 0) 
         return;
 
     // call sub_4225D0(eax = ps)
@@ -753,10 +745,10 @@ extern "C" char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* pm, int arg_0)
 {
     auto* ps = *(playerState_s**)pm;
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    int weaponClass = raw_int(w, 0x144);
+    int weaponClass = w->weapType;
 
     int mask;
-    if ((weaponClass == 1 || weaponClass == 6) && raw_int(w, 0x6AC) != 0) 
+    if ((weaponClass == 1 || weaponClass == 6) && w->hasDetonator != 0) 
     {
         mask = 0x400000;
     } 
@@ -765,14 +757,14 @@ extern "C" char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* pm, int arg_0)
         mask = 1;
     }
 
-    int bl = ((raw_int(pm, 0x8) & mask) != 0) ? 1 : 0;
+    int bl = ((pm->cmd.buttons & mask) != 0) ? 1 : 0;
 
-    if (raw_int(w, 0x6BC) != 0 && raw_int(ps, 0x88) == 0x3FF) 
+    if (w->freezeMovementWhenFiring != 0 && raw_int(ps, 0x88) == 0x3FF) 
     {
         bl = 0;
     }
 
-    if (raw_int(w, 0x5F0) != 0) 
+    if (w->canUseInVehicle != 0) 
     {
         // dword_1F552A4 holds a dvar_t* pointer; deref then check [+0x10] (dvar bool field).
         unsigned char* dvar_ptr = *(unsigned char**)0x01F552A4;
@@ -849,14 +841,14 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* pm, int arg
         return;
 
     // loc_421169
-    if ((raw_byte(pm, 0x8) & 4) != 0) 
+    if ((pm->cmd.buttons & 4) != 0) 
     {
         if (call_PM_Weapon_IsLocked(pm) != 0) 
             return;
     }
 
     // loc_42117E
-    if (raw_int(w, 0x430) == 0) 
+    if (w->iMeleeDamage == 0) 
         return;
 
     if (arg_0 != 0)
@@ -865,23 +857,23 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* pm, int arg
     if ((raw_byte(ps, 0x14) & 0x20) != 0) 
         return;
 
-    if (raw_int(ps, 0x44) != 0) 
+    if (ps->weaponDelay != 0) 
     {
         if (state != 7 && state != 9 && state != 0xB && state != 0xA && state != 8) 
             return;
     }
 
     // loc_4211B9
-    if ((raw_byte(pm, 0x8)  & 4) == 0) 
+    if ((pm->cmd.buttons  & 4) == 0) 
         return;
 
-    if ((raw_byte(pm, 0x40) & 4) != 0) 
+    if ((pm->oldcmd.buttons & 4) != 0) 
         return;
 
-    float wpf = raw_float(ps, 0x110);
+    float wpf = ps->fWeaponPosFrac;
     bool slowAnim = (wpf <= *(float*)0x008B7B30);  // ds:String2 — float 0.0 sentinel
 
-    if (!slowAnim && raw_int(w, 0x524) != 0) 
+    if (!slowAnim && w->overlayReticle != 0) 
         return;
 
     // loc_4211DF — get string pointer at w+0x6C
@@ -923,8 +915,8 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateTransition(playerState_s* ps
         // loc_421C0A — finalize (no-op end)
         raw_iref(ps, 0x10) &= 0xFFFFFFFD;
         raw_iref(ps, 0x0C) &= 0xFFFFFDFF;
-        raw_iref(ps, 0x40) = 0;
-        raw_iref(ps, 0x44) = 0;
+        ps->weaponTime = 0;
+        ps->weaponDelay = 0;
 
         if (T4M::TransitionToReadyOrLowReady(ps)) 
             return;
@@ -948,6 +940,434 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateTransition(playerState_s* ps
 
 
 // =====================================================================
+// Reconstructed weapon-drop handler — sub_41F010 (vanilla VA 0x0041F010).
+// Invoked from T4_Reconstructed::PM_Weapon dispatcher when ps.weaponstate
+// is WEAPON_DROPPING / WEAPON_DROPPING_QUICK. Mono-caller, no SafetyHook
+// detour, no shim — direct C++ call from the dispatcher.
+//
+// Vanilla notes :
+//   - `[pm+0x18]` = `pm->cmd.weapon` is a usercmd byte field. Read as byte
+//     to match vanilla. Idx ≥ 256 truncates here (intrinsic to wire format).
+//   - The function chunk at vanilla loc_41EF40 is inlined as a tail block.
+//   - Bitmaps at ps+0x7FC and ps+0x80C are vanilla-sized 4 dwords (= 128 bits).
+//     For idx ≥ 128 the test reads OOB and the idx is silently rejected.
+// =====================================================================
+
+// sub_41EBB0 — __usercall(eax = ps, [esp+4] = arg_0 idx, [esp+8] = arg_4 byte).
+static __declspec(naked) void call_PM_Weapon_FireImpulse(
+    playerState_s* /*ps*/, int /*arg_0*/, int /*arg_4*/)
+{
+    __asm
+    {
+        mov     eax, [esp+4]
+        push    [esp+12]
+        push    [esp+12]
+        mov     ecx, 0x0041EBB0
+        call    ecx
+        add     esp, 8
+        retn
+    }
+}
+
+// sub_41EEF0 — __usercall(eax=ps, edx=var_10, xmm0=xmm0_val, [esp+4]=ebp_state,
+// [esp+8]=var_C). Writes ps[+0x40] = edx, ps[+0x914] = xmm0.
+static __declspec(naked) void call_PM_Weapon_FinalizeSwap(
+    playerState_s* /*ps*/, int /*var_10_ptr*/, float /*xmm0_val*/,
+    int /*ebp_state*/, int /*var_C*/)
+{
+    __asm
+    {
+        mov     eax, [esp+4]
+        mov     edx, [esp+8]
+        movss   xmm0, dword ptr [esp+12]
+        push    [esp+20]
+        push    [esp+20]
+        mov     ecx, 0x0041EEF0
+        call    ecx
+        add     esp, 8
+        retn
+    }
+}
+
+// sub_41E6A0 — __usercall(ecx = ps), returns int.
+static __declspec(naked) int call_PM_Weapon_TestState(playerState_s* /*ps*/)
+{
+    __asm
+    {
+        mov     ecx, [esp+4]
+        mov     eax, 0x0041E6A0
+        jmp     eax
+    }
+}
+
+// sub_412BF0 — __usercall(eax = ps, ecx = arg).
+static __declspec(naked) void call_PM_Weapon_QueueState(
+    playerState_s* /*ps*/, int /*ecx_arg*/)
+{
+    __asm
+    {
+        mov     eax, [esp+4]
+        mov     ecx, [esp+8]
+        mov     edx, 0x00412BF0
+        call    edx
+        retn
+    }
+}
+
+// sub_406D00 — __usercall(eax = struct DWORD_46DE3B0+0x1958C, ecx = ps[+0xF8]),
+// returns ptr (eax).
+static __declspec(naked) int call_PM_Weapon_LookupSwapStruct(
+    int /*eax_struct*/, int /*ecx_arg*/)
+{
+    __asm
+    {
+        mov     eax, [esp+4]
+        mov     ecx, [esp+8]
+        mov     edx, 0x00406D00
+        jmp     edx
+    }
+}
+
+// sub_406E70 — __usercall(eax = 1, [esp+4]=ps, [esp+8]=eptr, [esp+C]=0, [esp+10]=0).
+static __declspec(naked) void call_PM_Weapon_TriggerSwapEvent(
+    int /*eax_in*/, void* /*ps*/, void* /*eptr*/, int /*a8*/, int /*aC*/)
+{
+    __asm
+    {
+        mov     eax, [esp+4]
+        push    [esp+20]
+        push    [esp+20]
+        push    [esp+20]
+        push    [esp+20]
+        mov     ecx, 0x00406E70
+        call    ecx
+        add     esp, 16
+        retn
+    }
+}
+
+// sub_7AA7A8 — vanilla rand-ish; __cdecl(), returns int.
+typedef int (__cdecl* call_PM_Weapon_RandTick_t)();
+static const call_PM_Weapon_RandTick_t call_PM_Weapon_RandTick =
+    (call_PM_Weapon_RandTick_t)0x007AA7A8;
+
+// sub_41D6A0 — __cdecl(int).
+typedef void (__cdecl* call_PM_Weapon_DispatchPickup_t)(int);
+static const call_PM_Weapon_DispatchPickup_t call_PM_Weapon_DispatchPickup =
+    (call_PM_Weapon_DispatchPickup_t)0x0041D6A0;
+
+// Vanilla globals referenced by sub_41F010.
+#define DWORD_8F0BE8     (*(void**)0x008F0BE8)        // SP/MP gate
+#define DWORD_8E0C7C     ((uint32_t*)0x008E0C7C)      // weapon-class table
+#define DWORD_8F71D4     (*(uint32_t*)0x008F71D4)
+#define DWORD_46DE3BC    (*(uint32_t*)0x046DE3BC)     // max valid weapon idx
+#define DWORD_46DE3B0    (*(uint32_t*)0x046DE3B0)     // base for per-weapon flag arrays
+#define DWORD_1F552C0    (*(void**)0x01F552C0)
+#define FLT_83DA58       (*(float*)0x0083DA58)
+#define FLT_8AF224       (*(float*)0x008AF224)
+
+// @faithful — full reconstruction of sub_41F010 + the loc_41EF40 tail chunk.
+//
+// Vanilla ABI : __usercall(ecx = pmove_t*, [esp+4] = arg_0 byte). Vanilla
+// caller (sub_422160+0x2A5) does `cmp eax, 4; setz cl; push ecx; mov ecx, edi;
+// call sub_41F010` — pushed dword has cl set (= isQuick) plus stack garbage
+// in upper 3 bytes. Clean ABI here (we own the caller) : (pmove_t*, int isQuick).
+extern "C" void T4_Reconstructed::PM_Weapon_Dropping(pmove_t* pm, int isQuick)
+{
+    auto sscr = (uint8_t*)pm;
+    auto ps   = (uint8_t*)pm->ps;
+
+    // ---- entry-time gate (sub_41F010+0..+2F) ----
+    bool special_path_skip = false;
+    {
+        auto gate = (uint8_t*)DWORD_8F0BE8;
+        if (gate && gate[0x10] != 0 && (ps[0x0C] & 4)) {
+            uint32_t v = *(uint32_t*)(ps + 0x8B0);
+            uint32_t edx = v * 3;
+            if (DWORD_8E0C7C[edx] != 0xA) {
+                special_path_skip = true;          // jump to loc_41F094
+            }
+        }
+    }
+
+    uint32_t edx;                                  // candidate new weapon idx
+
+    if (special_path_skip || (ps[0x0C] & 8)) {
+        // loc_41F094 : edx = 0
+        edx = 0;
+    } else {
+        // @faithful : vanilla `movzx edx, byte ptr [ecx+18h]`. Field at +0x18
+        // = pm->cmd.weapon, BYTE-sized. Reading dword would propagate garbage
+        // into the bitmap-test index → crash on OOB. Idx ≥ 256 support requires
+        // extending the upstream usercmd field separately.
+        edx = *(uint8_t*)(sscr + 0x18);
+
+        // Bitmap test 1 : ps_s ownedWeapons at +0x7FC (vanilla 4 dwords).
+        // For idx ≥ 128 this OOB-reads; deferred to bitmap-extension phase.
+        uint32_t bit  = 1u << (edx & 0x1F);
+        uint32_t word = edx >> 5;
+        bool owned    = (*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) != 0;
+
+        if (!owned
+            || (ps[0x10] & 0x80)
+            || (((*(uint32_t*)(ps + 0xCC) & 0x4000) != 0)
+                && *(uint32_t*)((uint8_t*)bg_weaponDefs[edx] + 0x5F0) == 0)) {
+            edx = 0;
+        } else {
+            // Range check: edx < dword_46DE3BC + 1 ?
+            if (edx >= DWORD_46DE3BC + 1) edx = 0;
+        }
+    }
+
+    // loc_41F096 : refined bitmap re-test (also rejects idx ≥ 128 for the
+    // same reason). If the bit isn't set, fall back to weapon 0.
+    {
+        uint32_t bit  = 1u << (edx & 0x1F);
+        uint32_t word = edx >> 5;
+        if ((*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) == 0) {
+            edx = 0;
+        }
+    }
+
+    // loc_41F0B2 : write the new ps.weapon. @faithful — vanilla `mov ecx,
+    // [esi+104h]; movzx eax, dl; mov [esi+104h], eax`. Since edx is already
+    // byte-sized (from the byte read at +0x18 above), the movzx is a no-op
+    // here ; we just store the dword value.
+    uint32_t old_idx = *(uint32_t*)(ps + 0x104);
+    *(uint32_t*)(ps + 0x104) = edx;
+
+    T4::WeaponDef* new_def = bg_weaponDefs[edx];
+    T4::WeaponDef* old_def = bg_weaponDefs[old_idx];
+    auto new_def_b = (uint8_t*)new_def;
+    auto old_def_b = (uint8_t*)old_def;
+
+    // Cl flag at loc_41F0F4 area.
+    bool cl_flag = (*(uint32_t*)(new_def_b + 0x140) != DWORD_8F71D4)
+                && (*(uint32_t*)(new_def_b + 0x5F0) == 0);
+
+    // Special branch : new_def[+0x144] == 1 AND DWORD_1F552C0[+0x10] != 0
+    if (*(uint32_t*)(new_def_b + 0x144) == 1) {
+        auto edi = (uint8_t*)DWORD_1F552C0;
+        if (edi && edi[0x10] != 0) {
+            cl_flag = false;
+            goto L_loc_41F148;
+        }
+    }
+
+    // loc_41F109 — alt-firemode swap detection.
+    if (cl_flag && old_def_b && *(uint32_t*)(old_def_b + 0x154) == 3) {
+        uint32_t alt_idx = *(uint32_t*)(old_def_b + 0x63C);
+        if (edx != alt_idx) {
+            // Swap ps.weapon to old's alt-firemode idx, clear weaponstate,
+            // call sub_41EBB0 with the requested new idx, return DIRECTLY
+            // (vanilla loc_41F141 path — never touches the chunk).
+            *(uint32_t*)(ps + 0x104) = alt_idx;
+            *(uint32_t*)(ps + 0x108) = 0;
+            call_PM_Weapon_FireImpulse((playerState_s*)ps, (int)edx, 0);
+            return;
+        }
+    }
+
+L_loc_41F148:
+    // loc_41F148 — same-weapon vs different-weapon split.
+    if (old_idx == edx) {
+        *(uint32_t*)(ps + 0x108) = 0;
+        if (*(uint32_t*)(ps + 4) >= 8) {
+            return;                          // vanilla : jge loc_41F141; pop; retn
+        }
+        *(uint32_t*)(ps + 0x910) = ~*(uint32_t*)(ps + 0x910) & 0x200;
+        return;                              // vanilla : pop; retn
+    }
+
+    // loc_41F179 — different weapon : full state-machine transition.
+    {
+        uint32_t eax_idx  = edx;
+        uint32_t bit      = 1u << (eax_idx & 0x1F);
+        uint32_t word     = eax_idx >> 5;
+        uint32_t altmap_w = *(uint32_t*)(ps + word * 4 + 0x80C);
+        uint32_t edi_flag = ((altmap_w & bit) == 0) ? 1 : 0;
+        *(uint32_t*)(ps + word * 4 + 0x80C) = altmap_w | bit;
+
+        int   arg_flag   = isQuick;          // [esp+arg_0] in vanilla : initial = caller's setz cl
+        int   var_C      = 0;
+        void* var_10_ptr = nullptr;
+        int   ebp_state  = 0;
+        float xmm0_val   = FLT_8AF224;       // var_4 in vanilla : default (loc_41F23E)
+
+        if (old_idx == 0) {
+            var_C = 0;
+            if (*(uint32_t*)(new_def_b + 0x144) == 2) {
+                arg_flag = 1;
+            }
+        } else {
+            // loc_41F21B — old_idx != 0 : detect alt-firemode swap.
+            if (edx == 0) {
+                var_C = 0;
+            } else {
+                auto old_def_for_alt = (uint8_t*)bg_weaponDefs[old_idx];
+                if (old_def_for_alt
+                    && edx == *(uint32_t*)(old_def_for_alt + 0x63C)) {
+                    var_C = 1;
+                } else {
+                    var_C = 0;
+                }
+            }
+        }
+
+        // loc_41F1D0 — common path.
+        if (*(uint32_t*)(old_def_b + 0x5F0) != 0
+         || *(uint32_t*)(new_def_b + 0x5F0) != 0) {
+            arg_flag = 1;
+        }
+
+        // loc_41F1E9 — if var_C set, alt-firemode swap → loc_41F323.
+        if (var_C != 0) {
+            var_10_ptr   = (void*)*(uint32_t*)(new_def_b + 0x490);
+            float ps_914 = *(float*)(ps + 0x914);
+            xmm0_val     = (FLT_83DA58 > ps_914) ? FLT_83DA58 : ps_914;
+            ebp_state    = 0x12;
+            goto L_loc_41F323;
+        }
+
+        // loc_41F23E — var_C == 0, set xmm0 default and pick var_10/ebp_state.
+        xmm0_val = FLT_8AF224;
+        if (*(uint32_t*)(new_def_b + 0x5F4) != 0) {
+            var_10_ptr = nullptr;
+            goto L_loc_41F2AE;
+        }
+
+        // loc_41F25A
+        if (call_PM_Weapon_TestState((playerState_s*)ps) != 0) {
+            var_10_ptr = (void*)*(uint32_t*)(new_def_b + 0x4A0);
+            ebp_state  = 0x16;
+            goto L_loc_41F2AE;
+        }
+
+        // loc_41F272
+        if (edi_flag != 0) {
+            var_10_ptr = (void*)*(uint32_t*)(new_def_b + 0x49C);
+            ebp_state  = 0x0C;
+            goto L_loc_41F2AE;
+        }
+
+        // loc_41F287
+        if (arg_flag != 0) {
+            var_10_ptr = (void*)*(uint32_t*)(new_def_b + 0x498);
+            ebp_state  = 0x14;
+            goto L_loc_41F2AE;
+        }
+
+        // loc_41F29F / loc_41F2AA — default.
+        var_10_ptr = (void*)*(uint32_t*)(new_def_b + 0x488);
+        ebp_state  = 0x0B;
+
+    L_loc_41F2AE:
+        if (old_idx != 0) {
+            int sw_arg = (edi_flag != 0) ? 0x18 : 0x17;
+            call_PM_Weapon_QueueState((playerState_s*)ps, sw_arg);
+
+            if (*(uint32_t*)(ps + 4) < 8) {
+                uint32_t struct_va = DWORD_46DE3B0 + 0x1958C;
+                if (*(uint32_t*)struct_va != 0) {
+                    int   sub_res = call_PM_Weapon_LookupSwapStruct(
+                                        (int)struct_va, *(int*)(ps + 0xF8));
+                    auto  edi_ptr = (uint8_t*)(uintptr_t)sub_res;
+                    if (edi_ptr && *(uint32_t*)(edi_ptr + 0x34) != 0) {
+                        uint32_t rnd  = (uint32_t)call_PM_Weapon_RandTick();
+                        uint32_t mod  = rnd % *(uint32_t*)(edi_ptr + 0x34);
+                        void*    eptr = edi_ptr + (mod * 5) * 4 + 0x38;
+                        if (eptr) {
+                            call_PM_Weapon_TriggerSwapEvent(1, ps, eptr, 0, 0);
+                        }
+                    }
+                }
+            }
+        }
+
+    L_loc_41F323:
+        if (*(uint32_t*)(new_def_b + 0x5F4) != 0) {
+            *(uint32_t*)(ps + 0x40)  = (uint32_t)(uintptr_t)var_10_ptr;
+            *(uint32_t*)(ps + 0x108) = (uint32_t)ebp_state;
+            *(float*)   (ps + 0x914) = xmm0_val;
+            uint32_t flags0C = *(uint32_t*)(ps + 0x0C);
+            if (flags0C & 1) {
+                *(uint32_t*)(ps + 0x0C) = flags0C | 0x200;
+            }
+            // loc_41F350
+            if (*(uint32_t*)(ps + 4) < 8) {
+                *(uint32_t*)(ps + 0x910) = ~*(uint32_t*)(ps + 0x910) & 0x200;
+            }
+        } else {
+            // loc_41F36C
+            call_PM_Weapon_FinalizeSwap((playerState_s*)ps,
+                                        (int)(uintptr_t)var_10_ptr, xmm0_val,
+                                        ebp_state, var_C);
+        }
+
+        // loc_41F380 — per-weapon flag arrays at DWORD_46DE3B0 + (f8 * 0x594) + 0x87EA8/B0.
+        {
+            uint32_t f8       = *(uint32_t*)(ps + 0xF8);
+            uint32_t edi_base = DWORD_46DE3B0;
+
+            // Array A keyed by new_def[+0x140]
+            {
+                uint32_t base = edi_base + f8 * 0x594;
+                uint32_t k    = *(uint32_t*)(new_def_b + 0x140);
+                *(uint32_t*)(base + 0x87EA8) = 0;
+                *(uint32_t*)(base + 0x87EAC) = 0;
+                uint32_t bw  = k >> 5;
+                uint32_t bb  = 1u << (k & 0x1F);
+                *(uint32_t*)(base + bw * 4 + 0x87EA8) |= bb;
+            }
+
+            // Array B keyed by new_def[+0x148]
+            {
+                uint32_t base = edi_base + f8 * 0x594;
+                uint32_t k    = *(uint32_t*)(new_def_b + 0x148);
+                *(uint32_t*)(base + 0x87EB0) = 0;
+                *(uint32_t*)(base + 0x87EB4) = 0;
+                uint32_t bw  = k >> 5;
+                uint32_t bb  = 1u << (k & 0x1F);
+                *(uint32_t*)(base + bw * 4 + 0x87EB0) |= bb;
+            }
+        }
+        // fall through to chunk
+    }
+
+L_chunk_41EF40:
+    // ---- inlined loc_41EF40 chunk (vanilla : eax=old_idx, ecx=ps) ----
+    if (old_idx == 0) return;
+    {
+        uint32_t bit  = 1u << (old_idx & 0x1F);
+        uint32_t word = old_idx >> 5;
+        if ((*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) == 0) return;
+
+        auto odb = (uint8_t*)bg_weaponDefs[old_idx];
+        if (!odb || *(uint32_t*)(odb + 0x5EC) == 0) return;
+
+        uint32_t off3FC = *(uint32_t*)(odb + 0x3FC);
+        if (*(uint32_t*)(ps + off3FC * 4 + 0x5FC) != 0) return;
+
+        uint32_t off3F4 = *(uint32_t*)(odb + 0x3F4);
+        if (*(uint32_t*)(ps + off3F4 * 4 + 0x17C) != 0) return;
+
+        if (*(uint32_t*)(odb + 0x6AC) != 0) return;
+
+        call_PM_Weapon_DispatchPickup(0);
+    }
+}
+
+#undef DWORD_8F0BE8
+#undef DWORD_8E0C7C
+#undef DWORD_8F71D4
+#undef DWORD_46DE3BC
+#undef DWORD_46DE3B0
+#undef DWORD_1F552C0
+#undef FLT_83DA58
+#undef FLT_8AF224
+
+
+// =====================================================================
 // Reconstructed reload handlers — sub_41F630 (RELOAD_START) and
 // sub_41F780 (RELOADING). Both cdecl(pm, callValidation). They share the
 // chunk @ 0x0041E940 (call_PM_Weapon_ReloadFinalize) for the "fast-reload" branch.
@@ -965,11 +1385,11 @@ extern "C" void T4_Reconstructed::PM_Weapon_ReloadStart(pmove_t* pm, int callVal
     }
 
     // loc_41F654
-    if (raw_int(ps, 0x40) != 0) 
+    if (ps->weaponTime != 0) 
         return;
 
     // Force INTERUPT state if weapon supports interruptible reload AND attack pressed
-    if (raw_int(w, 0x628) != 0 && (raw_byte(pm, 0x8) & 1) != 0) 
+    if (w->bSegmentedReload != 0 && (pm->cmd.buttons & 1) != 0) 
     {
         ps->weaponstate = (weaponstate_t)0xA;       // RELOAD_START_INTERUPT
     }
@@ -978,7 +1398,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_ReloadStart(pmove_t* pm, int callVal
     if (ps->weaponstate == 0xA) 
     {
         const WeaponDef* w2 = GetWeaponDef(ps->weapon);
-        int idx = raw_int(w2, 0x3FC);
+        int idx = w2->iClipIndex;
         if (raw_int(ps, 0x5FC + idx * 4) != 0) 
         {
             goto path_clear_bit;                     // jmp loc_41F6B0
@@ -999,7 +1419,7 @@ path_clear_bit:
         raw_iref(ps, 0x81C + (wIdx >> 5) * 4) &= ~(1u << (wIdx & 0x1F));
     }
 
-    if (raw_int(w, 0x480) != 0) 
+    if (w->iReloadEndTime != 0) 
     {
         // loc_41F6FF: state = RELOAD_END (0xB), submit anim event 0x10, queue notify 0x14
         ps->weaponstate = (weaponstate_t)0xB;
@@ -1008,7 +1428,7 @@ path_clear_bit:
             int v = raw_int(ps, 0x910);
             raw_iref(ps, 0x910) = ((~v) & 0x200) | 0x10;
         }
-        raw_iref(ps, 0x40) = raw_int(w, 0x480);
+        ps->weaponTime = w->iReloadEndTime;
         int head = raw_int(ps, 0xD0) & 3;
         raw_iref(ps, 0xD4 + head * 4) = 0x14;
         int head2 = raw_int(ps, 0xD0) & 3;
@@ -1040,16 +1460,16 @@ extern "C" void T4_Reconstructed::PM_Weapon_Reloading(pmove_t* pm, int callValid
     {
         call_PM_Weapon_RefreshReload(ps);
 
-        if (raw_int(ps, 0x40) != 0) 
+        if (ps->weaponTime != 0) 
             return;          // bail to loc_41F8BE
     }
 
     // loc_41F7AE
-    if (raw_int(ps, 0x40) != 0) 
+    if (ps->weaponTime != 0) 
         return;
 
     // Force INTERUPT state if weapon supports interruptible reload AND attack pressed
-    if (raw_int(w, 0x628) != 0 && (raw_byte(pm, 0x8) & 1) != 0) 
+    if (w->bSegmentedReload != 0 && (pm->cmd.buttons & 1) != 0) 
         ps->weaponstate = (weaponstate_t)8;          // RELOADING_INTERUPT
 
     // loc_41F7D2 — clear weapon-pickup bit
@@ -1058,7 +1478,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Reloading(pmove_t* pm, int callValid
         raw_iref(ps, 0x81C + (wIdx >> 5) * 4) &= ~(1u << (wIdx & 0x1F));
     }
 
-    if (raw_int(w, 0x628) == 0) 
+    if (w->bSegmentedReload == 0) 
     {
         // loc_41F89B: state = READY
 
@@ -1085,11 +1505,11 @@ extern "C" void T4_Reconstructed::PM_Weapon_Reloading(pmove_t* pm, int callValid
     }
 
     // loc_41F81A
-    if (raw_int(w, 0x480) != 0) 
+    if (w->iReloadEndTime != 0) 
     {
         ps->weaponstate = (weaponstate_t)0xB;        // RELOAD_END
         call_PM_Weapon_SubmitAnimEvent(ps, 0x10);
-        raw_iref(ps, 0x40) = raw_int(w, 0x480);
+        ps->weaponTime = w->iReloadEndTime;
         int head = raw_int(ps, 0xD0) & 3;
         raw_iref(ps, 0xD4 + head * 4) = 0x14;
         int head2 = raw_int(ps, 0xD0) & 3;
@@ -1119,15 +1539,15 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeFire(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
 
-    if (raw_int(w, 0x60C) != 0) 
+    if (w->bayonet != 0) 
     {
         ps->weaponstate = (weaponstate_t)0xF;
-        raw_iref(ps, 0x40) = 0x12C;
-        raw_iref(ps, 0x44) = 0;
+        ps->weaponTime = 0x12C;
+        ps->weaponDelay = 0;
         return;
     }
 
-    if (raw_int(w, 0x3CC) == 0) 
+    if (w->knifeModel == 0) 
     {
         // Path C: tail-call sub_4225D0
         call_PM_Weapon_FinalizeStateExit(ps);
@@ -1135,8 +1555,8 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeFire(playerState_s* ps)
     }
 
     ps->weaponstate = (weaponstate_t)0xF;
-    raw_iref(ps, 0x40) = raw_int(w, 0x498);
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = w->quickRaiseTime;
+    ps->weaponDelay = 0;
 
     if (raw_int(ps, 0x944) < 3 && ps->pm_type < 8) 
     {
@@ -1155,8 +1575,8 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeFire(playerState_s* ps)
 extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeCharge(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    raw_iref(ps, 0x40) = raw_int(w, 0x460);
-    raw_iref(ps, 0x44) = raw_int(w, 0x440);
+    ps->weaponTime = w->meleeChargeTime;
+    ps->weaponDelay = w->meleeChargeDelay;
 
     if (ps->pm_type < 8) 
     {
@@ -1201,14 +1621,14 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandPrepare(playerState_s* p
 {
     raw_iref(ps, 0x10) |= 2;
     ps->weaponstate = (weaponstate_t)0x13;
-    raw_iref(ps, 0x40) = 0;
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = 0;
+    ps->weaponDelay = 0;
 
     if (raw_int(ps, 0x4C) != 0x3FF) 
         return;
 
     const WeaponDef* w = GetWeaponDef(raw_int(ps, 0xFC));
-    raw_iref(ps, 0x48) = raw_int(w, 0x4D4);
+    raw_iref(ps, 0x48) = w->fuseTime;
 }
 
 // @faithful — chunk @ 0x00421410 — OFFHAND_START → OFFHAND_HOLD transition.
@@ -1219,20 +1639,20 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
     auto* ps = *(playerState_s**)pm;
     const WeaponDef* w = GetWeaponDef(raw_int(ps, 0xFC));   // offHandIndex
 
-    if (raw_int(w, 0x6B8) == 0
-        && (raw_int(pm, 0x40) & 0xC000) != 0
-        && (raw_int(pm, 0x8)  & 0xC000) != 0) 
+    if (w->holdButtonToThrow == 0
+        && (pm->oldcmd.buttons & 0xC000) != 0
+        && (pm->cmd.buttons  & 0xC000) != 0) 
     {
         // Inhibit transition: set fireTime=1 and exit
-        raw_iref(ps, 0x44) = 1;
+        ps->weaponDelay = 1;
         return;
     }
 
     // Standard transition path
     ps->weaponstate = (weaponstate_t)0x12;
-    raw_iref(ps, 0x40) = raw_int(w, 0x448);
+    ps->weaponTime = w->iFireTime;
     raw_iref(ps, 0x10) |= 2;
-    raw_iref(ps, 0x44) = raw_int(w, 0x438);
+    ps->weaponDelay = w->iFireDelay;
 
     if (ps->pm_type >= 8)
         return;
@@ -1334,8 +1754,8 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pmove_t* pm)
 
     // [+0x4C] == 0x3FF
     const WeaponDef* w = GetWeaponDef(raw_int(ps, 0xFC));
-    int wOff_3FC = raw_int(w, 0x3FC);
-    int wOff_3F4 = raw_int(w, 0x3F4);
+    int wOff_3FC = w->iClipIndex;
+    int wOff_3F4 = w->iAmmoIndex;
     int sum = raw_int(ps, 0x5FC + wOff_3FC * 4) + raw_int(ps, 0x17C + wOff_3F4 * 4);
 
     // Vanilla: cmp sum, 0; jnz loc_4215FF (sum!=0 → call sub_41E5E0 path).
@@ -1435,8 +1855,8 @@ void T4M::EnterLowReadyStart(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
     ps->weaponstate = WEAPON_LOWREADY_START;
-    raw_iref(ps, 0x40) = w->iLowReadyInTime;
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = w->iLowReadyInTime;
+    ps->weaponDelay = 0;
     if (ps->pm_type < 8) 
     {
         int v = raw_int(ps, 0x910);
@@ -1448,8 +1868,8 @@ void T4M::EnterLowReadyEnd(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
     ps->weaponstate = WEAPON_LOWREADY_END;
-    raw_iref(ps, 0x40) = w->iLowReadyOutTime;
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = w->iLowReadyOutTime;
+    ps->weaponDelay = 0;
     if (ps->pm_type < 8) 
     {
         int v = raw_int(ps, 0x910);
@@ -1510,8 +1930,8 @@ void T4M::PM_Weapon_LowReady_Start(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
     ps->weaponstate = WEAPON_LOWREADY_LOOP;
-    raw_iref(ps, 0x40) = w->iLowReadyLoopTime;   // 0 = infinite (LOOP case is no-op)
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = w->iLowReadyLoopTime;   // 0 = infinite (LOOP case is no-op)
+    ps->weaponDelay = 0;
     if (ps->pm_type < 8) 
     {
         int v = raw_int(ps, 0x910);
@@ -1530,8 +1950,8 @@ void T4M::PM_Weapon_LowReady_End(playerState_s* ps)
         return;
     }
     ps->weaponstate = WEAPON_READY;
-    raw_iref(ps, 0x40) = 0;
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = 0;
+    ps->weaponDelay = 0;
     if (ps->pm_type < 8) 
     {
         int v = raw_int(ps, 0x910);
@@ -1543,8 +1963,8 @@ void T4M::PM_Weapon_LowReady_End(playerState_s* ps)
 extern "C" void T4_Reconstructed::PM_Weapon_Tick_SprintRaise(playerState_s* ps)
 {
     ps->weaponstate = (weaponstate_t)0x18;
-    raw_iref(ps, 0x40) = 0;
-    raw_iref(ps, 0x44) = 0;
+    ps->weaponTime = 0;
+    ps->weaponDelay = 0;
 
     if (ps->pm_type >= 8) 
         return;
@@ -1618,7 +2038,7 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
     if ((ps->eFlags & 0x400) != 0)
     {
         const int kClearMask = 0x800 | 0x4000 | 0x8000 | 0x80000 | 0x400000;
-        raw_iref(pm, 0x8) &= ~kClearMask;
+        pm->cmd.buttons = (T4::button_mask)(pm->cmd.buttons & ~kClearMask);
     }
 
     if ((ps->eFlags & 0x400) != 0 
@@ -1627,8 +2047,8 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
             || ps->weaponstate == WEAPON_LOWREADY_END))
     {
         ps->weaponstate = WEAPON_LOWREADY_LOOP;
-        raw_iref(ps, 0x40) = 0;
-        raw_iref(ps, 0x44) = 0;
+        ps->weaponTime = 0;
+        ps->weaponDelay = 0;
 
         if (ps->pm_type < 8) 
         {
@@ -1644,7 +2064,7 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
     if (raw_int(ps, 0x0C)  & 0x400)
         return;
 
-    if (raw_int(ps, 0xCC) & 0x300) 
+    if (ps->eFlags & 0x300) 
         return;
 
     // SECTION 2: Swim transitions (when [+0x944] < 3)
@@ -1751,12 +2171,12 @@ dispatch_setup:
     // [ps+0x914] update
     bool do_float_store = false;
     bool first_block = (ps->pm_flags & 1) != 0
-        && raw_byte(pm, 0x1A) == 0
-        && raw_byte(pm, 0x1B) == 0;
+        && pm->cmd.forward == 0
+        && pm->cmd.right == 0;
 
     if (first_block) 
     {
-        if (raw_float(ps, 0x110) != 0.0f) 
+        if (ps->fWeaponPosFrac != 0.0f) 
             do_float_store = true;
     }
     if (!do_float_store) 
@@ -1773,10 +2193,10 @@ dispatch_setup:
     // Bail if not anim-sync and any timer pending
     if (animSync == 0) 
     {
-        if (raw_int(ps, 0x40) != 0) 
+        if (ps->weaponTime != 0) 
             return;
 
-        if (raw_int(ps, 0x44) != 0) 
+        if (ps->weaponDelay != 0) 
             return;
     }
 
@@ -1798,8 +2218,8 @@ dispatch_setup:
             raw_iref(ps, 0x910) = (~v) & 0x200;
             break;
         case WEAPON_DROPPING:
-        case WEAPON_DROPPING_QUICK: 
-            call_PM_Weapon_TickDrop(pm, 1);
+        case WEAPON_DROPPING_QUICK:
+            T4_Reconstructed::PM_Weapon_Dropping(pm, 1);
             break;
         case WEAPON_RELOADING:
         case WEAPON_RELOADING_INTERUPT:
@@ -1961,7 +2381,8 @@ namespace T4M
 }
 
 // === Vanilla globals (read-only) ===
-static const uintptr_t ADDR_bg_WeaponDefs        = 0x008F6770;
+// ADDR_bg_WeaponDefs removed: bg_weaponDefs is relocated by SetupBgWeaponDefsTable
+// to a heap address. Use the runtime pointer `::bg_weaponDefs` instead.
 static const uintptr_t ADDR_cg_gun_move_f        = 0x03688A88;
 static const uintptr_t ADDR_cg_gun_move_r        = 0x03688A70;
 static const uintptr_t ADDR_cg_gun_move_u        = 0x0368EB98;
@@ -2005,7 +2426,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
     int weaponIdx = (CgI(cg, 0xAACA8) & 0x02)
                   ? CgI(cg, 0xAAD94)
                   : CgI(cg, 0xAAD9C);
-    const WeaponDef* wd = ((const WeaponDef* const*)ADDR_bg_WeaponDefs)[weaponIdx];
+    const WeaponDef* wd = bg_weaponDefs[weaponIdx];
 
     int stanceBits = CgI(cg, 0xACE1C);
     bool prone = (stanceBits & 0x08) != 0;
@@ -2238,7 +2659,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelRotOfs(void* cg, float* outRo
     int weaponIdx = (CgI(cg, 0xAACA8) & 0x02)
                   ? CgI(cg, 0xAAD94)
                   : CgI(cg, 0xAAD9C);
-    const WeaponDef* wd = ((const WeaponDef* const*)ADDR_bg_WeaponDefs)[weaponIdx];
+    const WeaponDef* wd = bg_weaponDefs[weaponIdx];
 
     int stanceBits = CgI(cg, 0xACE1C);
     bool prone = (stanceBits & 0x08) != 0;

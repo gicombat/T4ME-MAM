@@ -1,10 +1,16 @@
 #include "StdInc.h"
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "T4.h"
 #include "MemoryMgr.h"
 #include <safetyhook.hpp>
 #include <cstddef>
 #include <cstring>
+
+namespace T4M { extern BYTE* cg_weaponInfo; } // runtime base, set by SetupCgWeaponInfoTable
 
 namespace T4M
 {
@@ -68,8 +74,9 @@ extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
             ? *(int*)((char*)ps + 0xFC)        // offhand
             : *(int*)((char*)ps + 0x104);      // main
 
-        // Tree handle stored by sub_464BF0 at dword_3463C40 + weapon_idx*0x48 + 0x30.
-        void* tree = *(void**)((char*)0x03463C40 + weapon_idx * 0x48 + 0x30);
+        // Tree handle stored by sub_464BF0 at cg_weaponInfo[weapon_idx] + 0x30.
+        // cg_weaponInfo is relocated to the heap by SetupCgWeaponInfoTable.
+        void* tree = *(void**)((char*)T4M::cg_weaponInfo + weapon_idx * 0x48 + 0x30);
         if (tree) 
         {
             int   slot  = 0x25 + (vm_state - 0x20);

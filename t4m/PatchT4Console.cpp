@@ -8,7 +8,11 @@
 // Started: 2015-07-12
 // ==========================================================
 
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "StdInc.h"
 #include "T4.h"
 #include <string>

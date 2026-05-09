@@ -30,18 +30,7 @@ float safeArea_vertical_set = 1.f;
 
 #define safeArea_vert safeArea_vertical_set
 
-struct ScreenPlacement
-{
-	float scaleVirtualToReal[2];
-	float scaleVirtualToFull[2];
-	float scaleRealToVirtual[2];
-	float virtualViewableMin[2];
-	float virtualViewableMax[2];
-	float realViewportSize[2];
-	float realViewableMin[2];
-	float realViewableMax[2];
-	float subScreen[2];
-};
+// ScreenPlacement defined in cod/structs.hpp under T4::, exposed via `using namespace T4;` from T4.h.
 
 
 float* ScrPlace_CalcSafeAreaOffsets(float* realViewableMin, float* realViewableMax, float viewportX, float viewportY, float viewportWidth, float viewportHeight, float aspect, float safeAreaRatioHorz, float safeAreaRatioVert, float* virtualViewableMin, float* virtualViewableMax, int width, int height)

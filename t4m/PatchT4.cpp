@@ -31,6 +31,10 @@ void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
 void PatchT4MAM_WeaponState();
+void PatchT4MAM_CentityPropagator();
+// PM_Weapon_Dropping (sub_41F010) is reconstructed in C++ and called
+// directly from T4M::PM_Weapon — no install function needed.
+// Defined in PatchT4MAM_WeaponState.cpp.
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -42,6 +46,8 @@ void PatchT4E_Pathing();
 void PatchT4E_Input();
 
 void PatchT4E_UI();
+
+void PatchT4_Temp();
 
 void Sys_RunInit()
 {
@@ -70,8 +76,9 @@ void PatchT4()
 	PatchT4_Script();
 	PatchT4_Load();
 	PatchT4MAM_Override();
-	PatchT4MAM_WeaponState(); 
-	PatchT4MAM_LowReady(); 
+	PatchT4MAM_WeaponState();
+	PatchT4MAM_LowReady();
+	PatchT4MAM_CentityPropagator();
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();
@@ -82,6 +89,8 @@ void PatchT4()
 	PatchT4E_Pathing();
 
 	PatchT4E_Input();
+
+	PatchT4_Temp(); // XModel meld trace — temp diagnostic
 
 	// check if game got started using steam
 	if (!GetModuleHandle("gameoverlayrenderer.dll"))
@@ -167,9 +176,9 @@ void PatchT4_Menus()
 
 	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) 
 	{
-		game::cg_s* cgArray = (game::cg_s*)0x034732B8;
+		T4::cg_s* cgArray = (T4::cg_s*)0x034732B8;
 
-		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == game::pmtype_t::PM_INTERMISSION) 
+		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == T4::pmtype_t::PM_INTERMISSION) 
 		{
 			ctx.eip = 0x006680DD;
 			return;

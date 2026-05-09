@@ -1,6 +1,6 @@
 #pragma once
 
-namespace game
+namespace T4
 {
 	WEAK symbol<void(scriptInstance_t inst, const char * errorMsg)>AnimTreeCompileError{ 0x0, 0x67D4B0};
 	WEAK symbol<int(scriptInstance_t inst)>GetAnimTreeParseProperties{ 0x0, 0x67D510};

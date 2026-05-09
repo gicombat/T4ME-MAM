@@ -11,7 +11,11 @@
 // Started: 2011-12-19
 // ==========================================================
 
-#include "t4_headers.h"
+#include "enums.hpp"
+#include "structs.hpp"
+#include "xasset.hpp"
+#include "clientscript/clientscript_public.hpp"
+using namespace T4;
 #include "StdInc.h"
 #include "T4.h"
 
@@ -140,7 +144,7 @@ int __cdecl T4M::Scr_GetNumParam(scriptInstance_t inst)
 	return value[4298 * inst];
 }
 
-RefString *__cdecl GetRefString(scriptInstance_t inst, unsigned int stringValue)
+RefString *__cdecl T4M::GetRefString(scriptInstance_t inst, unsigned int stringValue)
 {
 	DWORD *gScrMemTreePub = (DWORD *)0x03702390;
 	return (RefString *)&(&gScrMemTreePub)[3 * stringValue + 1];
@@ -150,13 +154,13 @@ char *__cdecl T4M::SL_ConvertToString(unsigned int stringValue, scriptInstance_t
 {
 	char *v3;
 	if (stringValue)
-		v3 = GetRefString(inst, stringValue)->str;
+		v3 = T4M::GetRefString(inst, stringValue)->str;
 	else
 		v3 = 0;
 	return v3;
 }
 
-void Scr_ClearOutParams(scriptInstance_t v1)
+void T4M::Scr_ClearOutParams(scriptInstance_t v1)
 {
 	static DWORD dwCall = 0x00693DA0;
 
@@ -167,9 +171,9 @@ void Scr_ClearOutParams(scriptInstance_t v1)
 	}
 }
 
-void __cdecl IncInParam(scriptInstance_t inst)
+void __cdecl T4M::IncInParam(scriptInstance_t inst)
 {
-	Scr_ClearOutParams(inst);
+	T4M::Scr_ClearOutParams(inst);
 
 	// TO-DO: define sys_error
 	//if (dword_A05AC98[4298 * inst] == dword_A05AC8C[4298 * inst])
@@ -178,9 +182,9 @@ void __cdecl IncInParam(scriptInstance_t inst)
 	++((DWORD *)0xA05ACA0)[4296 * inst];
 }
 
-void __cdecl Scr_AddInt(int value, scriptInstance_t inst)
+void __cdecl T4M::Scr_AddInt(int value, scriptInstance_t inst)
 {
-	IncInParam(inst);
+	T4M::IncInParam(inst);
 	*(DWORD *)((((DWORD *)0x03BD4710)[4296 * value]) + 4) = 6;
 	*(DWORD *)(((DWORD *)0x03BD4710)[4296 * value]) = value;
 }
@@ -352,7 +356,7 @@ void GScr_SetLowReady(scr_entref_t entref)
 {
 	if (T4M::Scr_GetNumParam(SCRIPTINSTANCE_SERVER) < 1)
 		return;
-	int enable = Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
+	int enable = T4M::Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
 
 	unsigned int idx = entref.entnum;
 	if (idx >= 1024)
@@ -366,7 +370,7 @@ void GScr_SetLowReady(scr_entref_t entref)
 #pragma endregion customFunctions
 
 
-int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
+int __cdecl T4M::Scr_GetInt(scriptInstance_t inst, unsigned int index)
 {
 	static DWORD func = 0x00699C50;
 	int result;
@@ -387,7 +391,7 @@ int __stdcall DisablePushPlayer() {
 		return 0;
 	}
 	else
-		return Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
+		return T4M::Scr_GetInt(SCRIPTINSTANCE_SERVER, 0);
 
 }
 
