@@ -21,8 +21,7 @@
 #include "Utils.h"
 #include "Utils\FileIO.h"
 #include "io.h"
-#define __thread __declspec(thread)
-#define HardDebugBreak() MessageBoxA(0, __FUNCTION__, 0, 0);
+//#include "t4m.rc"
 
 // first two number => correspond to T4M Enhanced dll version (current r49 on github)
 // 0 => separator
@@ -30,6 +29,10 @@
 #define INTERNAL_VERSION_NUMBER 4905
 #define STRINGIFY(x) #x
 #define TO_STRING(x) STRINGIFY(x)
+
+#define __thread __declspec(thread)
+#define HardDebugBreak() MessageBoxA(0, __FUNCTION__, 0, 0);
+
 
 #define IS_BETA
 #define BETA "b5"

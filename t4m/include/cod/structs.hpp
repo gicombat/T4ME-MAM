@@ -1135,6 +1135,13 @@ namespace T4
 		char upmove; //OFS: 0x18 SIZE: 0x1
 		char pitchmove; //OFS: 0x19 SIZE: 0x1
 		char yawmove; //OFS: 0x1A SIZE: 0x1
+		// T4M extension : reuses vanilla alignment padding byte at offset 0x1B
+		// (compiler reserved for __int16 alignment of wiimoteGunPitch). Stores
+		// high byte of weapon idx (low byte stays in `weapon` at +0x14). Combined
+		// gives 16-bit weapon idx, sufficient for T4M weapon pool (max 512).
+		// Filled by CL_FinishMove detour ; serialized by MSG_*Usercmd detours.
+		// See plan_usercmd_weapon_word_extension.md for the long-term refactor.
+		unsigned char weapon_high; //OFS: 0x1B SIZE: 0x1 — T4M
 		__int16 wiimoteGunPitch; //OFS: 0x1C SIZE: 0x2
 		__int16 wiimoteGunYaw; //OFS: 0x1E SIZE: 0x2
 		__int16 gunXOfs; //OFS: 0x20 SIZE: 0x2
@@ -1157,6 +1164,7 @@ namespace T4
 	ASSERT_STRUCT_OFFSET(usercmd_s, upmove, 0x18);
 	ASSERT_STRUCT_OFFSET(usercmd_s, pitchmove, 0x19);
 	ASSERT_STRUCT_OFFSET(usercmd_s, yawmove, 0x1A);
+	ASSERT_STRUCT_OFFSET(usercmd_s, weapon_high, 0x1B);  // T4M extension
 	ASSERT_STRUCT_OFFSET(usercmd_s, wiimoteGunPitch, 0x1C);
 	ASSERT_STRUCT_OFFSET(usercmd_s, wiimoteGunYaw, 0x1E);
 	ASSERT_STRUCT_OFFSET(usercmd_s, gunXOfs, 0x20);

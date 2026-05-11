@@ -184,7 +184,7 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_WeaponState.cpp" />
     <ClCompile Include="PatchT4MAM_WeaponDef.cpp" />
     <ClCompile Include="PatchT4MAM_LowReady.cpp" />
-    <ClCompile Include="PatchT4MAM_CentityPropagator.cpp" />
+    <ClCompile Include="PatchT4MAM_Wip_WeaponPoolIncreased.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />

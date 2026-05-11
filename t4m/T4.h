@@ -49,7 +49,8 @@ typedef struct __declspec(align(4)) dvar_t
 	dvar_maxmin_t min; //65:67
 	dvar_maxmin_t max; //68:72 woooo
 
-	inline bool isEnabled() {
+	inline bool isEnabled() 
+	{
 		return (this && this->current.boolean);
 	}
 
@@ -80,26 +81,24 @@ struct XZoneQueueEntry
 
 // Zone flags — used both as allocFlags (assigned type) and freeFlags (type to unload)
 // NOTE: ZONE_CODE_POST_GFX (0x04) and ZONE_RESERVED_400 (0x400) are "permanent" flags
-//       → not tested in Phase 3 (priorityBits[]), never unloaded via freeFlags.
+//       → never unloaded via freeFlags in DB_LoadXAssets
 enum XZoneFlags : int 
 {
 	ZONE_BASE = 0x001,   // (base/inconnu)
-	ZONE_LOCALIZED = 0x002,   // localized_* (ex: localized_ber1)
-	ZONE_CODE_POST_GFX = 0x004,   // code_post_gfx  [PERMANENT — jamais déchargé]
-	ZONE_LOC_COMMON = 0x008,   // localized_common
-	ZONE_UI = 0x010,   // ui / nom de map brut / _patch (usage multiple)
+	ZONE_LOCALIZED = 0x002,   // localized_<map>
+	ZONE_CODE_POST_GFX = 0x004,   // [PERMANENT — never unloaded]
+	ZONE_LOC_COMMON = 0x008,   // localized_common.ff
+	ZONE_UI = 0x010,   // mainly ui but can be used for something else
 	ZONE_MAP_LOAD = 0x020,   // <map>_load.ff
-	ZONE_POST_LOAD = 0x040,   // assets post-load (chargés après la map)
-	ZONE_RESERVED_80 = 0x080,   // (réservé)
+	ZONE_POST_LOAD = 0x040,   
+	ZONE_RESERVED_80 = 0x080,   // (reserved, unknow usage)
 	ZONE_MAP_PATCH = 0x100,   // <map>_patch.ff
 	ZONE_COMMON = 0x200,   // common.ff
-	ZONE_RESERVED_400 = 0x400,   // [PERMANENT — jamais déchargé]
-	ZONE_MOD = 0x800,   // mod.ff + localized_mod
+	ZONE_RESERVED_400 = 0x400,   // [PERMANENT — never unloaded]
+	ZONE_MOD = 0x800,   // everything related to mod.ff
 	// ── Extension T4M ─────────────────────────────────────────────────
-	ZONE_T4M_PATCH_EX = 0x1000,  // T4M — type générique 1
-	ZONE_T4M_MAP_LOCA = 0x2000,  // T4M — nouveau type 2
-	// Phase 3 handled by the T4M hook (manual DB_RemoveZoneEntry)
-	// Phase 1 works natively (AND without bit restriction)
+	ZONE_T4M_PATCH_EX = 0x1000,  // <map>_patch_ex.ff
+	ZONE_T4M_MAP_LOCA = 0x2000,  // localized_<language>_<map>.ff
 };
 
 // Decomposition of observed freeFlags:

@@ -16,6 +16,9 @@
 #include "MemoryMgr.h"
 #include <safetyhook.hpp>
 
+// Keep in sync with PatchT4MemoryLimits.cpp definition.
+#define NEW_MAX_WEAPONS 148
+
 // WSAStartup / WSADATA used by the Com_Init_Inner reconstruction.  StdInc.h
 // sets WIN32_LEAN_AND_MEAN, so winsock is not pulled in by <windows.h>.
 #include <winsock2.h>
@@ -40,6 +43,13 @@ namespace T4M { extern void** g_dword8F44A8; extern void** g_dword35D0DC8; }
 // SetupCgWeaponInfoTable in PatchT4MemoryLimits.cpp). Used by the
 // CG_RegisterWeapon reconstruction at the bottom of this file.
 namespace T4M { extern BYTE* cg_weaponInfo; }
+
+// Forward declaration : T4_Reconstructed::CG_RegisterWeapon is defined at
+// the bottom of this file but referenced inside PatchT4_Temp() for the
+// safetyhook detour install.
+namespace T4_Reconstructed {
+    extern "C" void __cdecl CG_RegisterWeapon(void* arg_0_ctx, int weapIdx);
+}
 
 // ==========================================================
 // Faithful C++ reconstructions of 6 engine functions identified from
@@ -1166,6 +1176,70 @@ void PatchT4_Temp()
     Memory::VP::Patch(0x004408C7 + 2, (uint32_t)0x800001FF); // displacement of `and ecx, imm32`
     Memory::VP::Patch<uint8_t>(0x004408E1 + 2, 9);           // shift count of `sar eax, imm8`
 
+    // ---- 2026-05-11 — targeted pickup decoder patch ----
+    // sub_4FCBA0 (CG item-pickup iterator, called from sub_4FCEB0 + sub_4FCFE0)
+    // has the same `and edi, 8000007Fh ; ... ; sar eax, 7` decoder pattern at
+    // 0x4FCBD5 / 0x4FCBF7. It reads `item_id` from `[ent+0x260]` and passes
+    // the decoded weap_idx to sub_4FC570 (give-ammo). For weap_idx > 127 the
+    // 7-bit mask truncates → player picks up wrong weapon.
+    //
+    // The previous scan-replace attempts failed because they couldn't isolate
+    // this site from unrelated 7-bit masks. With the exact VA in hand we just
+    // patch the two immediates directly — same minimum-byte approach as
+    // sub_440890 above.
+    //
+    // Layout at sub_4FCBA0+0x35..+0x57 (= loc_4FCBD0 block):
+    //   0x4FCBD0  mov   eax, [esi+4]                           (3 bytes)
+    //   0x4FCBD3  mov   edi, eax                               (2 bytes)
+    //   0x4FCBD5  and   edi, 8000007Fh    ← imm32 @ +2 = 0x4FCBD7
+    //   0x4FCBDB  jns   short loc_4FCBE2
+    //   0x4FCBDD  dec   edi
+    //   0x4FCBDE  or    edi, 0FFFFFF80h
+    //   0x4FCBE1  inc   edi
+    //   0x4FCBE2  test  edi, edi
+    //   0x4FCBE4  jle   loc_4FCC8C
+    //   0x4FCBEA  mov   ebx, dword_8F6770[edi*4]
+    //   0x4FCBF1  cdq
+    //   0x4FCBF2  and   edx, 7Fh           ← left alone (cdq=0 for positive eax)
+    //   0x4FCBF5  add   eax, edx
+    //   0x4FCBF7  sar   eax, 7             ← imm8 @ +2 = 0x4FCBF9
+    // PAUSED 2026-05-11 — see plan_weapons_full_detour.md
+    // Memory::VP::Patch(0x004FCBD5 + 2, (uint32_t)0x800001FF);
+    // Memory::VP::Patch<uint8_t>(0x004FCBF7 + 2, 9);
+
+    // ---- sub_4FD080 — pickup entry decoder ----
+    // Top-of-chain pickup handler (called from sub_4FD210). Reads `item_id`
+    // from `[ent+0xA8]` and decodes weap_idx as 7-bit signed. Same fix as
+    // sub_440890 / sub_4FCBA0.
+    //
+    // Layout at sub_4FD080+0xF:
+    //   0x4FD080  push  ebx
+    //   0x4FD081  push  ebp
+    //   0x4FD082  mov   ebp, [esp+8+arg_0]
+    //   0x4FD086  push  esi
+    //   0x4FD087  mov   esi, eax
+    //   0x4FD089  mov   eax, [esi+0A8h]
+    //   0x4FD08F  and   eax, 8000007Fh     ← imm32 @ +1 = 0x4FD090
+    //   0x4FD094  jns   short loc_4FD09B   (sign-extend block follows)
+    // The `and eax, imm32` uses the short eax-specific encoding (0x25 imm32 = 5 bytes),
+    // so the immediate is at +1 (not +2 like the generic `and r/m32, imm32`).
+    // PAUSED 2026-05-11
+    // Memory::VP::Patch(0x004FD080 + 0xF + 1, (uint32_t)0x800001FF);
+
+    // ---- sub_4FCEB0 — pickup model_idx decoder ----
+    // Called by sub_4FD080. Reads `item_id = [esi+0xA8]` and extracts the
+    // high bits via `sar eax, 7` for model_idx. For 9-bit weap_idx packing
+    // the corresponding shift is 9.
+    //
+    // Layout at sub_4FCEB0+0x18:
+    //   0x4FCEBC  mov   eax, [esi+0A8h]
+    //   0x4FCEC2  cdq
+    //   0x4FCEC3  and   edx, 7Fh           ← left alone (cdq=0 for positive eax)
+    //   0x4FCEC6  add   eax, edx
+    //   0x4FCEC8  sar   eax, 7             ← imm8 @ +2 = 0x4FCECA
+    // PAUSED 2026-05-11
+    // Memory::VP::Patch<uint8_t>(0x004FCEC8 + 2, 9);
+
     // =====================================================================
     // Latent vanilla bug fix in sub_464F90 (CG model-attachment array build).
     //
@@ -1499,6 +1573,60 @@ void PatchT4_Temp()
         // (disabled body)
     });
     #endif
+
+    // =====================================================================
+    // Map-init reset hook (sub_4659B0 entry) — force re-registration on
+    // every map restart by zeroing all cgwInfo[+0x34] (registered) flags
+    // before the per-weapon iteration starts.
+    //
+    // BUG : on map restart, vanilla CG_RegisterWeapon's `if registered, bail`
+    // early-out preserves cgwInfo entries from the previous map. cgw[+0]
+    // points to a dobj that was freed during map unload. Per-frame
+    // sub_465160 detects state mismatch → calls sub_464F90 → uses stale
+    // dobj → cascades to sub_68A0E0 which crashes (movq [eax=0x28], xmm0).
+    //
+    // FIX : sub_4659B0 is called once per map init (via sub_459410 from
+    // asset registration). Zeroing the registered flags here forces every
+    // active weapon's CG_RegisterWeapon call to do a fresh memset +
+    // re-fetch dobj from sub_59E8F0. No more stale pointers.
+    //
+    // Cost : 512 * 4 bytes zeroed per map init (= trivial). Re-registers
+    // all active weapons (= dozens, negligible).
+    //
+    // 2026-05-10 — fixes map_restart crash in sub_68A0E0.
+    // =====================================================================
+    static auto cg_register_weapon_map_reset = safetyhook::create_mid(0x004659B0, [](SafetyHookContext& /*ctx*/) {
+        BYTE* cgw_base = T4M::cg_weaponInfo;
+        if (!cgw_base) return;
+        // 2026-05-11 : reduced from 512 to NEW_MAX_WEAPONS (= 148) after
+        // pausing the weapon-pool-expansion stack. cg_weaponInfo is now sized
+        // NEW_MAX_WEAPONS × 0x48 ; iterating past NEW_MAX_WEAPONS-1 would OOB.
+        for (int idx = 0; idx < NEW_MAX_WEAPONS; ++idx) {
+            *(uint32_t*)(cgw_base + idx * 0x48 + 0x34) = 0;
+        }
+    });
+    (void)cg_register_weapon_map_reset;
+
+    // =====================================================================
+    // CG_RegisterWeapon (sub_464BF0) — install C++ reconstruction detour
+    // 2026-05-10 (P4 phase). Replaces vanilla with T4_Reconstructed::
+    // CG_RegisterWeapon which : (a) handles NULL bg_weaponDefs[idx], (b)
+    // uses correct __usercall ABIs for sub_464A50/611110/60C420/60F990/
+    // 6103E0/610F50 via naked wrappers, (c) skips the early-return bug in
+    // the AI overlay localize path. Same wire-level signature as vanilla
+    // (cdecl 2 args), so SafetyHook inline replace is sufficient.
+    //
+    // OBSOLETED by this detour (kept disabled-in-source to document) :
+    //   - PatchT4MAM_WeaponDef.cpp : sub_464BF0_null_def_guard midhook
+    //     (NULL guard now in C++ reconstruction)
+    //   - PatchT4MemoryLimits.cpp : byte patches at 0x464C4B / 0x464E52
+    //     (inside vanilla body — bytes never executed once detoured ; left
+    //     in place as defensive measure if detour install ever fails)
+    // =====================================================================
+    static auto cg_register_weapon_hook = safetyhook::create_inline(
+        (void*)0x00464BF0,
+        (void*)&T4_Reconstructed::CG_RegisterWeapon);
+    (void)cg_register_weapon_hook;
 }
 
 // =====================================================================
@@ -1546,33 +1674,127 @@ void PatchT4_Temp()
 // =====================================================================
 namespace T4_Reconstructed {
 
-    // Vanilla helper pointers used by CG_RegisterWeapon. Resolved from the asm
-    // at sub_464BF0 — not all of these are typed in T4.h yet.
-    typedef void  (__cdecl* sub_479370_t)(void);                                // pre-init guard
-    typedef void  (__cdecl* sub_464A50_t)(void* arg_0);                         // build attachment list (returns ptr in eax)
-    typedef int   (__cdecl* sub_59E8F0_t)(void* modelArray, int count, int weapIdxBiased, void* arg_8, void* arg_C);  // meld builder (also __usercall via eax)
-    typedef void  (__cdecl* sub_6103E0_t)(void* arg);                           // model attach finalizer
-    typedef void  (__cdecl* sub_611110_t)(int arg_0, int arg_4, int arg_8, float a, float b, float c, int arg_X, int arg_Y);
-    typedef int   (__cdecl* sub_60C420_t)(unsigned int strId, unsigned char* outIdx); // bone tag lookup (returns 0/1)
-    typedef void  (__cdecl* sub_60F990_t)(int dobj, int zero);                  // dobj cleanup
-    typedef void  (__cdecl* sub_610F50_t)(int ctx, int arg);                    // viewmodel anim setup (called via ecx)
-    typedef const char* (__cdecl* sub_5ACD40_t)(const char* key);               // localize lookup (returns NULL if missing)
+    // Vanilla helper pointers used by CG_RegisterWeapon. Most have __usercall
+    // ABIs (register inputs) ; we use naked wrappers below to translate to
+    // standard cdecl from the C++ caller side.
+    typedef void  (__cdecl* sub_479370_t)(void);                                  // pre-init guard, no register args
+    typedef const char* (__cdecl* sub_5ACD40_t)(const char* key);                 // localize lookup (cdecl)
     typedef void  (__cdecl* Com_PrintError_t)(int channel, const char* fmt, ...); // sub_59A440
     typedef void  (__cdecl* Com_Printf_chan_t)(int channel, const char* fmt, ...);// sub_59A380 (warn channel)
-    typedef void  (__cdecl* Com_ErrorMsg_t)(int level, const char* fmt, ...);   // sub_59AC50
+    typedef void  (__cdecl* Com_ErrorMsg_t)(int level, const char* fmt, ...);     // sub_59AC50
 
     static const sub_479370_t      pSub_479370       = (sub_479370_t)     0x00479370;
-    static const sub_464A50_t      pBuildAttachList  = (sub_464A50_t)     0x00464A50;
-    // sub_59E8F0 is __usercall: weap_idx_biased passed in eax. Use a naked
-    // wrapper at the call site below, not a typedef call.
-    static const sub_6103E0_t      pAttachFinalize   = (sub_6103E0_t)     0x006103E0;
-    static const sub_611110_t      pSub_611110       = (sub_611110_t)     0x00611110;
-    static const sub_60C420_t      pBoneTagLookup    = (sub_60C420_t)     0x0060C420;
-    static const sub_60F990_t      pSub_60F990       = (sub_60F990_t)     0x0060F990;
     static const sub_5ACD40_t      pLocalize         = (sub_5ACD40_t)     0x005ACD40;
     static const Com_PrintError_t  pCom_PrintError   = (Com_PrintError_t) 0x0059A440;
     static const Com_Printf_chan_t pCom_PrintWarn    = (Com_Printf_chan_t)0x0059A380;
     static const Com_ErrorMsg_t    pCom_ErrorMsg     = (Com_ErrorMsg_t)   0x0059AC50;
+
+    // ----- naked __usercall wrappers for register-arg helpers -----
+
+    // sub_464A50 — __cdecl(arg_0=wpnDef) -> eax (attachment list ptr).
+    // The existing typedef `void(*)(void*)` discarded eax. This wrapper
+    // captures it.
+    extern "C" __declspec(naked) static void* Sub_464A50_call(void* /*wpnDef*/)
+    {
+        __asm
+        {
+            push    [esp+4]
+            mov     ecx, 0x00464A50
+            call    ecx
+            add     esp, 4
+            retn
+        }
+    }
+
+    // sub_6103E0 — __usercall(eax=dobj, ecx=0, esi=attachList). The body reads
+    // `movzx eax, word ptr [esi+4]` at entry — esi must be a valid struct ptr.
+    extern "C" __declspec(naked) static void Sub_6103E0_call(int /*dobj*/, void* /*attachList*/)
+    {
+        __asm
+        {
+            push    esi
+            mov     eax, [esp+8]            // dobj (slots shifted +4 by push)
+            mov     esi, [esp+0x0C]          // attachList
+            xor     ecx, ecx
+            mov     edx, 0x006103E0
+            call    edx
+            pop     esi
+            retn
+        }
+    }
+
+    // sub_611110 — __usercall(eax=layerIdx) + cdecl(dobj, f1, f2, f3, i1, i2, i3).
+    // Vanilla pushes 7 stack args (28 bytes). f1/f2/f3 are float bits stored as
+    // dwords — the caller passes them as int from C++.
+    extern "C" __declspec(naked) static void Sub_611110_call(
+        int /*layerIdx*/, int /*dobj*/,
+        int /*f1_bits*/, int /*f2_bits*/, int /*f3_bits*/,
+        int /*i1*/, int /*i2*/, int /*i3*/)
+    {
+        __asm
+        {
+            mov     eax, [esp+4]            // layerIdx
+            push    [esp+0x20]               // i3
+            push    [esp+0x20]               // i2
+            push    [esp+0x20]               // i1
+            push    [esp+0x20]               // f3
+            push    [esp+0x20]               // f2
+            push    [esp+0x20]               // f1
+            push    [esp+0x20]               // dobj
+            mov     ecx, 0x00611110
+            call    ecx
+            add     esp, 28
+            retn
+        }
+    }
+
+    // sub_60C420 — __usercall(ecx=dobj) + cdecl(strId, outIdx) -> eax (0/1).
+    extern "C" __declspec(naked) static int Sub_60C420_call(
+        int /*dobj*/, unsigned int /*strId*/, unsigned char* /*outIdx*/)
+    {
+        __asm
+        {
+            mov     ecx, [esp+4]
+            push    [esp+0x0C]               // outIdx
+            push    [esp+0x0C]               // strId (slot shifted +4 by push)
+            mov     edx, 0x0060C420
+            call    edx
+            add     esp, 8
+            retn
+        }
+    }
+
+    // sub_60F990 — __usercall(edi=dobj) + cdecl(float_bits, zero).
+    extern "C" __declspec(naked) static void Sub_60F990_call(
+        int /*dobj*/, int /*float_bits*/, int /*zero*/)
+    {
+        __asm
+        {
+            push    edi
+            mov     edi, [esp+8]             // dobj (after push edi)
+            push    [esp+0x10]                // zero
+            push    [esp+0x10]                // float_bits
+            mov     eax, 0x0060F990
+            call    eax
+            add     esp, 8
+            pop     edi
+            retn
+        }
+    }
+
+    // sub_610F50 — __usercall(ecx=attachList, edx=arg_X, xmm0=float). No stack args.
+    extern "C" __declspec(naked) static void Sub_610F50_call(
+        void* /*attachList*/, int /*arg_X*/, int /*xmm_float_bits*/)
+    {
+        __asm
+        {
+            mov     ecx, [esp+4]
+            mov     edx, [esp+8]
+            movss   xmm0, dword ptr [esp+0x0C]
+            mov     eax, 0x00610F50
+            jmp     eax
+        }
+    }
 
     // Vanilla globals referenced.
     #define DWORD_1F552FC    (*(void**)0x01F552FC)        // some flag struct (mp/sp gate)
@@ -1615,6 +1837,12 @@ namespace T4_Reconstructed {
         // Vanilla reads dword_3463C74[ebp*8] which is &cg_weaponInfo[idx]+0x34.
         if (*(int*)(cgwInfo + 0x34) != 0) return;
 
+        // T4M : NULL guard for unregistered idx ≥ NUM_WEAPONS_LOADED. Vanilla
+        // would NULL-deref at `mov eax, [ebx+0Ch]`. The detoured midhook in
+        // PatchT4MAM_WeaponDef.cpp does this same check ; once we install
+        // this reconstruction, that midhook becomes redundant.
+        if (wpnDef == nullptr) return;
+
         // First-time global init guard (mp/sp gate).
         if (*(unsigned char*)((char*)DWORD_1F552FC + 0x10) == 0
          || *(unsigned char*)((char*)DWORD_1F552D0 + 0x10) == 0) {
@@ -1622,8 +1850,6 @@ namespace T4_Reconstructed {
         }
 
         // Wipe the entry: 0x48 bytes of zero, then re-init the marker fields.
-        // Vanilla calls sub_7AFF40(esi+0, 0, 0x48) but the entry base is at
-        // ebp here, which IS esi+0. Same effect.
         memset(cgwInfo, 0, 0x48);
         *(int*)(cgwInfo + 0x34) = 1;                                 // registered
         *(void**)(cgwInfo + 0x38) = &DWORD_8F44A8[weapIdx];           // itemSlotPtr
@@ -1648,11 +1874,12 @@ namespace T4_Reconstructed {
 
         {
             // Build the {handModel, gunXModel} 2-entry array on the local stack
-            // and pass it to the meld constructor. Layout matches sub_464BF0
-            // exactly: entry 0 = pHandModel, entry 1 = pGunXModel.
+            // (this is what gets passed to sub_59E8F0 as arg_0). Layout matches
+            // sub_464BF0 stack vars var_14/var_10/var_E (entry 0) + var_C/var_8/
+            // var_6 (entry 1) : 8 bytes per entry.
             struct MeldEntry { void* model; uint16_t boneId; uint8_t flag1; uint8_t flag2; };
             MeldEntry models[2];
-            models[0].model = pHandModel;       // [+0x4C]  → cgw.attach[0]
+            models[0].model = pHandModel;       // [+0x4C]
             models[0].boneId = 0;
             models[0].flag1 = 0;
             models[0].flag2 = 0;
@@ -1662,53 +1889,102 @@ namespace T4_Reconstructed {
             models[1].flag2 = 0;
 
             // Build the per-weapon attachment dobj list (= sub_464A50).
-            // First arg is &models (used as a build context).
-            pBuildAttachList(&models);
-            void* attachList = nullptr; // sub_464A50 actually returns its result in eax — we'd capture via __asm if we cared at runtime.
+            // FIX 2026-05-10 : vanilla passes ebx (= wpnDef), not the local
+            // model array. The previous `pBuildAttachList(&models)` was wrong
+            // and the eax return value was discarded.
+            void* attachList = Sub_464A50_call(wpnDef);
             *(void**)(cgwInfo + 0x30) = attachList;
 
             // Meld build. weapIdx | 0x800 is the biased index used by sub_59E8F0
             // (caller stores it in word_1FE58C8 keyed on this hash).
-            int dobj = Sub_59E8F0_call(&models[0], /*count*/2, /*arg_8*/attachList, /*arg_C*/(char)(uintptr_t)arg_0_ctx, weapIdx + 0x800);
+            int dobj = Sub_59E8F0_call(&models[0], /*count*/2, /*arg_8*/attachList,
+                                       /*arg_C*/(char)(uintptr_t)arg_0_ctx,
+                                       weapIdx + 0x800);
 
             *(void**)(cgwInfo + 0x00) = (void*)(intptr_t)dobj;
-            *(void**)(cgwInfo + 0x04) = pHandModel;             // ← THE cached attach[0] write
+            *(void**)(cgwInfo + 0x04) = pHandModel;             // cgw.attach[0]
             *(unsigned char*)(cgwInfo + 0x14) = 0;
         }
 
-        // Run two unconditional pSub_611110 setup calls (anim layers).
-        pSub_611110(/*dobj*/ *(int*)(cgwInfo + 0x00), 0, 1, 1.0f, 0.0f, 0.0f, 0, 0);
-        pSub_611110(/*dobj*/ *(int*)(cgwInfo + 0x00), 0, 1, 1.0f, 0.0f, 0.0f, 0, 1);
+        // sub_6103E0 (model attach finalizer). Vanilla : __usercall(eax=dobj,
+        // ecx=0, esi=attachList).
+        Sub_6103E0_call(*(int*)(cgwInfo + 0x00), *(void**)(cgwInfo + 0x30));
 
-        // Optional third pSub_611110 if WeaponDef[+0xD8] (AI overlay name) is
-        // non-empty — handled by the loop in vanilla; abbreviated here.
+        // Two unconditional sub_611110 calls (anim-layer init for hand + gun).
+        // Vanilla ABI : __usercall(eax=layerIdx) + cdecl(dobj, 1.0f, 0.0f, 1.0f, 0, 1, 0).
+        // FIX 2026-05-10 : vanilla pushes 7 stack args (not 8), and uses eax for
+        // the layer idx (= 0 / 1 / 0x22). f1=1.0, f2=0.0, f3=1.0 (FPU stack reuses
+        // the initial fld1).
+        {
+            int dobj = *(int*)(cgwInfo + 0x00);
+            const int f_1_0 = 0x3F800000;       // 1.0f as bits
+            const int f_0_0 = 0x00000000;       // 0.0f as bits
+            Sub_611110_call(/*layerIdx*/0, dobj, f_1_0, f_0_0, f_1_0, 0, 1, 0);
+            Sub_611110_call(/*layerIdx*/1, dobj, f_1_0, f_0_0, f_1_0, 0, 1, 0);
+        }
+
+        // Optional 3rd sub_611110 + sub_610F50 (if WeaponDef[+0xD8] != 0 byte).
+        // Vanilla pushes 0/1/0 + 0.0f/0.0f/1.0f then sub_611110(eax=0x22),
+        // followed by sub_610F50(ecx=attachList, edx=0x22, xmm0=dword_826A4C).
+        if (*(unsigned char*)((char*)wpnDef + 0xD8) != 0) {
+            int dobj = *(int*)(cgwInfo + 0x00);
+            const int f_1_0 = 0x3F800000;
+            const int f_0_0 = 0x00000000;
+            // var_4C=1.0, var_48=0.0, var_44=0.0 (per fldz then fstp x2 chain).
+            Sub_611110_call(/*layerIdx*/0x22, dobj, f_1_0, f_0_0, f_0_0, 0, 1, 0);
+            void* attachList = *(void**)(cgwInfo + 0x30);
+            const int dword_826A4C_bits = *(int*)0x00826A4C;
+            Sub_610F50_call(attachList, 0x22, dword_826A4C_bits);
+        }
 
         // Process bone tag list at WeaponDef[+0xE0..+0xF0] (8 entries × 2 bytes).
         {
             uint16_t* tags = (uint16_t*)((char*)wpnDef + 0xE0);
+            int dobj = *(int*)(cgwInfo + 0x00);
             for (int i = 0; i < 8; i++) {
                 uint16_t strId = tags[i];
                 if (strId == 0) break;
                 unsigned char boneIdx = 0xFE;
-                int dobj = *(int*)(cgwInfo + 0x00);
-                if (pBoneTagLookup(strId, &boneIdx) == 0) {
+                // FIX 2026-05-10 : vanilla passes dobj via ecx (__usercall) ;
+                // the previous pBoneTagLookup typedef was cdecl and missed it.
+                if (Sub_60C420_call(dobj, strId, &boneIdx) == 0) {
                     const char* tagName = strId
                         ? (const char*)(DWORD_3702390 + (size_t)strId * 12 + 4)
                         : nullptr;
                     pCom_PrintWarn(0x0E, "CG_RegisterWeapon: No such bone tag (%s) in model (%s)\n",
                         tagName, *(const char**)wpnDef);
                 } else {
-                    // Set bit (0x80000000 >> (boneIdx & 0x1F)) at offset
-                    // 0x18 + (boneIdx >> 5) * 4 in cgwInfo.
                     uint32_t bit = 0x80000000u >> (boneIdx & 0x1F);
                     *(uint32_t*)(cgwInfo + 0x18 + (boneIdx >> 5) * 4) |= bit;
                 }
             }
-            // Final attach-finalize pass with the full tag set.
-            pSub_60F990(*(int*)(cgwInfo + 0x00), 0);
+
+            // Final attach-finalize pass : vanilla copies the bone bitmap from
+            // cgw[+0x18..+0x28] into dobj+0x50..+0x60 via xmm, then calls
+            // sub_60F990(__usercall edi=dobj, stack=float_bits + 0).
+            uint8_t* dobj_b = (uint8_t*)(intptr_t)dobj;
+            *(uint64_t*)(dobj_b + 0x50) = *(uint64_t*)(cgwInfo + 0x18);
+            *(uint64_t*)(dobj_b + 0x58) = *(uint64_t*)(cgwInfo + 0x20);
+            const int dword_8AF370_bits = *(int*)0x008AF370;
+            Sub_60F990_call(dobj, dword_8AF370_bits, 0);
         }
 
     L_localize_strings:
+        // Vanilla loc_464E40 : write display-name fallback ptr to
+        // dword_35D0DC8[idx] (= per-weapon HUD pickup-hint cache).
+        //   eax = def[+0x3D8] (szDisplayNameFallback) ; if NULL, fallback to
+        //   dword_35D0DBC (global default).
+        //   dword_35D0DC8[idx] = eax
+        // FIX 2026-05-10 : missing from earlier reconstruction → pickup hints
+        // disappeared once the detour replaced vanilla.
+        {
+            uint32_t fallback = *(uint32_t*)((char*)wpnDef + 0x3D8);
+            if (fallback == 0) {
+                fallback = (uint32_t)(uintptr_t)DWORD_35D0DBC;
+            }
+            ((uint32_t*)DWORD_35D0DC8)[weapIdx] = fallback;
+        }
+
         // ----- partial-init path (and tail of full-init path) -----
         // Localize szDisplayName, szModeName, szAIOverlayName. Each lookup
         // either returns the localized string or hits a fallback chain with
@@ -1754,6 +2030,8 @@ namespace T4_Reconstructed {
             }
 
             // AI overlay name (WeaponDef[+0x08])
+            // FIX 2026-05-10 : vanilla DOES set [+0x44] = raw name even after
+            // pCom_ErrorMsg ; the previous early-return was incorrect.
             loc = pLocalize(*(const char**)((char*)wpnDef + 0x08));
             if (loc) {
                 *(const char**)(cgwInfo + 0x44) = loc;
@@ -1764,11 +2042,10 @@ namespace T4_Reconstructed {
                     if (*(unsigned char*)((char*)gateB + 0x10) != 0) {
                         pCom_ErrorMsg(6, "Weapon %s: Could not translate AI overlay '%s'\n",
                             *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x08));
-                        // Vanilla actually returns here without setting [+0x44].
-                        return;
+                    } else {
+                        pCom_PrintError(0x11, "WARNING: Weapon %s: Could not translate AI overlay '%s'\n",
+                            *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x08));
                     }
-                    pCom_PrintError(0x11, "WARNING: Weapon %s: Could not translate AI overlay '%s'\n",
-                        *(const char**)wpnDef, *(const char**)((char*)wpnDef + 0x08));
                 }
                 *(const char**)(cgwInfo + 0x44) = *(const char**)((char*)wpnDef + 0x08);
             }

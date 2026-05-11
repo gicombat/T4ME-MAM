@@ -24,7 +24,7 @@
 // Shared with the WEAPON asset pool reallocation. cg_weaponInfo MUST be
 // at least this large or the loop in sub_465200/sub_465160/sub_465270
 // will OOB-read into the dvar registration globals at 0x3466040+.
-#define NEW_MAX_WEAPONS     512
+#define NEW_MAX_WEAPONS     148
 
 // External T4M-side globals that hardcode the OLD vanilla table addresses.
 // We update these to the new heap base after relocation so T4M reconstructions
@@ -416,26 +416,32 @@ namespace T4M
 			*(DWORD*)va = newBase + 4;
 		}
 
-		// (3) Init count — `mov ecx, 0x7FF` → `mov ecx, 0x1FFF` (rep stosd zeros 32 KB - 4).
-		*(DWORD*)0x0041D2F1 = 0x00001FFF;
-
-		// (4) Init stride — `add eax, 0x200` → `add eax, 0x800` (sub_41D310 loop).
-		*(DWORD*)0x0041D347 = 0x00000800;
-
-		// (5) 3 composite-encoder shifts — `shl reg, 7` → `shl reg, 9`.
-		for (DWORD va : k_dword8F44A8_Shl7Sites) {
-			*(BYTE*)va = 0x09;
-		}
-
-		// (6) 3 reverse-mapper masks — `and reg, 0x8000007F` → `0x800001FF`.
-		for (DWORD va : k_dword8F44A8_AndMaskSites) {
-			*(DWORD*)va = 0x800001FF;
-		}
-
-		// (7) 2 slot-extract shifts — `sar eax, 7` → `sar eax, 9`.
-		for (DWORD va : k_dword8F44A8_Sar7Sites) {
-			*(BYTE*)va = 0x09;
-		}
+		// PAUSED 2026-05-11 — dword_8F44A8 9-bit composite encoding patches
+		// archived in PatchT4MAM_Wip_WeaponPoolIncreased.cpp. Vanilla 7-bit
+		// composite encoding (= sub-tables of 128 entries each) used instead.
+		// For NEW_MAX_WEAPONS=148, addressable range stays at 8 KB (vanilla),
+		// allocation is 9472 bytes (16 * 148 * 4) — overprovisioned but safe.
+		//
+		// // (3) Init count — `mov ecx, 0x7FF` → `mov ecx, 0x1FFF` (rep stosd zeros 32 KB - 4).
+		// *(DWORD*)0x0041D2F1 = 0x00001FFF;
+		//
+		// // (4) Init stride — `add eax, 0x200` → `add eax, 0x800` (sub_41D310 loop).
+		// *(DWORD*)0x0041D347 = 0x00000800;
+		//
+		// // (5) 3 composite-encoder shifts — `shl reg, 7` → `shl reg, 9`.
+		// for (DWORD va : k_dword8F44A8_Shl7Sites) {
+		// 	*(BYTE*)va = 0x09;
+		// }
+		//
+		// // (6) 3 reverse-mapper masks — `and reg, 0x8000007F` → `0x800001FF`.
+		// for (DWORD va : k_dword8F44A8_AndMaskSites) {
+		// 	*(DWORD*)va = 0x800001FF;
+		// }
+		//
+		// // (7) 2 slot-extract shifts — `sar eax, 7` → `sar eax, 9`.
+		// for (DWORD va : k_dword8F44A8_Sar7Sites) {
+		// 	*(BYTE*)va = 0x09;
+		// }
 
 		// .text intentionally left writable — see SetupCgWeaponInfoTable comment.
 
@@ -444,8 +450,14 @@ namespace T4M
 
 	// =====================================================================
 	// dword_35D0DC8 — per-weapon localized display name cache (vanilla 128 × 4 = 512 B).
-	// Single .text writer at VA 0x00464E52 (sub_464BF0 / CG_RegisterWeapon, loc_464E4F):
-	//   89 04 B5 C8 0D 5D 03   mov [esi*4 + 0x035D0DC8], eax
+	// Two .text sites :
+	//   (a) VA 0x00464E52 — writer in sub_464BF0 / CG_RegisterWeapon (loc_464E4F):
+	//       89 04 B5 C8 0D 5D 03   mov [esi*4 + 0x035D0DC8], eax
+	//   (b) VA 0x004514AF — reader via alias `dword_35D0DB0 = dword_35D0DC8 - 0x18`
+	//       in sub_451310 (pickup hint dispatcher) : the alias is paired with
+	//       a `weapon_idx + 6` pre-shift pattern (same trick as bg_weaponDefs's
+	//       0x8F6758 alias). Without patching this site, the pickup hint reader
+	//       targets dead vanilla BSS → no hint shown for picked-up weapons.
 	// Adjacent .data at 0x35D0FCC..0x35D0FFC stores HUD material/font handles
 	// registered by sub_6621B0 and read by sub_44FC10 (HUD render). At idx≥129
 	// the OOB write clobbers those handles → image corruption (HUD/stance/
@@ -461,11 +473,20 @@ namespace T4M
 		if (!buf) return;
 		memset(buf, 0, ALLOC_SIZE);
 
-		// Patch the single immediate (4-byte disp32 inside the mov instruction).
-		const DWORD IMM_VA = 0x00464E52;
+		const DWORD newBase = (DWORD)buf;
+
+		// Two .text sites covering the table base + the -0x18 alias.
+		const DWORD TEXT_START = 0x00401000U;
+		const DWORD TEXT_END   = 0x00800000U;
 		DWORD oldProt;
-		VirtualProtect((LPVOID)IMM_VA, 4, PAGE_EXECUTE_READWRITE, &oldProt);
-		*(DWORD*)IMM_VA = (DWORD)buf;
+		VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
+		               PAGE_EXECUTE_READWRITE, &oldProt);
+
+		// (a) Writer site 0x00464E52 — patch base address.
+		*(DWORD*)0x00464E52 = newBase;
+		// (b) Alias reader site 0x004514AF — patch with newBase - 0x18 so that
+		//     `dword_35D0DB0_alias[(idx+6)*4]` lands at newBase + idx*4.
+		*(DWORD*)0x004514AF = newBase - 0x18;
 		// Leave .text writable — see SetupCgWeaponInfoTable for rationale.
 
 		T4M::g_dword35D0DC8 = (void**)buf;

@@ -54,7 +54,7 @@
     <ClCompile Include="PatchT4MAM_LowReady.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PatchT4MAM_CentityPropagator.cpp">
+    <ClCompile Include="PatchT4MAM_Wip_WeaponPoolIncreased.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PatchT4FileDebug.cpp">

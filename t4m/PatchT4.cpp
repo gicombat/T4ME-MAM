@@ -31,10 +31,6 @@ void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
 void PatchT4MAM_WeaponState();
-void PatchT4MAM_CentityPropagator();
-// PM_Weapon_Dropping (sub_41F010) is reconstructed in C++ and called
-// directly from T4M::PM_Weapon — no install function needed.
-// Defined in PatchT4MAM_WeaponState.cpp.
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -65,7 +61,6 @@ void PatchT4()
 	//*(const char**)0x00840FF0 = "raw";
 	PatchT4_SteamDRM();
 	PatchT4_PreLoad();
-	// SetLowReady — WeaponDef extension (size + parser) must run before MemoryLimits.
 	PatchT4MAM_WeaponDef();
 	PatchT4_MemoryLimits();
 	PatchT4_Branding();
@@ -78,7 +73,6 @@ void PatchT4()
 	PatchT4MAM_Override();
 	PatchT4MAM_WeaponState();
 	PatchT4MAM_LowReady();
-	PatchT4MAM_CentityPropagator();
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();
@@ -90,7 +84,7 @@ void PatchT4()
 
 	PatchT4E_Input();
 
-	PatchT4_Temp(); // XModel meld trace — temp diagnostic
+	// PatchT4_Temp(); // XModel meld trace — temp diagnostic (DISABLED 2026-05-11)
 
 	// check if game got started using steam
 	if (!GetModuleHandle("gameoverlayrenderer.dll"))
@@ -167,10 +161,6 @@ void PatchT4_Menus()
 		if (T4M::isZombieMode())
 			ctx.eip = 0x006680D4;
 	});
-
-	//static auto MapRestart1 = safetyhook::create_mid(0x0062B7C0, [](SafetyHookContext& ctx) {
-	//	cdecl_call<int>(0x435D80);
-	//	});
 
 	Memory::VP::Nop(0x00438875, 10);
 

@@ -8,6 +8,9 @@ using namespace T4;
 #include <cstddef>
 #include <cstring>
 
+// Keep in sync with PatchT4MemoryLimits.cpp definition.
+#define NEW_MAX_WEAPONS 148
+
 // =============================================================================
 // (1) WeaponDef pool stride bump 0x9AC -> 0x9DC
 // =============================================================================
@@ -151,13 +154,6 @@ extern T4::WeaponDef** bg_weaponDefs;
 
 namespace T4M
 {
-    // Naked thunk: pure `retn` to bail out of sub_464BF0 cleanly. cdecl, caller
-    // cleans the 2 stack args, so we just pop the saved ret addr.
-    __declspec(naked) static void Sub_464BF0_RetnThunk()
-    {
-        __asm { retn }
-    }
-
     // =====================================================================
     // byte_351EAA0 (per-weapon "current attachment slot" byte table) relocation.
     //
@@ -321,9 +317,14 @@ namespace T4M
 
     static void ApplyCgRegisterWeaponCapPatch()
     {
-        // (a) Loop cap: cmp esi, 80h → cmp esi, 200h (= 512 = NEW_MAX_WEAPONS).
+        // (a) Loop cap: cmp esi, 80h → cmp esi, NEW_MAX_WEAPONS.
         // The 32-bit immediate of the 6-byte cmp lives at 0x465A17.
-        Memory::VP::Patch<uint32_t>(0x00465A17, 0x200);
+        // 2026-05-11 : reduced from 0x200 (512) to NEW_MAX_WEAPONS (= 148)
+        // after pausing the weapon-pool-expansion stack. Iterator calls our
+        // T4_Reconstructed::CG_RegisterWeapon (in PatchT4_Temp.cpp) which
+        // accesses cg_weaponInfo[idx*0x48]. With cap > NEW_MAX_WEAPONS, idx
+        // ≥ NEW_MAX_WEAPONS would OOB the allocation → AV. Keep cap aligned.
+        Memory::VP::Patch<uint32_t>(0x00465A17, NEW_MAX_WEAPONS);
 
         // (b) Bypass the bitmap test that filters which weapons to register.
         //
@@ -347,23 +348,10 @@ namespace T4M
         // Patched bytes:  90 90    (nop, nop)
         Memory::VP::Patch(0x00465A06, { 0x90, 0x90 });
 
-        // (c) Guard sub_464BF0 against NULL bg_weaponDefs[idx]. Vanilla never
-        // had to handle this since the loop stopped before any unallocated slot
-        // and the bitmap filter excluded missing weapons; post-bypass we hit
-        // idx 128..511 where most slots are empty for any single map. Without
-        // this guard, sub_464BF0 NULL-derefs `[ebx+0Ch]` immediately.
-        static auto sub_464BF0_null_def_guard = safetyhook::create_mid(0x00464BF0, [](SafetyHookContext& ctx) {
-            int weapIdx = *(int*)(ctx.esp + 8);  // arg_4
-            if (weapIdx <= 0 || weapIdx >= 512) {
-                ctx.eip = (uintptr_t)&Sub_464BF0_RetnThunk;
-                return;
-            }
-            if (!::bg_weaponDefs || !::bg_weaponDefs[weapIdx]) {
-                ctx.eip = (uintptr_t)&Sub_464BF0_RetnThunk;
-                return;
-            }
-        });
-        (void)sub_464BF0_null_def_guard;
+        // (c) NULL guard for sub_464BF0 was previously a midhook here ;
+        // removed 2026-05-10 — the C++ reconstruction in PatchT4_Temp.cpp
+        // (T4_Reconstructed::CG_RegisterWeapon) handles NULL bg_weaponDefs[idx]
+        // natively as the first guard after the entry sentinel check.
     }
 }
 
@@ -377,7 +365,14 @@ void PatchT4MAM_WeaponDef()
     T4M::ApplyWeaponDefParserPatches();
     T4M::RelocateByte351EAA0();
     T4M::Apply_Sub_465200_ClClamp();
-    T4M::ApplyCgRegisterWeaponCapPatch();
+    // 2026-05-11 : ApplyCgRegisterWeaponCapPatch disabled. It patches
+    // sub_4659B0 cap (0x80→NEW_MAX_WEAPONS) AND NOPs the bitmap filter,
+    // forcing vanilla sub_464BF0 to register every idx 1..NEW_MAX_WEAPONS-1.
+    // The NULL guard against unloaded bg_weaponDefs[idx] slots lived in
+    // T4_Reconstructed::CG_RegisterWeapon (PatchT4_Temp.cpp) which is now
+    // disabled too — without it, vanilla NULL-derefs at sub_464BF0+0x70.
+    // Keeping vanilla cap (0x80) + vanilla bitmap = only idx 1..127 registered.
+    // T4M::ApplyCgRegisterWeaponCapPatch();
     // Bit-width patches DISABLED 2026-05-09 — superseded by plan_weapons_full_detour.md.
     // We pivot to full C++ detours of the writers/readers (sub_410660 / sub_41F010 /
     // sub_676A50) which carry idx as int32_t natively. Byte-level imm patches were

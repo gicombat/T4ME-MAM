@@ -33,19 +33,19 @@ namespace T4_Reconstructed
         void PM_Weapon_Dropping(pmove_t* pm, int isQuick);                  // sub_41F010
 
         // Per-state chunk handlers — reconstructed @faithful in this file.
-        void PM_Weapon_Tick_MeleeFire(playerState_s* ps);      // chunk #1 @ 0x00420CE0
-        void PM_Weapon_Tick_MeleeCharge(playerState_s* ps);    // chunk #2 @ 0x00420D70
-        void PM_Weapon_Tick_MeleeInit(playerState_s* ps);      // chunk #3 @ 0x00420E10
-        void PM_Weapon_Tick_OffhandPrepare(playerState_s* ps); // chunk #4 @ 0x004213D0
-        void PM_Weapon_Tick_OffhandStart(pmove_t* pm);         // chunk #5 @ 0x00421410
-        void PM_Weapon_Tick_OffhandHold(pmove_t* pm);          // chunk #6 @ 0x004214E0
-        void PM_Weapon_Tick_SwimIn(playerState_s* ps);         // chunk #7 @ 0x00421C40
-        void PM_Weapon_Tick_SwimOut(playerState_s* ps);        // chunk #8 @ 0x00421CD0
-        void PM_Weapon_Tick_SprintRaise(playerState_s* ps);    // chunk #9 @ 0x00421D80
+        void PM_Weapon_MeleeFire(playerState_s* ps);      // chunk #1 @ 0x00420CE0
+        void PM_Weapon_MeleeCharge(playerState_s* ps);    // chunk #2 @ 0x00420D70
+        void PM_Weapon_MeleeInit(playerState_s* ps);      // chunk #3 @ 0x00420E10
+        void PM_Weapon_OffhandPrepare(playerState_s* ps); // chunk #4 @ 0x004213D0
+        void PM_Weapon_OffhandStart(pmove_t* pm);         // chunk #5 @ 0x00421410
+        void PM_Weapon_OffhandHold(pmove_t* pm);          // chunk #6 @ 0x004214E0
+        void PM_Weapon_SwimIn(playerState_s* ps);         // chunk #7 @ 0x00421C40
+        void PM_Weapon_SwimOut(playerState_s* ps);        // chunk #8 @ 0x00421CD0
+        void PM_Weapon_SprintRaise(playerState_s* ps);    // chunk #9 @ 0x00421D80
 
         // Shared chunks — kept as register-preserving stubs (vanilla call).
-        void PM_Weapon_Tick_OffhandInit_Stub(playerState_s* ps);   // shared A @ 0x00421300
-        void PM_Weapon_Tick_Offhand_Stub(playerState_s* ps);       // shared B @ 0x00421630
+        void PM_Weapon_OffhandInit_Stub(playerState_s* ps);   // shared A @ 0x00421300
+        void PM_Weapon_Offhand_Stub(playerState_s* ps);       // shared B @ 0x00421630
 
         // Main entry — full reconstruction.
         void PM_Weapon(pmove_t* pm, int callValidation);
@@ -63,6 +63,13 @@ namespace T4M
     void EnterLowReadyStart(playerState_s* ps);
     void EnterLowReadyEnd(playerState_s* ps);
     void SetLowReadyIntent(playerState_s* ps, bool enable);
+
+    // Bitmap-ext helpers (defined in PatchT4MAM_PsBitmapExt.cpp). Read/write
+    // the 3 weapon bitmaps at ps+0x7FC/0x80C/0x81C with extension to 512 bits
+    // via per-PS sidecar.
+    extern "C" bool PsBitTest (playerState_s* ps, int inStructOffset, unsigned idx);
+    extern "C" void PsBitSet  (playerState_s* ps, int inStructOffset, unsigned idx);
+    extern "C" void PsBitClear(playerState_s* ps, int inStructOffset, unsigned idx);
 }
 
 void PatchT4MAM_WeaponState();
@@ -693,7 +700,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
         if (w->holdButtonToThrow != 0 && (pm->cmd.buttons & 0xC000) == 0) 
         {
             // jmp shared chunk @ 0x00421630 (with eax = ps)
-            T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(ps);
+            T4_Reconstructed::PM_Weapon_Offhand_Stub(ps);
             return;
         }
         // fall through to loc_421BB7 (no-op end)
@@ -947,10 +954,12 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateTransition(playerState_s* ps
 //
 // Vanilla notes :
 //   - `[pm+0x18]` = `pm->cmd.weapon` is a usercmd byte field. Read as byte
-//     to match vanilla. Idx ≥ 256 truncates here (intrinsic to wire format).
+//     to match vanilla. Idx ≥ 256 truncates here (intrinsic to wire format) ;
+//     the high byte is reconstructed from cmd.weapon_high (Phase 1a).
 //   - The function chunk at vanilla loc_41EF40 is inlined as a tail block.
-//   - Bitmaps at ps+0x7FC and ps+0x80C are vanilla-sized 4 dwords (= 128 bits).
-//     For idx ≥ 128 the test reads OOB and the idx is silently rejected.
+//   - Bitmaps at ps+0x7FC and ps+0x80C are accessed via T4M::PsBitTest/Set
+//     which extends them from 128 to 512 bits via per-PS sidecar (cf.
+//     PatchT4MAM_PsBitmapExt.cpp). Idx >= 128 stored in the sidecar.
 // =====================================================================
 
 // sub_41EBB0 — __usercall(eax = ps, [esp+4] = arg_0 idx, [esp+8] = arg_4 byte).
@@ -1096,17 +1105,18 @@ extern "C" void T4_Reconstructed::PM_Weapon_Dropping(pmove_t* pm, int isQuick)
         // loc_41F094 : edx = 0
         edx = 0;
     } else {
-        // @faithful : vanilla `movzx edx, byte ptr [ecx+18h]`. Field at +0x18
-        // = pm->cmd.weapon, BYTE-sized. Reading dword would propagate garbage
-        // into the bitmap-test index → crash on OOB. Idx ≥ 256 support requires
-        // extending the upstream usercmd field separately.
-        edx = *(uint8_t*)(sscr + 0x18);
+        // @modified : vanilla lisait `movzx edx, byte ptr [ecx+18h]` (= cmd.weapon
+        // byte) → tronquait idx ≥ 256. T4M étend via `cmd.weapon_high` à offset
+        // +0x1B (= ex-padding, rempli par CL_FinishMove midhook + wire codec).
+        // Combine low + high pour reconstruire l'idx jusqu'à 16 bits (0..0xFFFF).
+        // Voir PatchT4MAM_CmdWeaponExt.cpp + plan_usercmd_weapon_word_extension.md.
+        const uint32_t weaponLow  = *(uint8_t*)(sscr + 0x18);   // cmd.weapon
+        const uint32_t weaponHigh = *(uint8_t*)(sscr + 0x1B);   // cmd.weapon_high (T4M)
+        edx = weaponLow | (weaponHigh << 8);
 
-        // Bitmap test 1 : ps_s ownedWeapons at +0x7FC (vanilla 4 dwords).
-        // For idx ≥ 128 this OOB-reads; deferred to bitmap-extension phase.
-        uint32_t bit  = 1u << (edx & 0x1F);
-        uint32_t word = edx >> 5;
-        bool owned    = (*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) != 0;
+        // Bitmap test 1 : ps_s ownedWeapons at +0x7FC. For idx >= 128 the
+        // T4M sidecar bitmap (per-PS unordered_map) covers 128..511.
+        bool owned = T4M::PsBitTest(pm->ps, 0x7FC, edx);
 
         if (!owned
             || (ps[0x10] & 0x80)
@@ -1119,14 +1129,9 @@ extern "C" void T4_Reconstructed::PM_Weapon_Dropping(pmove_t* pm, int isQuick)
         }
     }
 
-    // loc_41F096 : refined bitmap re-test (also rejects idx ≥ 128 for the
-    // same reason). If the bit isn't set, fall back to weapon 0.
-    {
-        uint32_t bit  = 1u << (edx & 0x1F);
-        uint32_t word = edx >> 5;
-        if ((*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) == 0) {
-            edx = 0;
-        }
+    // loc_41F096 : refined bitmap re-test via unified helper.
+    if (!T4M::PsBitTest(pm->ps, 0x7FC, edx)) {
+        edx = 0;
     }
 
     // loc_41F0B2 : write the new ps.weapon. @faithful — vanilla `mov ecx,
@@ -1181,12 +1186,9 @@ L_loc_41F148:
 
     // loc_41F179 — different weapon : full state-machine transition.
     {
-        uint32_t eax_idx  = edx;
-        uint32_t bit      = 1u << (eax_idx & 0x1F);
-        uint32_t word     = eax_idx >> 5;
-        uint32_t altmap_w = *(uint32_t*)(ps + word * 4 + 0x80C);
-        uint32_t edi_flag = ((altmap_w & bit) == 0) ? 1 : 0;
-        *(uint32_t*)(ps + word * 4 + 0x80C) = altmap_w | bit;
+        bool wasUnset     = !T4M::PsBitTest(pm->ps, 0x80C, edx);
+        uint32_t edi_flag = wasUnset ? 1 : 0;
+        T4M::PsBitSet(pm->ps, 0x80C, edx);
 
         int   arg_flag   = isQuick;          // [esp+arg_0] in vanilla : initial = caller's setz cl
         int   var_C      = 0;
@@ -1338,9 +1340,7 @@ L_chunk_41EF40:
     // ---- inlined loc_41EF40 chunk (vanilla : eax=old_idx, ecx=ps) ----
     if (old_idx == 0) return;
     {
-        uint32_t bit  = 1u << (old_idx & 0x1F);
-        uint32_t word = old_idx >> 5;
-        if ((*(uint32_t*)(ps + word * 4 + 0x7FC) & bit) == 0) return;
+        if (!T4M::PsBitTest(pm->ps, 0x7FC, old_idx)) return;
 
         auto odb = (uint8_t*)bg_weaponDefs[old_idx];
         if (!odb || *(uint32_t*)(odb + 0x5EC) == 0) return;
@@ -1535,7 +1535,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Reloading(pmove_t* pm, int callValid
 // =====================================================================
 
 // @faithful — chunk @ 0x00420CE0 — MELEE_FIRE → MELEE_END transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeFire(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_MeleeFire(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
 
@@ -1572,7 +1572,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeFire(playerState_s* ps)
 }
 
 // @faithful — chunk @ 0x00420D70 — MELEE_CHARGE → MELEE_INIT transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeCharge(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_MeleeCharge(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
     ps->weaponTime = w->meleeChargeTime;
@@ -1600,7 +1600,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeCharge(playerState_s* ps)
 }
 
 // @faithful — chunk @ 0x00420E10 — MELEE_INIT → MELEE_FIRE transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeInit(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_MeleeInit(playerState_s* ps)
 {
     int head = raw_int(ps, 0xD0) & 3;
     ps->weaponstate = (weaponstate_t)0xE;
@@ -1617,7 +1617,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_MeleeInit(playerState_s* ps)
 }
 
 // @faithful — chunk @ 0x004213D0 — OFFHAND_PREPARE → OFFHAND_START transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandPrepare(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_OffhandPrepare(playerState_s* ps)
 {
     raw_iref(ps, 0x10) |= 2;
     ps->weaponstate = (weaponstate_t)0x13;
@@ -1634,7 +1634,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandPrepare(playerState_s* p
 // @faithful — chunk @ 0x00421410 — OFFHAND_START → OFFHAND_HOLD transition.
 //   Special case: if w->[+0x6B8] == 0 AND pmove_t.[+0x40] & 0xC000 AND pmove_t.[+0x8] & 0xC000
 //   → set fireTime=1 and do NOT transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
+extern "C" void T4_Reconstructed::PM_Weapon_OffhandStart(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     const WeaponDef* w = GetWeaponDef(raw_int(ps, 0xFC));   // offHandIndex
@@ -1719,7 +1719,7 @@ done:
 }
 
 // @faithful — chunk @ 0x004214E0 — OFFHAND_HOLD → SWIM_IN or OFFHAND.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pmove_t* pm)
+extern "C" void T4_Reconstructed::PM_Weapon_OffhandHold(pmove_t* pm)
 {
     auto* ps = *(playerState_s**)pm;
     int head = raw_int(ps, 0xD0) & 3;
@@ -1799,7 +1799,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pmove_t* pm)
 }
 
 // @faithful — chunk @ 0x00421C40 — SWIM_IN tick: anim flag toggle.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_SwimIn(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_SwimIn(playerState_s* ps)
 {
     int head = raw_int(ps, 0xD0) & 3;
     raw_iref(ps, 0xD4 + head * 4) = 3;
@@ -1830,7 +1830,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_SwimIn(playerState_s* ps)
 }
 
 // @faithful — chunk @ 0x00421CD0 — SWIM_OUT tick: sound notify code 1.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_SwimOut(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_SwimOut(playerState_s* ps)
 {
     int head = raw_int(ps, 0xD0) & 3;
     raw_iref(ps, 0xD4 + head * 4) = 1;
@@ -1960,7 +1960,7 @@ void T4M::PM_Weapon_LowReady_End(playerState_s* ps)
 }
 
 // @faithful — chunk @ 0x00421D80 — SPRINT_RAISE → SPRINT_LOOP transition.
-extern "C" void T4_Reconstructed::PM_Weapon_Tick_SprintRaise(playerState_s* ps)
+extern "C" void T4_Reconstructed::PM_Weapon_SprintRaise(playerState_s* ps)
 {
     ps->weaponstate = (weaponstate_t)0x18;
     ps->weaponTime = 0;
@@ -1977,7 +1977,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_SprintRaise(playerState_s* ps)
 // Shared chunks — kept as register-preserving stubs (vanilla call).
 // =====================================================================
 
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Tick_OffhandInit_Stub(playerState_s* /*ps*/)
+extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_OffhandInit_Stub(playerState_s* /*ps*/)
 {
     __asm 
     {
@@ -1994,7 +1994,7 @@ extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Tick_OffhandInit_S
     }
 }
 
-extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(playerState_s* /*ps*/)
+extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Offhand_Stub(playerState_s* /*ps*/)
 {
     __asm 
     {
@@ -2219,11 +2219,10 @@ dispatch_setup:
             break;
         case WEAPON_DROPPING:
         case WEAPON_DROPPING_QUICK:
-            T4_Reconstructed::PM_Weapon_Dropping(pm, 1);
+            T4_Reconstructed::PM_Weapon_Dropping(pm, (ps->weaponstate == WEAPON_DROPPING_QUICK) ? 1 : 0);
             break;
         case WEAPON_RELOADING:
         case WEAPON_RELOADING_INTERUPT:
-            // Vanilla `push ebx; push edi; call sub_41F780` — ebx = animSync (after overwrite).
             T4_Reconstructed::PM_Weapon_Reloading(pm, animSync);
             break;
         case WEAPON_RELOAD_START:
@@ -2241,13 +2240,13 @@ dispatch_setup:
             raw_iref(ps, 0x910) = (~v) & 0x200;
             break;
         case WEAPON_MELEE_CHARGE:
-            T4_Reconstructed::PM_Weapon_Tick_MeleeCharge(ps);
+            T4_Reconstructed::PM_Weapon_MeleeCharge(ps);
             break;
         case WEAPON_MELEE_INIT:
-            T4_Reconstructed::PM_Weapon_Tick_MeleeInit(ps);
+            T4_Reconstructed::PM_Weapon_MeleeInit(ps);
             break;
         case WEAPON_MELEE_FIRE:
-            T4_Reconstructed::PM_Weapon_Tick_MeleeFire(ps);
+            T4_Reconstructed::PM_Weapon_MeleeFire(ps);
             break;
         case WEAPON_MELEE_END:
         case WEAPON_OFFHAND_END:
@@ -2255,25 +2254,25 @@ dispatch_setup:
             call_PM_Weapon_FinalizeStateExit(ps);
             break;
         case WEAPON_OFFHAND_INIT:
-            T4_Reconstructed::PM_Weapon_Tick_OffhandInit_Stub(ps);
+            T4_Reconstructed::PM_Weapon_OffhandInit_Stub(ps);
             break;
         case WEAPON_OFFHAND_PREPARE:
-            T4_Reconstructed::PM_Weapon_Tick_OffhandPrepare(ps);
+            T4_Reconstructed::PM_Weapon_OffhandPrepare(ps);
             break;
         case WEAPON_OFFHAND_HOLD:
-            T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pm);
+            T4_Reconstructed::PM_Weapon_OffhandHold(pm);
             break;
         case WEAPON_OFFHAND_START:
-            T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pm);
+            T4_Reconstructed::PM_Weapon_OffhandStart(pm);
             break;
         case WEAPON_OFFHAND:
-            T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(ps);
+            T4_Reconstructed::PM_Weapon_Offhand_Stub(ps);
             break;
         case WEAPON_DETONATING:
             T4_Reconstructed::PM_Weapon_DetonateTransition(ps, animSync);
             break;
         case WEAPON_SPRINT_RAISE:
-            T4_Reconstructed::PM_Weapon_Tick_SprintRaise(ps);
+            T4_Reconstructed::PM_Weapon_SprintRaise(ps);
             break;
         case WEAPON_SPRINT_LOOP:
         case WEAPON_DEPLOYED:
@@ -2286,10 +2285,10 @@ dispatch_setup:
             call_Anim_TriggerEvent(ps, 0x25);
             break;
         case WEAPON_SWIM_IN:
-            T4_Reconstructed::PM_Weapon_Tick_SwimIn(ps);
+            T4_Reconstructed::PM_Weapon_SwimIn(ps);
             break;
         case WEAPON_SWIM_OUT:
-            T4_Reconstructed::PM_Weapon_Tick_SwimOut(ps);
+            T4_Reconstructed::PM_Weapon_SwimOut(ps);
             break;
         case WEAPON_LOWREADY_START:
             T4M::PM_Weapon_LowReady_Start(ps);
