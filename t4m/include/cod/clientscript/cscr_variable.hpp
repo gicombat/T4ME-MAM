@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<int(const void * info1, const void * info2)>ThreadInfoCompare{ 0x0, 0x68EB50};
 	WEAK symbol<void(scriptInstance_t scriptInstance)>Scr_DumpScriptThreads{ 0x0, 0x68EBA0};
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int name, unsigned int index)>GetNewVariableIndexInternal3{ 0x0, 0x68F090};
@@ -226,4 +225,4 @@ namespace game
 	unsigned int GetNewArrayVariable(scriptInstance_t inst, unsigned int parentId, unsigned int unsignedValue);
 	unsigned int GetArrayVariable(scriptInstance_t inst, unsigned int parentId, unsigned int unsignedValue);
 	unsigned int AllocThread(scriptInstance_t inst, unsigned int self);
-}
+} } // namespace T4::engine

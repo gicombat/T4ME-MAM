@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<void(scriptInstance_t inst)>Scr_VM_Init{ 0x0, 0x693B20 };
 	WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId, VariableStackBuffer* stackValue)>VM_UnarchiveStack{ 0x0, 0x697BB0 };
 	WEAK symbol<unsigned int(scriptInstance_t inst)>VM_ExecuteInternal{ 0x0, 0x693E80 };
@@ -178,5 +177,5 @@ namespace game
 	void Scr_EvalBoolNot(scriptInstance_t inst, VariableValue* value);
 	unsigned int GetInternalVariableIndex(scriptInstance_t inst, unsigned int unsignedValue);
 	const char* Scr_ReadData(scriptInstance_t inst, const char** pos, unsigned int count);
-	unsigned int Scr_GetNumParam(game::scriptInstance_t inst);
-}
+	unsigned int Scr_GetNumParam(scriptInstance_t inst);
+} } // namespace T4::engine

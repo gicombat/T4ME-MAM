@@ -1,5 +1,5 @@
-#include "t4_headers.h"
 #include "StdInc.h"
+#include "t4_headers.h"
 #include "T4.h"
 #include "MemoryMgr.h"
 #include <safetyhook.hpp>
@@ -1434,7 +1434,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_SwimOut(playerState_s* ps)
 void T4M::EnterLowReadyStart(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    ps->weaponstate = WEAPON_LOWREADY_START;
+    ps->weaponstate = T4::engine::WEAPON_LOWREADY_START;
     raw_iref(ps, 0x40) = w->iLowReadyInTime;
     raw_iref(ps, 0x44) = 0;
     if (ps->pm_type < 8) 
@@ -1447,7 +1447,7 @@ void T4M::EnterLowReadyStart(playerState_s* ps)
 void T4M::EnterLowReadyEnd(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    ps->weaponstate = WEAPON_LOWREADY_END;
+    ps->weaponstate = T4::engine::WEAPON_LOWREADY_END;
     raw_iref(ps, 0x40) = w->iLowReadyOutTime;
     raw_iref(ps, 0x44) = 0;
     if (ps->pm_type < 8) 
@@ -1483,7 +1483,7 @@ void T4M::SetLowReadyIntent(playerState_s* ps, bool enable)
     {
         ps->eFlags |= 0x400;
         // Force immediate transition unless already in a LowReady state.
-        if (ps->weaponstate < WEAPON_LOWREADY_START || ps->weaponstate > WEAPON_LOWREADY_END) 
+        if (ps->weaponstate < T4::engine::WEAPON_LOWREADY_START || ps->weaponstate > T4::engine::WEAPON_LOWREADY_END)
         {
             EnterLowReadyStart(ps);
         }
@@ -1492,7 +1492,7 @@ void T4M::SetLowReadyIntent(playerState_s* ps, bool enable)
     else 
     {
         ps->eFlags &= ~0x400;
-        if (ps->weaponstate == WEAPON_LOWREADY_LOOP) 
+        if (ps->weaponstate == T4::engine::WEAPON_LOWREADY_LOOP)
         {
             EnterLowReadyEnd(ps);
         }
@@ -1509,7 +1509,7 @@ void T4M::SetLowReadyIntent(playerState_s* ps, bool enable)
 void T4M::PM_Weapon_LowReady_Start(playerState_s* ps)
 {
     const WeaponDef* w = GetWeaponDef(ps->weapon);
-    ps->weaponstate = WEAPON_LOWREADY_LOOP;
+    ps->weaponstate = T4::engine::WEAPON_LOWREADY_LOOP;
     raw_iref(ps, 0x40) = w->iLowReadyLoopTime;   // 0 = infinite (LOOP case is no-op)
     raw_iref(ps, 0x44) = 0;
     if (ps->pm_type < 8) 
@@ -1529,7 +1529,7 @@ void T4M::PM_Weapon_LowReady_End(playerState_s* ps)
         EnterLowReadyStart(ps);
         return;
     }
-    ps->weaponstate = WEAPON_READY;
+    ps->weaponstate = T4::engine::WEAPON_READY;
     raw_iref(ps, 0x40) = 0;
     raw_iref(ps, 0x44) = 0;
     if (ps->pm_type < 8) 
@@ -1622,11 +1622,11 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
     }
 
     if ((ps->eFlags & 0x400) != 0 
-            && (ps->weaponstate == WEAPON_READY
-            || ps->weaponstate == WEAPON_LOWREADY_START
-            || ps->weaponstate == WEAPON_LOWREADY_END))
+            && (ps->weaponstate == T4::engine::WEAPON_READY
+            || ps->weaponstate == T4::engine::WEAPON_LOWREADY_START
+            || ps->weaponstate == T4::engine::WEAPON_LOWREADY_END))
     {
-        ps->weaponstate = WEAPON_LOWREADY_LOOP;
+        ps->weaponstate = T4::engine::WEAPON_LOWREADY_LOOP;
         raw_iref(ps, 0x40) = 0;
         raw_iref(ps, 0x44) = 0;
 
@@ -1653,12 +1653,12 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
         int state = ps->weaponstate;
         if (state == 0x1D) 
         {
-            ps->weaponstate = WEAPON_SWIM_OUT;
+            ps->weaponstate = T4::engine::WEAPON_SWIM_OUT;
         } 
         else if (state == 0x1E) 
         {
             if (!T4M::TransitionToReadyOrLowReady(ps))
-                ps->weaponstate = WEAPON_READY;
+                ps->weaponstate = T4::engine::WEAPON_READY;
         }
         goto dispatch_setup;
     }
@@ -1686,7 +1686,7 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
         {
             needs_swim_check = true;
         }
-        else if (state >= WEAPON_LOWREADY_START && state <= WEAPON_LOWREADY_END)
+        else if (state >= T4::engine::WEAPON_LOWREADY_START && state <= T4::engine::WEAPON_LOWREADY_END)
         {
             // T4M: LOWREADY states bypass the force-SWIM_IN else branch.
             // Without this, SECTION 3 forces SWIM_IN every frame causing visual cycling.
@@ -1696,7 +1696,7 @@ extern "C" void T4_Reconstructed::PM_Weapon(pmove_t* pm, int callValidation)
         {
             // loc_42222B — force SWIM_IN
             raw_iref(ps, 0x10) |= 0x2000;
-            ps->weaponstate = WEAPON_SWIM_IN;
+            ps->weaponstate = T4::engine::WEAPON_SWIM_IN;
             goto dispatch_setup;
         }
 
@@ -1786,102 +1786,104 @@ dispatch_setup:
 
     switch (state) 
     {
-        case WEAPON_RAISING:
-        case WEAPON_RAISING_ALTSWITCH:
+        case T4::engine::WEAPON_RAISING:
+        case T4::engine::WEAPON_RAISING_ALTSWITCH:
             if (ps->pm_type >= 8)
                 break;
 
             if (T4M::TransitionToReadyOrLowReady(ps)) 
                 break;
 
-            ps->weaponstate = WEAPON_READY;
+            ps->weaponstate = T4::engine::WEAPON_READY;
             raw_iref(ps, 0x910) = (~v) & 0x200;
             break;
-        case WEAPON_DROPPING:
-        case WEAPON_DROPPING_QUICK: 
+        case T4::engine::WEAPON_DROPPING:
+            call_PM_Weapon_TickDrop(pm, 0);
+            break;
+        case T4::engine::WEAPON_DROPPING_QUICK:
             call_PM_Weapon_TickDrop(pm, 1);
             break;
-        case WEAPON_RELOADING:
-        case WEAPON_RELOADING_INTERUPT:
+        case T4::engine::WEAPON_RELOADING:
+        case T4::engine::WEAPON_RELOADING_INTERUPT:
             // Vanilla `push ebx; push edi; call sub_41F780` — ebx = animSync (after overwrite).
             T4_Reconstructed::PM_Weapon_Reloading(pm, animSync);
             break;
-        case WEAPON_RELOAD_START:
-        case WEAPON_RELOAD_START_INTERUPT:
+        case T4::engine::WEAPON_RELOAD_START:
+        case T4::engine::WEAPON_RELOAD_START_INTERUPT:
             T4_Reconstructed::PM_Weapon_ReloadStart(pm, animSync);
             break;
-        case WEAPON_RELOAD_END:
+        case T4::engine::WEAPON_RELOAD_END:
             if (T4M::TransitionToReadyOrLowReady(ps)) 
                 break;
 
-            ps->weaponstate = WEAPON_READY;
+            ps->weaponstate = T4::engine::WEAPON_READY;
             if (ps->pm_type >= 8)
                 break;
 
             raw_iref(ps, 0x910) = (~v) & 0x200;
             break;
-        case WEAPON_MELEE_CHARGE:
+        case T4::engine::WEAPON_MELEE_CHARGE:
             T4_Reconstructed::PM_Weapon_Tick_MeleeCharge(ps);
             break;
-        case WEAPON_MELEE_INIT:
+        case T4::engine::WEAPON_MELEE_INIT:
             T4_Reconstructed::PM_Weapon_Tick_MeleeInit(ps);
             break;
-        case WEAPON_MELEE_FIRE:
+        case T4::engine::WEAPON_MELEE_FIRE:
             T4_Reconstructed::PM_Weapon_Tick_MeleeFire(ps);
             break;
-        case WEAPON_MELEE_END:
-        case WEAPON_OFFHAND_END:
-        case WEAPON_SPRINT_DROP:
+        case T4::engine::WEAPON_MELEE_END:
+        case T4::engine::WEAPON_OFFHAND_END:
+        case T4::engine::WEAPON_SPRINT_DROP:
             call_PM_Weapon_FinalizeStateExit(ps);
             break;
-        case WEAPON_OFFHAND_INIT:
+        case T4::engine::WEAPON_OFFHAND_INIT:
             T4_Reconstructed::PM_Weapon_Tick_OffhandInit_Stub(ps);
             break;
-        case WEAPON_OFFHAND_PREPARE:
+        case T4::engine::WEAPON_OFFHAND_PREPARE:
             T4_Reconstructed::PM_Weapon_Tick_OffhandPrepare(ps);
             break;
-        case WEAPON_OFFHAND_HOLD:
+        case T4::engine::WEAPON_OFFHAND_HOLD:
             T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pm);
             break;
-        case WEAPON_OFFHAND_START:
+        case T4::engine::WEAPON_OFFHAND_START:
             T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pm);
             break;
-        case WEAPON_OFFHAND:
+        case T4::engine::WEAPON_OFFHAND:
             T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(ps);
             break;
-        case WEAPON_DETONATING:
+        case T4::engine::WEAPON_DETONATING:
             T4_Reconstructed::PM_Weapon_DetonateTransition(ps, animSync);
             break;
-        case WEAPON_SPRINT_RAISE:
+        case T4::engine::WEAPON_SPRINT_RAISE:
             T4_Reconstructed::PM_Weapon_Tick_SprintRaise(ps);
             break;
-        case WEAPON_SPRINT_LOOP:
-        case WEAPON_DEPLOYED:
+        case T4::engine::WEAPON_SPRINT_LOOP:
+        case T4::engine::WEAPON_DEPLOYED:
             break;
-        case WEAPON_DEPLOYING:
+        case T4::engine::WEAPON_DEPLOYING:
             call_Anim_TriggerEvent(ps, 0x23);
             break;
-        case WEAPON_BREAKING_DOWN:
+        case T4::engine::WEAPON_BREAKING_DOWN:
             call_PM_Weapon_FinalizeStateExit(ps);
             call_Anim_TriggerEvent(ps, 0x25);
             break;
-        case WEAPON_SWIM_IN:
+        case T4::engine::WEAPON_SWIM_IN:
             T4_Reconstructed::PM_Weapon_Tick_SwimIn(ps);
             break;
-        case WEAPON_SWIM_OUT:
+        case T4::engine::WEAPON_SWIM_OUT:
             T4_Reconstructed::PM_Weapon_Tick_SwimOut(ps);
             break;
-        case WEAPON_LOWREADY_START:
+        case T4::engine::WEAPON_LOWREADY_START:
             T4M::PM_Weapon_LowReady_Start(ps);
             break;
-        case WEAPON_LOWREADY_LOOP:
+        case T4::engine::WEAPON_LOWREADY_LOOP:
             break;
-        case WEAPON_LOWREADY_END:
+        case T4::engine::WEAPON_LOWREADY_END:
             T4M::PM_Weapon_LowReady_End(ps);
             break;
-        case WEAPON_FIRING:
-        case WEAPON_RECHAMBERING:
-        case WEAPON_READY:
+        case T4::engine::WEAPON_FIRING:
+        case T4::engine::WEAPON_RECHAMBERING:
+        case T4::engine::WEAPON_READY:
         default:
             // def_422367 — fire input dispatch.
             // Vanilla uses ebx (= animSync after the SECTION 4 overwrite) as arg_0 here,
@@ -1905,7 +1907,7 @@ dispatch_setup:
             if ((raw_int(ps, 0x0C) & 0x800) != 0)
                 return;
 
-            if (ps->weaponstate == WEAPON_DEPLOYING)
+            if (ps->weaponstate == T4::engine::WEAPON_DEPLOYING)
                 return;
 
             call_PM_Weapon_ProcessAttackInput(ps, animSync);

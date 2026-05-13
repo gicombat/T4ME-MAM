@@ -1,4 +1,4 @@
-﻿// ==========================================================
+// ==========================================================
 // T4M project
 //
 // Component: clientdll
@@ -56,7 +56,7 @@ namespace T4M
 			PAGE_READWRITE);
 
 		if (!g_newEntityPool) {
-			T4::Com_Printf(0, "^1[T4M] FATAL: entity pool VirtualAlloc failed\n");
+			T4::engine::Com_Printf(0, "^1[T4M] FATAL: entity pool VirtualAlloc failed\n");
 			return;
 		}
 
@@ -92,7 +92,7 @@ namespace T4M
 		VirtualProtect((LPVOID)TEXT_START, TEXT_END - TEXT_START,
 					   PAGE_EXECUTE_READ, &oldProt);
 
-		T4::Com_Printf(0, "[T4M] Entity pool: base=0x%08X, %d refs patched\n",
+		T4::engine::Com_Printf(0, "[T4M] Entity pool: base=0x%08X, %d refs patched\n",
 				   newBase, patched);
 	}
 
@@ -116,16 +116,16 @@ namespace T4M
 	void PatchT4_MemoryLimits()
 	{
 		// increase pool sizes to similar (or greater) t5 sizes.
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_FX, 2048);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_IMAGE, 8192);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_LOADED_SOUND, 4096);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_MATERIAL, 4096);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_WEAPON, 512);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_XMODEL, 4096);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_RAWFILE, 2048);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_PHYSCONSTRAINTS, 256);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_PHYSPRESET, 256);
-		T4M::DB_ReallocXAssetPool(ASSET_TYPE_XMODELPIECES, 256);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_FX, 2048);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_IMAGE, 8192);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_LOADED_SOUND, 4096);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_MATERIAL, 4096);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_WEAPON, 256);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_XMODEL, 4096);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_RAWFILE, 2048);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_PHYSCONSTRAINTS, 256);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_PHYSPRESET, 256);
+		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_XMODELPIECES, 256);
 
 		// change the size of g_mem from 0x12C00000 to 0x19600000, UGX-Mod v1.1 is pretty fucking huge
 		// had to increase due to it crashing in Com_BeginParseSession
@@ -163,7 +163,7 @@ namespace T4M
 			PAGE_READWRITE);
 
 		if (!newPool) {
-			T4::Com_Printf(0, "^1ERROR: Failed to allocate expanded asset entry pool\n");
+			T4::engine::Com_Printf(0, "^1ERROR: Failed to allocate expanded asset entry pool\n");
 			return;
 		}
 
@@ -171,7 +171,7 @@ namespace T4M
 		DWORD newPoolAddr10 = (DWORD)&newPool[1]; // pool + 0x10 (unk_A51C60 equivalent)
 
 		// Update T4M's C pointer so DB_ListAssetPool and other T4M code use the new pool
-		T4::g_assetEntryPool = newPool;
+		T4::engine::g_assetEntryPool = newPool;
 
 		// Unprotect .text section pages covering all patch addresses (0x48D340 – 0x48FA30)
 		DWORD oldProtect;
@@ -292,7 +292,7 @@ namespace T4M
 			PAGE_READWRITE);
 
 		if (!newImageBuffer) {
-			T4::Com_Printf(0, "^1ERROR: Failed to allocate expanded image sort buffer\n");
+			T4::engine::Com_Printf(0, "^1ERROR: Failed to allocate expanded image sort buffer\n");
 			return;
 		}
 

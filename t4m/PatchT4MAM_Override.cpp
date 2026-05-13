@@ -14,20 +14,20 @@ void T4M::DB_DumpOverrideChain(int type, const char* name)
 	XAssetEntry* head = T4_Reconstructed::DB_FindXAssetByName(type, name);
 	if (!head)
 	{
-		T4::Com_Printf(0, "[T4M] '%s' (type %d) introuvable\n", name, type);
+		T4::engine::Com_Printf(0, "[T4M] '%s' (type %d) introuvable\n", name, type);
 		return;
 	}
 
-	T4::Com_Printf(0, "[T4M] Override chain for '%s' (type %s):\n",	name, T4M::DB_GetXAssetTypeName(type));
+	T4::engine::Com_Printf(0, "[T4M] Override chain for '%s' (type %s):\n",	name, T4M::DB_GetXAssetTypeName(type));
 
 	XAssetEntry* cur = head;
 	int depth = 0;
 	while (cur)
 	{
-		T4::Com_Printf(0, "  [%d] zone=%u (%s) prio=%d inuse=%d header=%p\n",
+		T4::engine::Com_Printf(0, "  [%d] zone=%u (%s) prio=%d inuse=%d header=%p\n",
 			depth,
 			cur->zoneIndex,
-			T4::g_zoneFileNames[cur->zoneIndex].name,
+			T4::engine::g_zoneFileNames[cur->zoneIndex].name,
 			T4M::ZonePriority(cur->zoneIndex),
 			cur->inuse ? 1 : 0,
 			cur->asset.header.data);
@@ -46,17 +46,17 @@ void T4M::DB_DumpHashBucket(unsigned int bucket)
 {
 	if (bucket >= 0x8000) 
 	{ 
-		T4::Com_Printf(0, "[T4M] bucket out of range\n");
+		T4::engine::Com_Printf(0, "[T4M] bucket out of range\n");
 		return; 
 	}
 
-	unsigned short idx = T4::db_hashTable[bucket];
-	T4::Com_Printf(0, "[T4M] Bucket %u:\n", bucket);
+	unsigned short idx = T4::engine::db_hashTable[bucket];
+	T4::engine::Com_Printf(0, "[T4M] Bucket %u:\n", bucket);
 	int depth = 0;
 	while (idx != 0)
 	{
 		XAssetEntry* e = T4M::POOL_ENTRY(idx);
-		T4::Com_Printf(0, "  [%d] type=%d (%s) name='%s' zone=%u nextHash=%u nextOvr=%u\n",
+		T4::engine::Com_Printf(0, "  [%d] type=%d (%s) name='%s' zone=%u nextHash=%u nextOvr=%u\n",
 			depth,
 			e->asset.type,
 			T4M::DB_GetXAssetTypeName(e->asset.type),
@@ -77,7 +77,7 @@ int T4M::DB_CountActiveEntries()
 	int count = 0;
 	for (int b = 0; b < 0x8000; ++b)
 	{
-		unsigned short idx = T4::db_hashTable[b];
+		unsigned short idx = T4::engine::db_hashTable[b];
 		while (idx != 0)
 		{
 			++count;
@@ -105,27 +105,27 @@ int	T4M::timeAtMapStart = 0;
 void T4M::Key_FormatIntroSeconds(const char* argStr, char* outBuf)
 {
 	int value = 0;
-	T4::Com_sscanf(argStr, "%d", &value);
+	T4::engine::Com_sscanf(argStr, "%d", &value);
 
 	if (T4M::resetFakeIntroSecondValue)
 	{
-		T4M::timeAtMapStart = *T4::com_frameTime;
+		T4M::timeAtMapStart = *T4::engine::com_frameTime;
 		T4M::resetFakeIntroSecondValue = false;
 	}
 
 	if (value < 0 || value > 40)
 	{
-		T4::Com_PrintError(1,
+		T4::engine::Com_PrintError(1,
 			"Argument \"%s\" given for FAKE_INTRO_SECONDS is outside the acceptable range of (%d,%d).",
 			argStr, 0, 40);
 		value = 0;
 	}
 
-	int frameTimeAtMapStart = *T4::com_frameTime - T4M::timeAtMapStart;
+	int frameTimeAtMapStart = *T4::engine::com_frameTime - T4M::timeAtMapStart;
 
 	value += (int)(frameTimeAtMapStart / 1000u);   // 0x00351DF34 — vanilla path
 
-	T4::Com_sprintf(outBuf, 4, "%02d", (DWORD)value);
+	T4::engine::Com_sprintf(outBuf, 4, "%02d", (DWORD)value);
 }
 
 // =====================================================================
@@ -142,20 +142,20 @@ void T4M::Key_FormatIntroHourMinSec(const char* argStr, char* outBuf)
 
 	if (splittedString.size() != 3)
 	{
-		T4::Com_PrintError(1, "Incorrect number of argument FAKE_INTRO_FULL_TIME was given, it should be 3 value with '_' delemiter");
+		T4::engine::Com_PrintError(1, "Incorrect number of argument FAKE_INTRO_FULL_TIME was given, it should be 3 value with '_' delemiter");
 	}
 
 	if (T4M::resetFakeIntroSecondValue)
 	{
-		T4M::timeAtMapStart = *T4::com_frameTime;
+		T4M::timeAtMapStart = *T4::engine::com_frameTime;
 		T4M::resetFakeIntroSecondValue = false;
 	}
 
-	int frameTimeAtMapStart = *T4::com_frameTime - T4M::timeAtMapStart;
+	int frameTimeAtMapStart = *T4::engine::com_frameTime - T4M::timeAtMapStart;
 
-	T4::Com_sscanf(splittedString[0].c_str(), "%d", &hour);
-	T4::Com_sscanf(splittedString[1].c_str(), "%d", &minutes);
-	T4::Com_sscanf(splittedString[2].c_str(), "%d", &second);
+	T4::engine::Com_sscanf(splittedString[0].c_str(), "%d", &hour);
+	T4::engine::Com_sscanf(splittedString[1].c_str(), "%d", &minutes);
+	T4::engine::Com_sscanf(splittedString[2].c_str(), "%d", &second);
 
 	int finalHourWithSecond = second + minutes * 60 + hour * 60 * 60;
 
@@ -167,7 +167,7 @@ void T4M::Key_FormatIntroHourMinSec(const char* argStr, char* outBuf)
 	// use std::chrono::
 	// Still need to hook to the root function of the Key_FormatIntroSeconds so we can add this things
 
-	//T4::Com_sprintf(outBuf, 4, "%02d:%02d:%02d", (DWORD)hour, (DWORD)minutes, (DWORD)second);
+	//T4::engine::Com_sprintf(outBuf, 4, "%02d:%02d:%02d", (DWORD)hour, (DWORD)minutes, (DWORD)second);
 }
 
 // =====================================================================
@@ -280,16 +280,5 @@ void PatchT4MAM_Override()
 	 Detours::X86::DetourFunction((uintptr_t)0x0048DFF0, (uintptr_t)&T4_Reconstructed::DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
 
 	// Full vanilla-faithful reconstruction of DB_FindXAssetHeader (sub_48DA30).
-	//
-	// DISABLED — startup OK, but hangs during first map load inside vanilla
-	// sub_48E370's hash-chain scan (asset type 9 "ing_small" not found in
-	// chain → infinite loop, no termination on idx==0 in vanilla).
-	//
-	// Confirmed by bisection: with this detour OFF the game loads maps fine.
-	// Something our reconstruction does differs from vanilla in a way that
-	// leaves an asset's hash-chain linkage broken. Needs further investigation
-	// (probable suspects: T4_Reconstructed::DB_LinkXAssetEntry fallback ordering, or pump
-	// sequence causing DB worker to promote entries in unexpected order).
 	 Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_Reconstructed::DB_FindXAssetHeader, Detours::X86Option::USE_JUMP);
-
 }

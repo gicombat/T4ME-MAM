@@ -36,7 +36,7 @@ const char* va(const char* string, ...)
 
 	if (length >= BUFFER_LENGTH)
 	{
-		T4::Com_Printf(0, "ERROR: Attempted to overrun string in call to va()!");
+		T4::engine::Com_Printf(0, "ERROR: Attempted to overrun string in call to va()!");
 		exit(1);
 	}
 
@@ -66,7 +66,7 @@ const wchar_t* va(const wchar_t* string, ...)
 
 	if (length >= BUFFER_LENGTH)
 	{
-		T4::Com_Printf(0, "ERROR: Attempted to overrun string in call to va()!");
+		T4::engine::Com_Printf(0, "ERROR: Attempted to overrun string in call to va()!");
 		exit(1);
 	}
 

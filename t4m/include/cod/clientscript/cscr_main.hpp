@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<unsigned int(scriptInstance_t inst, const char* file, PrecacheEntry* entries, int entriesCount)> Scr_LoadScriptInternal { 0x0, 0x689980 };
 	WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadScripts { 0x0, 0x689C80 };
 	WEAK symbol<void(scriptInstance_t inst, void *(__cdecl *Alloc)(int), int user, int modChecksum)> Scr_PrecacheAnimTrees { 0x0, 0x689D60 };
@@ -29,4 +28,4 @@ namespace game
 	int Scr_IsInOpcodeMemory(scriptInstance_t inst, const char* pos);
 	void SL_BeginLoadScripts(scriptInstance_t inst);
 	void Scr_SetLoadedImpureScript(bool loadedImpureScript);
-}
+} } // namespace T4::engine

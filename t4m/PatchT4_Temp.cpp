@@ -362,7 +362,7 @@ extern "C" void __cdecl Material_InitDefault()
 // ===========================================================================
 extern "C" void __cdecl R_Init()
 {
-	T4::Com_Printf(8, "----- R_Init -----\n");
+	T4::engine::Com_Printf(8, "----- R_Init -----\n");
 
 	// var_4 is a local word; asm sets byte[var_4] = 1, byte[var_4+1] = 0
 	// then compares the word with 1 → taken branch always (fullscreen path).
@@ -405,7 +405,7 @@ extern "C" void __cdecl R_Init()
 
 	if (!sunOK)
 	{
-		T4::Com_Printf(8, "Sun sprite occlusion query calibration failed.\n");
+		T4::engine::Com_Printf(8, "Sun sprite occlusion query calibration failed.\n");
 		Engine::R_ResetToDefault();       // sub_72D000
 	}
 
@@ -553,7 +553,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		"1", "7", 0x4EF, "350073", "JADAMS2", "Thu Oct 29 15:43:55 2009");
 	(void)banner;
 
-	T4::Com_Printf(0x10, "%s %s build %s %s\n",
+	T4::engine::Com_Printf(0x10, "%s %s build %s %s\n",
 		"COD_WaW", "win-x86", "7", "Oct 29 2009");
 
 	// ---- Preliminaries ----------------------------------------------------
@@ -576,7 +576,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		&& (*G::dvar_singlethreadRender)->current.boolean)
 	{
 		Engine::Hunk_InitMemory();                       // sub_5F5480
-		T4::Com_Printf(7, "begin $init\n");
+		T4::engine::Com_Printf(7, "begin $init\n");
 
 		*G::g_comInitDone = 1;
 		if (*G::g_initHasStart == 0)
@@ -679,7 +679,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i)
 		{
 			if (Engine::Cmd_Exists(entries[i].name))
-				T4::Com_Printf(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
+				T4::engine::Com_Printf(0x10, "Cmd_AddCommand: %s already defined\n", entries[i].name);
 			else
 				T4M::Cmd_AddCommand(entries[i].name, entries[i].func);
 		}
@@ -730,7 +730,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		Engine::Com_PrintError(0x10, "WARNING: Winsock initialization failed, returned %d\n", wsaRc);
 	else
 	{
-		T4::Com_Printf(0x10, "Winsock Initialized\n");
+		T4::engine::Com_Printf(0x10, "Winsock Initialized\n");
 		*G::g_46E50B0_netUp = 1;
 		Engine::Cinema_Init();                            // sub_600CC0
 		Engine::Cinema_SetInitialized(1);                 // sub_600ED0 (eax=1)
@@ -782,19 +782,19 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		else if (rec <= 10) workers = rec - 2;
 		else                workers = 8;
 
-		T4::Com_Printf(0x10, "%s %d\n",
+		T4::engine::Com_Printf(0x10, "%s %d\n",
 			"Number of worker threads", workers);
 
 		*G::g_smpWorkerThreads = (DWORD)Engine::Dvar_RegisterString(
 			"r_smp_worker_threads", 5, (void*)(uintptr_t)workers, (const char*)2);
 	}
 
-	T4::Com_Printf(8, "Trying SMP acceleration...\n");
+	T4::engine::Com_Printf(8, "Trying SMP acceleration...\n");
 	if (!Engine::Sys_SpawnRenderThread())
 		Engine::Com_Error(0, "Failed to create render thread");
 
 	Engine::UI_LoadCinematic();                           // sub_71EFC0
-	T4::Com_Printf(8, "...succeeded.\n");
+	T4::engine::Com_Printf(8, "...succeeded.\n");
 
 	// ---- Video post-init ---------------------------------------------------
 	Com_PostInit_Video();                                 // sub_644BE0
@@ -824,11 +824,11 @@ finish_banner:
 			*G::g_initHasStart = 1;
 		}
 		DWORD end = timeGetTime() - *G::g_initStartMs;
-		T4::Com_Printf(0x10, "end $init %d ms\n", end);
+		T4::engine::Com_Printf(0x10, "end $init %d ms\n", end);
 	}
 
 	// ---- Final banner + trace session ------------------------------------
-	T4::Com_Printf(0x10, "--- Common Initialization Complete ---\n");
+	T4::engine::Com_Printf(0x10, "--- Common Initialization Complete ---\n");
 	*G::g_1F964B0_done = 1;
 
 	{
@@ -863,9 +863,9 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 		{
 			if (*G::g_48AE4D4_inCgame == 0)
 				Com_PostInit_Video();                     // sub_644BE0
-			T4::Sys_SyncDatabase();                            // sub_6F6CE0
+			T4::engine::Sys_SyncDatabase();                            // sub_6F6CE0
 			Engine::Com_PostInit2();                      // sub_644E60
-			T4::Sys_WakeDatabase();                            // sub_6F6D60
+			T4::engine::Sys_WakeDatabase();                            // sub_6F6D60
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
@@ -986,7 +986,7 @@ static void __cdecl T4_Key_GetBindStringForCmd(char* outBuf, void* ctx, const ch
 
     // Phase 5 — fallback: "KEY_UNBOUND"
     const char* unboundStr = T4M_Key_KeynumToString("KEY_UNBOUND");
-    T4::Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
+    T4::engine::Com_sprintf(outBuf, 32, "\"%s\"", (DWORD)(uintptr_t)unboundStr);
 }
 
 // =====================================================================

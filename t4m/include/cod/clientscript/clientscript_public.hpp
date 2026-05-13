@@ -20,11 +20,11 @@
 #define VARIABLELIST_CHILD_BEGIN 0x6000
 
 #define IsObject(__parentValue__) \
-	((__parentValue__->w.status & VAR_MASK) >= game::VAR_THREAD) \
+	((__parentValue__->w.status & VAR_MASK) >= T4::engine::VAR_THREAD) \
 
 #define MT_NODE_BITS 16
-#define MT_NODE_SIZE sizeof(game::MemoryNode)
-#define MT_SIZE sizeof(game::scrMemTreeGlob_t::nodes)
+#define MT_NODE_SIZE sizeof(T4::engine::MemoryNode)
+#define MT_SIZE sizeof(T4::engine::scrMemTreeGlob_t::nodes)
 #define MT_NODE_COUNT (1 << MT_NODE_BITS)
 #define MT_NUM_BUCKETS 256
 
@@ -39,8 +39,7 @@
 #define MAX_VM_STACK_DEPTH 30
 
 #ifdef __cplusplus
-namespace game
-{
+namespace T4 { namespace engine {
 #endif
 
 	struct HunkUser;
@@ -903,9 +902,11 @@ namespace game
 	struct scr_localVar_t
 	{
 		unsigned int name; //OFS: 0x0 SIZE: 0x4
+		unsigned int sourcePos; //OFS: 0x4 SIZE: 0x4
 	};
-	ASSERT_STRUCT_SIZE(scr_localVar_t, 0x4);
+	ASSERT_STRUCT_SIZE(scr_localVar_t, 0x8);
 	ASSERT_STRUCT_OFFSET(scr_localVar_t, name, 0x0);
+	ASSERT_STRUCT_OFFSET(scr_localVar_t, sourcePos, 0x4);
 
 	struct scr_block_s
 	{
@@ -914,9 +915,9 @@ namespace game
 		int localVarsPublicCount; //OFS: 0x8 SIZE: 0x4
 		int localVarsCount; //OFS: 0xC SIZE: 0x4
 		unsigned __int8 localVarsInitBits[8]; //OFS: 0x10 SIZE: 0x8
-		scr_localVar_t localVars[64]; //OFS: 0x18 SIZE: 0x100
+		scr_localVar_t localVars[64]; //OFS: 0x18 SIZE: 0x200
 	};
-	ASSERT_STRUCT_SIZE(scr_block_s, 0x118);
+	ASSERT_STRUCT_SIZE(scr_block_s, 0x218);
 	ASSERT_STRUCT_OFFSET(scr_block_s, abortLevel, 0x0);
 	ASSERT_STRUCT_OFFSET(scr_block_s, localVarsCreateCount, 0x4);
 	ASSERT_STRUCT_OFFSET(scr_block_s, localVarsPublicCount, 0x8);
@@ -2345,7 +2346,7 @@ namespace game
 	inline void* Scr_GetObjectField_ADDR() { return CALL_ADDR(0x0, 0x546D30); }
 	void Scr_GetObjectField(int ofs, int inst, classNum_e classnum, int entnum, void* call_addr = Scr_GetObjectField_ADDR());
 #pragma endregion
-}
+} } // namespace T4::engine
 
 #include "cscr_main.hpp"
 #include "cscr_memorytree.hpp"

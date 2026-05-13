@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<void(scriptInstance_t inst)>Scr_InitAllocNode{ 0x0, 0x68B870};
 	WEAK symbol<sval_u()>node0{ 0x0, 0x68B900};
 	WEAK symbol<sval_u(scr_enum_t type, sval_u val1)>node1{ 0x0, 0x68B920};
@@ -17,4 +16,4 @@ namespace game
 	WEAK symbol<sval_u(sval_u val1, sval_u val2)>append_node{ 0x0, 0x68BBE0};
 
 	sval_u* Scr_AllocNode(scriptInstance_t inst, int size);
-}
+} } // namespace T4::engine

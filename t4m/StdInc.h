@@ -24,39 +24,7 @@
 #define __thread __declspec(thread)
 #define HardDebugBreak() MessageBoxA(0, __FUNCTION__, 0, 0);
 
-// first two number => correspond to T4M Enhanced dll version (current r49 on github)
-// 0 => separator
-// XX => config file revision, currently b 5
-#define INTERNAL_VERSION_NUMBER 4905
-#define STRINGIFY(x) #x
-#define TO_STRING(x) STRINGIFY(x)
-
-#define IS_BETA
-#define BETA "b5"
-#define VERSION "1.0"
-#define FS_BASEGAME "data"
-#define DATE_T4 __DATE__
-#define TIME __TIME__
-#define CONSOLEVERSION_BETA_STR "T4Me-MAM " VERSION "" BETA "> "
-#define CONSOLEVERSION_STR "T4Me-MAM " VERSION "> "
-#define CONSOLEVERSION_VULKAN_STR "T4Me-MAM " VERSION "> "
-#define CONSOLEVERSION_BETA_VULKAN_STR "T4Me-MAM " VERSION "" BETA "> "
-#define VERSION_BETA_STR "T4Me-MAM-SP " VERSION "" BETA " (built " DATE_T4 " " TIME " by gicombat)"
-#define VERSION_STR "T4Me-MAM-SP " VERSION " (built " DATE_T4 " " TIME " by gicombat)"
-#define VERSION_BETA_VULKAN_STR "T4Me-MAM-SP " VERSION "" BETA " with dxvk (built " DATE_T4 " " TIME " by gicombat)"
-#define VERSION_VULKAN_STR "T4Me-MAM-SP " VERSION " with dxvk (built " DATE_T4 " " TIME " by gicombat)"
-#define VERSIONMP_STR "T4Me-MAM-MP " VERSION " (built " DATE_T4 " " TIME " by gicombat)"
-#define VERSIONMP_BETA_STR "T4Me-MAM-MP " VERSION "" BETA " (built " DATE_T4 " " TIME " by gicombat)"
-#define BUILDLOG_STR VERSION_STR "\nlogfile created\n"
-#define SHORTVERSION_BETA_STR "T4MAM\n" VERSION "" BETA ""
-#define SHORTVERSION_STR "T4MAM\n" VERSION 
-#define SHORTVERSION_VULKAN_STR "T4MAM\n" VERSION "\ndxvk"
-#define SHORTVERSION_BETA_VULKAN_STR "T4MAM\n" VERSION "" BETA "\ndxvk"
-#define LONGVERSION_STR SHORTVERSION_STR " CL " DATE_T4 " " TIME
-#define SHORTVERSION_CONFIG_BETA_STR "T4MAM " VERSION "" BETA ""
-#define SHORTVERSION_CONFIG_STR "T4MAM " VERSION 
-
-#define VERSION_T4ME 49
+#include "t4m_version.h"
 
 #define force_gamma_update true
 
@@ -67,6 +35,8 @@
 //#include "include\cod\clientscript\clientscript_public.hpp"
 #include <cassert>
 
+
+using namespace T4::dvar;
 
 // cdecl
 template<typename Ret, typename... Args>

@@ -2,8 +2,7 @@
 
 
 
-namespace game
-{
+namespace T4 { namespace engine {
 	gamemode current = reinterpret_cast<const char*>(0x88A5DC) != "CoDWaW.exe"
 		? gamemode::multiplayer
 		: gamemode::singleplayer;
@@ -202,7 +201,7 @@ namespace game
 	}
 
 	// BuiltinMethod __usercall Scr_GetMethod@<eax>(int *type@<edi>, const char **pName@<esi>)
-	BuiltinMethod Scr_GetMethod(int* type_, const char** pName, void* call_addr)
+	/*BuiltinMethod Scr_GetMethod(int* type_, const char** pName, void* call_addr)
 	{
 		BuiltinMethod answer;
 
@@ -227,7 +226,7 @@ namespace game
 		//newCmd->name = utils::memory::duplicate_string(name);
 
 		//*cmd_functions = newCmd;
-	}
+	}*/
 
 	// restored
 	const char** FS_ListFiles(const char* path, const char* extension, FsListBehavior_e behavior, int* numfiles)
@@ -278,4 +277,4 @@ namespace game
 	//		* (float)360.0);
 	//	return *((float*)&v2 + 1);
 	//}
-}
+} } // namespace T4::engine

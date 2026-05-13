@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<int()>yyparse{ 0x0, 0x69AEC0 };
 	WEAK symbol<int()>yylex{ 0x0, 0x69C0D0 };
 	WEAK symbol<int()>yy_get_next_buffer{ 0x0, 0x69D300 };
@@ -24,4 +23,4 @@ namespace game
 	void yy_fatal_error(const char* err);
 	void* yy_flex_realloc(void* ptr, unsigned int size);
 	void yy_init_buffer(yy_buffer_state* b, FILE* file);
-}
+} } // namespace T4::engine

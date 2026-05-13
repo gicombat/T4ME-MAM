@@ -154,6 +154,7 @@ popd</Command>
     <ClInclude Include="Script.h" />
     <ClInclude Include="SDLLP.h" />
     <ClInclude Include="StdInc.h" />
+    <ClInclude Include="t4m_version.h" />
     <ClInclude Include="T4.h" />
     <ClInclude Include="t4_headers.h" />
     <ClInclude Include="Utils.h" />

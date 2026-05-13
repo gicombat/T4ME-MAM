@@ -1,4 +1,4 @@
-﻿// ==========================================================
+// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -7,9 +7,8 @@
 // Initial author: DidUknowiPwn
 // Started: 2015-07-12
 // ==========================================================
-
-#include "t4_headers.h"
 #include "StdInc.h"
+#include "t4_headers.h"
 #include "T4.h"
 #include <string>
 
@@ -45,20 +44,20 @@ void DrawDvarFlags(dvar_t* dvar)
 	__int16 flags = dvar->flags;
 
 	const char* flagsString = va("Flags: %s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
-		(flags & DVAR_FLAG_ARCHIVE ? "Archive, " : ""),
-		(flags & DVAR_FLAG_USERINFO ? "UserInfo, " : ""),
-		(flags & DVAR_FLAG_SERVERINFO ? "ServerInfo, " : ""),
-		(flags & DVAR_FLAG_SYSTEMINFO ? "SystemInfo, " : ""),
-		(flags & DVAR_FLAG_INIT ? "Init, " : ""),
-		(flags & DVAR_FLAG_LATCH ? "Latch, " : ""),
-		(flags & DVAR_FLAG_ROM ? "Rom, " : ""),
-		(flags & DVAR_FLAG_CHEAT ? "Cheat, " : ""),
-		(flags & DVAR_FLAG_DEVELOPER ? "Developer, " : ""),
-		(flags & DVAR_FLAG_SAVED ? "Saved, " : ""),
-		(flags & DVAR_FLAG_NORESTART ? "NoRestart, " : ""),
-		(flags & DVAR_FLAG_CHANGEABLE_RESET ? "ChangeableReset, " : ""),
-		(flags & DVAR_FLAG_EXTERNAL ? "External, " : ""),
-		(flags & DVAR_FLAG_AUTOEXEC ? "AutoExec" : ""));
+		(flags & T4::dvar::DVAR_FLAG_ARCHIVE ? "Archive, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_USERINFO ? "UserInfo, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_SERVERINFO ? "ServerInfo, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_SYSTEMINFO ? "SystemInfo, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_INIT ? "Init, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_LATCH ? "Latch, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_ROM ? "Rom, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_CHEAT ? "Cheat, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_DEVELOPER ? "Developer, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_SAVED ? "Saved, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_NORESTART ? "NoRestart, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_CHANGEABLE_RESET ? "ChangeableReset, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_EXTERNAL ? "External, " : ""),
+		(flags & T4::dvar::DVAR_FLAG_AUTOEXEC ? "AutoExec" : ""));
 
 	// increase by one line and reset to left side
 	conDraw->y += conDraw->fontHeight;
@@ -142,7 +141,7 @@ void PatchT4_ConsoleBox()
 
 void testCmd_f()
 {
-	T4::Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", T4::Cmd_Argc() - 1);
+	T4::engine::Com_Printf(0, "Surprise motherfucker. You have: ^3%i ^7args passed\n", T4::engine::Cmd_Argc() - 1);
 }
 
 void __cdecl DB_ListAssetPool_f()
@@ -154,26 +153,26 @@ void __cdecl DB_ListAssetPool_f()
 
 	unsigned int* g_poolSize = (unsigned int*)0x8DC5D0;
 
-	if (T4::Cmd_Argc() >= 2)
+	if (T4::engine::Cmd_Argc() >= 2)
 	{
-		v1 = T4::Cmd_Argv(1);
+		v1 = T4::engine::Cmd_Argv(1);
 		type = (XAssetType)atoi(v1);
 		T4M::DB_ListAssetPool(type, false);
 	}
 	else
 	{
-		T4::Com_Printf(0, "listassetpool <poolnumber>: lists all the assets in the specified pool\n");
+		T4::engine::Com_Printf(0, "listassetpool <poolnumber>: lists all the assets in the specified pool\n");
 		for (i = 0; i < ASSET_TYPE_MAX; ++i)
 		{
 			v0 = T4M::DB_GetXAssetTypeName(i);
-			T4::Com_Printf(0, "%d %s %i\n", i, v0, g_poolSize[i]);
+			T4::engine::Com_Printf(0, "%d %s %i\n", i, v0, g_poolSize[i]);
 		}
 	}
 }
 
 void DB_ListAssetCounts_f()
 {
-	T4::Com_Printf(0, "Listing assets in all pools.\n");
+	T4::engine::Com_Printf(0, "Listing assets in all pools.\n");
 
 	for (int i = 0; i < ASSET_TYPE_MAX; ++i)
 	{
@@ -285,13 +284,13 @@ void PatchT4_GetGEnts()
 
 void PatchT4_Console()
 {
-	con_external = T4::Dvar_RegisterBool(0, "con_external", DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
-	enable_scoreboard = T4::Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
-	disable_intro = T4::Dvar_RegisterBool(0, "disable_intro", DVAR_FLAG_ARCHIVE, "Show the intro video.");
-	is_watching_for_switch_mode_input = T4::Dvar_RegisterBool(0, "i_watching_sm_input", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
-	switch_mode_input_pressed = T4::Dvar_RegisterBool(0, "i_sm_pressed", DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
-	loadout_preset_usa = T4::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
-	loadout_preset_rus = T4::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	con_external = T4::dvar::Dvar_RegisterBool(0, "con_external", T4::dvar::DVAR_FLAG_ARCHIVE, "Enable the external console (requires restart).");
+	enable_scoreboard = T4::dvar::Dvar_RegisterBool(0, "enable_scoreboard", T4::dvar::DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+	disable_intro = T4::dvar::Dvar_RegisterBool(0, "disable_intro", T4::dvar::DVAR_FLAG_ARCHIVE, "Show the intro video.");
+	is_watching_for_switch_mode_input = T4::dvar::Dvar_RegisterBool(0, "i_watching_sm_input", T4::dvar::DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	switch_mode_input_pressed = T4::dvar::Dvar_RegisterBool(0, "i_sm_pressed", T4::dvar::DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
+	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 
 	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
 

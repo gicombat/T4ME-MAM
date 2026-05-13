@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<void(scriptInstance_t inst, VariableValue* value)>RemoveRefToValue{ 0x0, 0x67EB70 };
 	WEAK symbol<void(scriptInstance_t inst, OpcodeVM op, int offset, int callType)>EmitOpcode{ 0x0, 0x67ECA0 };
 	WEAK symbol<int(scriptInstance_t inst, unsigned int name, sval_u sourcePos, int create, scr_block_s* block)>Scr_FindLocalVarIndex{ 0x0, 0x67F500 };
@@ -309,4 +308,4 @@ namespace game
 	void Scr_CalcLocalVarsFormalParameterList(sval_u exprlist, scr_block_s* block);
 	void SetThreadPosition(scriptInstance_t inst, unsigned int posId);
 	void EmitIncludeList(scriptInstance_t inst, sval_u val);
-}
+} } // namespace T4::engine

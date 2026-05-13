@@ -115,9 +115,9 @@ void PatchT4MAM_LowReady()
     {
             auto* ps = (playerState_s*)ctx.esi;
             if ((ps->eFlags & 0x400) != 0
-                || ps->weaponstate == WEAPON_LOWREADY_START
-                || ps->weaponstate == WEAPON_LOWREADY_LOOP
-                || ps->weaponstate == WEAPON_LOWREADY_END)
+                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_START
+                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_LOOP
+                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_END)
             {
                 ctx.eip = 0x0041EB9C;   // retn only (no pop ebp pairing needed)
             }

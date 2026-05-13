@@ -1,4 +1,4 @@
-﻿// ==========================================================
+// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -21,8 +21,8 @@ namespace T4M
 	__declspec(noinline)
 	void DB_FreeXZoneMemory(int poolIndex, const char* zoneName)
 	{
-		T4::Com_PrintfChannel(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
-		PMem_Pool* pool = &T4::g_pmem_pools[poolIndex];
+		T4::engine::Com_PrintfChannel(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
+		PMem_Pool* pool = &T4::engine::g_pmem_pools[poolIndex];
 		int count = pool->count;
 		int found = -1;
 
@@ -43,7 +43,7 @@ namespace T4M
 
 		if (found != newCount) 
 		{
-			T4::Com_Error(0, "[T4M] - free does not match allocation");
+			T4::engine::Com_Error(0, "[T4M] - free does not match allocation");
 			return;
 		}
 
@@ -66,12 +66,12 @@ namespace T4M
 	{
 		memset(entry->runtimeData, 0, sizeof(entry->runtimeData));
 
-		const char* zoneName = T4::g_zoneFileNames[entry->zoneFileIndex].name;
-		T4::Com_PrintfChannel(0x10, "Unloaded fastfile %s\n", zoneName);
+		const char* zoneName = T4::engine::g_zoneFileNames[entry->zoneFileIndex].name;
+		T4::engine::Com_PrintfChannel(0x10, "Unloaded fastfile %s\n", zoneName);
 
 		DB_FreeXZoneMemory(entry->memHandle, zoneName);
 
-		T4::g_zoneFileNames[entry->zoneFileIndex].name[0] = '\0';
+		T4::engine::g_zoneFileNames[entry->zoneFileIndex].name[0] = '\0';
 	}
 
 	// ── Level 1: removal + g_zoneLoaded compaction ───────────────────────────────
@@ -79,54 +79,54 @@ namespace T4M
 	__declspec(noinline)
 	void DB_RemoveZoneEntry(XZoneLoadedEntry* entry)
 	{
-		int index = (int)(entry - T4::g_zoneLoaded);
+		int index = (int)(entry - T4::engine::g_zoneLoaded);
 
 		DB_ZoneEntryCleanup(entry);
 
-		int newCount = *T4::g_zoneCount - 1;
-		*T4::g_zoneCount = newCount;
+		int newCount = *T4::engine::g_zoneCount - 1;
+		*T4::engine::g_zoneCount = newCount;
 
 		if (index < newCount)
-			memmove(&T4::g_zoneLoaded[index], &T4::g_zoneLoaded[index + 1],
+			memmove(&T4::engine::g_zoneLoaded[index], &T4::engine::g_zoneLoaded[index + 1],
 				(newCount - index) * sizeof(XZoneLoadedEntry));
 	}
 
 	// @modified — replaces sub_48F720 to handle T4M custom zones 0x1000
 	void __cdecl DB_UnloadAllZones()
 	{
-		T4::Com_Printf(0, "[T4M] - DB_UnloadAllZones Start\n");
+		T4::engine::Com_Printf(0, "[T4M] - DB_UnloadAllZones Start\n");
 		// --- Phase 1: engine sync (identical to DB_LoadXAssets Phase 0.5) ---
-		T4::Sys_SyncDatabase();        // sub_6F6CE0
-		T4::DB_PostLoadXZone();        // sub_5A3320
-		T4::Sys_WakeDatabase();        // sub_6F6D60
-		T4::DB_WaitForPendingLoads();  // sub_5FDBF0
-		T4::DB_CheckPendingComplete(); // sub_48E560
-		T4::DB_PreUnloadResources();   // sub_48F8D0
+		T4::engine::Sys_SyncDatabase();        // sub_6F6CE0
+		T4::engine::DB_PostLoadXZone();        // sub_5A3320
+		T4::engine::Sys_WakeDatabase();        // sub_6F6D60
+		T4::engine::DB_WaitForPendingLoads();  // sub_5FDBF0
+		T4::engine::DB_CheckPendingComplete(); // sub_48E560
+		T4::engine::DB_PreUnloadResources();   // sub_48F8D0
 
 		// --- Phase 2: acquire writer lock ---
 		DB_WriterAcquire();
 
 		// --- Phase 3: LIFO asset unload (no PMem free yet) ---
-		for (int z = *T4::g_zoneCount - 1; z >= 0; z--)
+		for (int z = *T4::engine::g_zoneCount - 1; z >= 0; z--)
 		{
-			T4_Reconstructed::DB_UnloadZoneAssets(T4::g_zoneLoaded[z].zoneFileIndex, /*freeMemory=*/false);
+			T4_Reconstructed::DB_UnloadZoneAssets(T4::engine::g_zoneLoaded[z].zoneFileIndex, /*freeMemory=*/false);
 		}
 
 		// --- Phase 4: cleanup asset references in the hash table ---
-		T4::DB_CleanupAssetRefs();  // sub_48F670 — iterates db_hashTable, returns entries to the free list
-		T4::DB_PostUnloadCleanup(); // sub_48F9B0
+		T4::engine::DB_CleanupAssetRefs();  // sub_48F670 — iterates db_hashTable, returns entries to the free list
+		T4::engine::DB_PostUnloadCleanup(); // sub_48F9B0
 
 		// --- Phase 5: LIFO final cleanup (log + PMem_Free + clear zone name) ---
 		// All zones are freed in the reverse order of their allocation, which
 		// respects the strict LIFO of the PMem pool for all zones (vanilla + T4M).
-		for (int z = *T4::g_zoneCount - 1; z >= 0; z--)
+		for (int z = *T4::engine::g_zoneCount - 1; z >= 0; z--)
 		{
-			DB_ZoneEntryCleanup(&T4::g_zoneLoaded[z]);
+			DB_ZoneEntryCleanup(&T4::engine::g_zoneLoaded[z]);
 		}
 
 		// --- Phase 6: reset state flags ---
-		*T4::g_zoneCount = 0;
-		*T4::g_dbHasLoadedZones = false;  // byte_46DE3B6 — no more zones loaded
+		*T4::engine::g_zoneCount = 0;
+		*T4::engine::g_dbHasLoadedZones = false;  // byte_46DE3B6 — no more zones loaded
 
 		// --- Phase 7: release writer lock ---
 		DB_WriterRelease();
@@ -135,26 +135,26 @@ namespace T4M
 	// @modified — replaces sub_48E7B0 with T4M Phase 3 for zones 0x1000
 	void DB_LoadXAssets(XZoneInfo* zoneInfo, int zoneCount, int sync)
 	{
-		T4::Com_PrintfChannel(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
+		T4::engine::Com_PrintfChannel(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
 		for (size_t i = 0; i < zoneCount; i++)
 		{
-			T4::Com_PrintfChannel(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
+			T4::engine::Com_PrintfChannel(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
 		}
 
 		bool anyUnloaded = false;
 		// ── PHASE 0: one-shot init ────────────────────────────────────────────
-		if (!*T4::g_dbInitialized)
+		if (!*T4::engine::g_dbInitialized)
 		{
-			*T4::g_dbInitialized = true;
-			T4::DB_InitAssetEntryPool(); // sub_48D340 — g_assetEntryPool free list + per-type pool clear
+			*T4::engine::g_dbInitialized = true;
+			T4::engine::DB_InitAssetEntryPool(); // sub_48D340 — g_assetEntryPool free list + per-type pool clear
 		}
 
 		// ── PHASE 0.5: engine synchronization ─────────────────────────────────
-		T4::Sys_SyncDatabase();        // sub_6F6CE0 — renderer pre-frame / flush pending
-		T4::DB_PostLoadXZone();        // sub_5A3320 — tick sync worker
-		T4::Sys_WakeDatabase();        // sub_6F6D60 — renderer post-frame
-		T4::DB_WaitForPendingLoads();  // sub_5FDBF0 — PMem frame update
-		T4::DB_CheckPendingComplete(); // sub_48E560 — update zone visibility
+		T4::engine::Sys_SyncDatabase();        // sub_6F6CE0 — renderer pre-frame / flush pending
+		T4::engine::DB_PostLoadXZone();        // sub_5A3320 — tick sync worker
+		T4::engine::Sys_WakeDatabase();        // sub_6F6D60 — renderer post-frame
+		T4::engine::DB_WaitForPendingLoads();  // sub_5FDBF0 — PMem frame update
+		T4::engine::DB_CheckPendingComplete(); // sub_48E560 — update zone visibility
 
 		if (zoneCount <= 0)
 			goto skipToSync;
@@ -165,27 +165,27 @@ namespace T4M
 			int freeFlags = zoneInfo[i].freeFlags;
 			if (freeFlags == 0) continue;
 
-			for (int z = *T4::g_zoneCount - 1; z >= 0; z--)
+			for (int z = *T4::engine::g_zoneCount - 1; z >= 0; z--)
 			{
-				if (!(T4::g_zoneLoaded[z].allocFlags & freeFlags)) continue;
+				if (!(T4::engine::g_zoneLoaded[z].allocFlags & freeFlags)) continue;
 
 				if (!anyUnloaded) {
 					anyUnloaded = true;
-					T4::DB_PreUnloadResources(); // sub_48F8D0 — flush renderer, GPU, D3D buffers
+					T4::engine::DB_PreUnloadResources(); // sub_48F8D0 — flush renderer, GPU, D3D buffers
 
-					if (!*T4::g_dbInUse) {
-						*T4::g_dbInUse = true;
+					if (!*T4::engine::g_dbInUse) {
+						*T4::engine::g_dbInUse = true;
 						// Clear client model weapon slots (renderer scene @ dword_3BF392C)
-						T4::R_ClearScene();                          // sub_6B1440
-						T4::CL_ClearState();                         // sub_59EA90
-						T4::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+						T4::engine::R_ClearScene();                          // sub_6B1440
+						T4::engine::CL_ClearState();                         // sub_59EA90
+						T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
 					}
 
 					DB_WriterAcquire(); // pure C++ reconstruction — replaces the broken register-based call
 				}
 
 				// zoneFileIndex = word at [entry+0x00]
-				T4_Reconstructed::DB_UnloadZoneAssets(T4::g_zoneLoaded[z].zoneFileIndex, /*freeMemory=*/true); // sub_48F340
+				T4_Reconstructed::DB_UnloadZoneAssets(T4::engine::g_zoneLoaded[z].zoneFileIndex, /*freeMemory=*/true); // sub_48F340
 			}
 		}
 
@@ -193,7 +193,7 @@ namespace T4M
 			goto skipToSync;
 
 		// ── PHASE 2: post-unload hash table cleanup ──────────────────────────
-		T4::DB_PostUnloadCleanup(); // sub_48F9B0 — walks db_hashTable, frees orphan entries
+		T4::engine::DB_PostUnloadCleanup(); // sub_48F9B0 — walks db_hashTable, frees orphan entries
 
 		// ── PHASE 3: remove zones from g_zoneLoaded (hardcoded bits) ─────────
 		// Each bit = one independent LIFO pass.
@@ -201,12 +201,12 @@ namespace T4M
 		// NOTE: 0x1000 is also absent → manual T4M Phase 3 is mandatory.
 		static const int priorityBits[] =
 		{
-			XZoneFlags::ZONE_T4M_MAP_LOCA, XZoneFlags::ZONE_T4M_PATCH_EX, 
-			XZoneFlags::ZONE_MOD, XZoneFlags::ZONE_COMMON, 
-			XZoneFlags::ZONE_MAP_PATCH, XZoneFlags::ZONE_RESERVED_80,
-			XZoneFlags::ZONE_POST_LOAD, XZoneFlags::ZONE_MAP_LOAD, 
-			XZoneFlags::ZONE_UI, XZoneFlags::ZONE_LOC_COMMON,
-			XZoneFlags::ZONE_LOCALIZED, XZoneFlags::ZONE_BASE
+			T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA, T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX,
+			T4::engine::XZoneFlags::ZONE_MOD, T4::engine::XZoneFlags::ZONE_COMMON,
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH, T4::engine::XZoneFlags::ZONE_RESERVED_80,
+			T4::engine::XZoneFlags::ZONE_POST_LOAD, T4::engine::XZoneFlags::ZONE_MAP_LOAD,
+			T4::engine::XZoneFlags::ZONE_UI, T4::engine::XZoneFlags::ZONE_LOC_COMMON,
+			T4::engine::XZoneFlags::ZONE_LOCALIZED, T4::engine::XZoneFlags::ZONE_BASE
 		};
 
 		for (int i = 0; i < zoneCount; i++)
@@ -216,49 +216,49 @@ namespace T4M
 			{
 				if (!(freeFlags & priorityBits[b])) continue;
 
-				for (int z = *T4::g_zoneCount - 1; z >= 0; z--)
+				for (int z = *T4::engine::g_zoneCount - 1; z >= 0; z--)
 				{
-					if (T4::g_zoneLoaded[z].allocFlags & priorityBits[b])
-						DB_RemoveZoneEntry(&T4::g_zoneLoaded[z]); // sub_48F7D0
+					if (T4::engine::g_zoneLoaded[z].allocFlags & priorityBits[b])
+						DB_RemoveZoneEntry(&T4::engine::g_zoneLoaded[z]); // sub_48F7D0
 				}
 			}
 		}
 
 		// ── PHASE 4: unload finalization ─────────────────────────────────────
 		DB_WriterRelease(); // release the writer lock taken by DB_WriterAcquire() in Phase 1
-		*T4::g_dbInUse = false;
-		*T4::g_assetsDirty = true;
-		T4::R_BeginRegistration();    // sub_6B1500
-		T4::CL_BeginRegistration();   // sub_59EB00
-		T4::Hunk_BeginRegistration(); // sub_4B3090
-		T4::DB_SyncAssets();          // sub_41D3A0
+		*T4::engine::g_dbInUse = false;
+		*T4::engine::g_assetsDirty = true;
+		T4::engine::R_BeginRegistration();    // sub_6B1500
+		T4::engine::CL_BeginRegistration();   // sub_59EB00
+		T4::engine::Hunk_BeginRegistration(); // sub_4B3090
+		T4::engine::DB_SyncAssets();          // sub_41D3A0
 		// (updates thread ID in TLS[0x20] if not set)
 
 	skipToSync:
 		// ── PHASE 5: renderer sync (if sync && not already active) ───────────
-		if (sync && !*T4::g_dbInUse)
+		if (sync && !*T4::engine::g_dbInUse)
 		{
-			*T4::g_dbInUse = true;
+			*T4::engine::g_dbInUse = true;
 			// Clear client model weapon slots (same code as Phase 1)
-			T4::R_ClearScene();                          // sub_6B1440
-			T4::CL_ClearState();                         // sub_59EA90
-			T4::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+			T4::engine::R_ClearScene();                          // sub_6B1440
+			T4::engine::CL_ClearState();                         // sub_59EA90
+			T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
 		}
 
 		// ── PHASE 6: enqueue the new zones for loading ──────────────────────
-		*T4::g_syncValue = sync;
-		T4::DB_AddZonesToQueue(zoneInfo, zoneCount); // sub_48E4C0
+		*T4::engine::g_syncValue = sync;
+		T4::engine::DB_AddZonesToQueue(zoneInfo, zoneCount); // sub_48E4C0
 
 		// ── PHASE 7: if sync, wait for the load to finish ───────────────────
 		if (sync)
 		{
-			T4::DB_PostLoadXZone();    // sub_5A3320
-			*T4::g_dbInUse = false;
-			*T4::g_assetsDirty = true;
-			T4::R_BeginRegistration();
-			T4::CL_BeginRegistration();
-			T4::Hunk_BeginRegistration();
-			T4::DB_SyncAssets();       // sub_41D3A0
+			T4::engine::DB_PostLoadXZone();    // sub_5A3320
+			*T4::engine::g_dbInUse = false;
+			*T4::engine::g_assetsDirty = true;
+			T4::engine::R_BeginRegistration();
+			T4::engine::CL_BeginRegistration();
+			T4::engine::Hunk_BeginRegistration();
+			T4::engine::DB_SyncAssets();       // sub_41D3A0
 			// (updates thread ID in TLS[0x20] if not set)
 		}
 	}
@@ -275,17 +275,17 @@ namespace T4M
 
 		// Default local is english
 		const char* selectedLocal = "english";
-		if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string, *T4::language_system)))
+		if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*T4::engine::fs_localAppData)->current.string, (*T4::engine::fs_game)->current.string, *T4::engine::language_system)))
 		{
 			load_localized_mod = true;
 			totalZoneCount = totalZoneCount + 1;
-			selectedLocal = *T4::language_system;
+			selectedLocal = *T4::engine::language_system;
 		}
 
 		// try to fallback to localized_english_mod.ff if we haven't didn't succeed reading localization.txt or we haven't found a corresponding localized_mod.ff file
 		if (load_localized_mod == false)
 		{
-			if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string, selectedLocal)))
+			if (FileExists(va("%s\\%s\\localized_%s_mod.ff", (*T4::engine::fs_localAppData)->current.string, (*T4::engine::fs_game)->current.string, selectedLocal)))
 			{
 				load_localized_mod = true;
 				totalZoneCount = totalZoneCount + 1;
@@ -293,18 +293,18 @@ namespace T4M
 		}
  
 		// in cod waw mods are loaded from appdata not base game
-		if (FileExists(va("%s\\%s\\mod_ex.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string)))
+		if (FileExists(va("%s\\%s\\mod_ex.ff", (*T4::engine::fs_localAppData)->current.string, (*T4::engine::fs_game)->current.string)))
 		{
 			load_modEx = true;
 			totalZoneCount = totalZoneCount + 1;
 		}
-		if (FileExists(va("%s\\%s\\mod_patch.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string)))
+		if (FileExists(va("%s\\%s\\mod_patch.ff", (*T4::engine::fs_localAppData)->current.string, (*T4::engine::fs_game)->current.string)))
 		{
 			load_modPatch = true;
 			totalZoneCount = totalZoneCount + 1;
 
 		}
-		if (FileExists(va("%s\\%s\\mod_ex_patch.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string)))
+		if (FileExists(va("%s\\%s\\mod_ex_patch.ff", (*T4::engine::fs_localAppData)->current.string, (*T4::engine::fs_game)->current.string)))
 		{
 			load_modEx_Patch = true;
 			totalZoneCount = totalZoneCount + 1;
@@ -329,28 +329,28 @@ namespace T4M
 			if (load_modEx)
 			{
 				modZoneInfo[currentIndex].name = "mod_ex";
-				modZoneInfo[currentIndex].allocFlags = XZoneFlags::ZONE_MOD; 
+				modZoneInfo[currentIndex].allocFlags = T4::engine::XZoneFlags::ZONE_MOD; 
 				modZoneInfo[currentIndex].freeFlags = 0;
 				currentIndex = currentIndex + 1;
 			}
 			if (load_modPatch)
 			{
 				modZoneInfo[currentIndex].name = "mod_patch";
-				modZoneInfo[currentIndex].allocFlags = XZoneFlags::ZONE_MOD; 
+				modZoneInfo[currentIndex].allocFlags = T4::engine::XZoneFlags::ZONE_MOD;
 				modZoneInfo[currentIndex].freeFlags = 0;
 				currentIndex = currentIndex + 1;
 			}
 			if (load_modEx_Patch)
 			{
 				modZoneInfo[currentIndex].name = "mod_ex_patch";
-				modZoneInfo[currentIndex].allocFlags = XZoneFlags::ZONE_MOD; 
+				modZoneInfo[currentIndex].allocFlags = T4::engine::XZoneFlags::ZONE_MOD;
 				modZoneInfo[currentIndex].freeFlags = 0;
 				currentIndex = currentIndex + 1;
 			}
 			if (load_localized_mod)
 			{
 				modZoneInfo[currentIndex].name = va("localized_%s_mod", selectedLocal);
-				modZoneInfo[currentIndex].allocFlags = XZoneFlags::ZONE_MOD; 
+				modZoneInfo[currentIndex].allocFlags = T4::engine::XZoneFlags::ZONE_MOD;
 				modZoneInfo[currentIndex].freeFlags = 0;
 			}
 			DB_LoadXAssets(modZoneInfo, totalZoneCount, sync);
@@ -363,7 +363,7 @@ namespace T4M
 	{
 		// Code Post gfx is loaded after reading player var, so we need to update them with the value of the .conf, we can do this only here, so let's hack this shit
 		UINT enableVulkan = GetPrivateProfileInt("Options", "EnableVulkan", 0, CONFIG_FILE_LOCATION);
-		vulkan = T4::Dvar_RegisterBool(0, "vulkan", DVAR_FLAG_ARCHIVE, "Use vulkan instead of DirectX 9.0c (only used for UI, if you want to change please use the change in the options or in the .conf file");
+		vulkan = T4::dvar::Dvar_RegisterBool(0, "vulkan", DVAR_FLAG_ARCHIVE, "Use vulkan instead of DirectX 9.0c (only used for UI, if you want to change please use the change in the options or in the .conf file");
 		vulkan->current.boolean = enableVulkan;
 
 		DB_LoadXAssets(zoneInfo, zoneCount, sync);
@@ -381,43 +381,61 @@ namespace T4M
 	// @modified — replaces sub_59E050 (FS_AddUserMapDir + PATCH_EX zones)
 	void __cdecl DB_LoadMapZones(const char* mapName)
 	{
-		T4::Com_PrintfChannel(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
+		T4::engine::Com_PrintfChannel(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
 		// Reset the fastfile streaming progress counters
-		T4::db_streamReadBlocksTotal = 0;  // 0x957400
-		T4::db_streamReadBlocksDone = 0;  // 0x957408
-		T4::db_streamDecompBytesTotal = 0;  // 0x95740C
-		T4::db_streamDecompBytesDone = 0;  // 0x9571A4
-		T4::db_streamEnabled = 0;  // 0x957404
+		T4::engine::db_streamReadBlocksTotal = 0;  // 0x957400
+		T4::engine::db_streamReadBlocksDone = 0;  // 0x957408
+		T4::engine::db_streamDecompBytesTotal = 0;  // 0x95740C
+		T4::engine::db_streamDecompBytesDone = 0;  // 0x9571A4
+		T4::engine::db_streamEnabled = 0;  // 0x957404
 
 		T4M::resetFakeIntroSecondValue = true;
 
-		if ((*T4::fs_game)->current.string[0] != '\0' && FS_ZoneFileExists(mapName, 2))
+		if ((*T4::engine::fs_game)->current.string[0] != '\0' && FS_ZoneFileExists(mapName, 2))
 		{
 			const char* usermapPath = va("%s/%s", "usermaps", mapName); // sub_5F6D80
-			T4::FS_AddUserMapDir(usermapPath);    // sub_5DD8A0
+			T4::engine::FS_AddUserMapDir(usermapPath);    // sub_5DD8A0
 		}
 
 		char localBuf[0x40];
 		_snprintf(localBuf, sizeof(localBuf) - 1, "%s%s", "localized_", mapName);
 		localBuf[sizeof(localBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(localBuf, XZoneFlags::ZONE_LOCALIZED, XZoneFlags::ZONE_MAP_PATCH | XZoneFlags::ZONE_UI | XZoneFlags::ZONE_LOCALIZED | XZoneFlags::ZONE_T4M_PATCH_EX | XZoneFlags::ZONE_T4M_MAP_LOCA);
+		DB_LoadZoneGeneric(localBuf, T4::engine::XZoneFlags::ZONE_LOCALIZED, 
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH | 
+			T4::engine::XZoneFlags::ZONE_UI | 
+			T4::engine::XZoneFlags::ZONE_LOCALIZED | 
+			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX |
+			T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA);
 
 		char locaXlBuf[0x40];
-		_snprintf(locaXlBuf, sizeof(locaXlBuf) - 1, "%s_%s_%s", "localized", *T4::language_system, mapName);
+		_snprintf(locaXlBuf, sizeof(locaXlBuf) - 1, "%s_%s_%s", "localized", *T4::engine::language_system, mapName);
 		locaXlBuf[sizeof(locaXlBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(locaXlBuf, XZoneFlags::ZONE_T4M_MAP_LOCA, XZoneFlags::ZONE_MAP_PATCH | XZoneFlags::ZONE_UI | XZoneFlags::ZONE_T4M_PATCH_EX | XZoneFlags::ZONE_T4M_MAP_LOCA);
+		DB_LoadZoneGeneric(locaXlBuf, T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA, 
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH | 
+			T4::engine::XZoneFlags::ZONE_UI | 
+			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX | 
+			T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA);
 
 		char patchNameBuf[0x40];
 		_snprintf(patchNameBuf, sizeof(patchNameBuf) - 1, "%s_patch", mapName);
 		patchNameBuf[sizeof(patchNameBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(patchNameBuf, XZoneFlags::ZONE_MAP_PATCH, XZoneFlags::ZONE_MAP_PATCH | XZoneFlags::ZONE_POST_LOAD | XZoneFlags::ZONE_UI | XZoneFlags::ZONE_T4M_PATCH_EX);
+		DB_LoadZoneGeneric(patchNameBuf, T4::engine::XZoneFlags::ZONE_MAP_PATCH,
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH |
+			T4::engine::XZoneFlags::ZONE_POST_LOAD |
+			T4::engine::XZoneFlags::ZONE_UI |
+			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX);
 
 		char patchNameExBuf[0x40];
 		_snprintf(patchNameExBuf, sizeof(patchNameExBuf) - 1, "%s_patch_ex", mapName);
 		patchNameExBuf[sizeof(patchNameExBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(patchNameExBuf, XZoneFlags::ZONE_T4M_PATCH_EX, XZoneFlags::ZONE_POST_LOAD | XZoneFlags::ZONE_UI | XZoneFlags::ZONE_T4M_PATCH_EX);
+		DB_LoadZoneGeneric(patchNameExBuf, T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX, 
+			T4::engine::XZoneFlags::ZONE_POST_LOAD | 
+			T4::engine::XZoneFlags::ZONE_UI | 
+			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX);
 
-		DB_LoadZoneGeneric(mapName, XZoneFlags::ZONE_UI, XZoneFlags::ZONE_POST_LOAD | XZoneFlags::ZONE_UI);
+		DB_LoadZoneGeneric(mapName, T4::engine::XZoneFlags::ZONE_UI, 
+			T4::engine::XZoneFlags::ZONE_POST_LOAD | 
+			T4::engine::XZoneFlags::ZONE_UI);
 	}
 
 	// =====================================================================
@@ -430,21 +448,21 @@ namespace T4M
 		// Vanilla first-check: if the counter is 0 on entry, return without
 		// resetting or signalling. Fast path when the worker was woken by a
 		// non-load event.
-		if (*T4::g_zonesToLoad == 0)
+		if (*T4::engine::g_zonesToLoad == 0)
 			return;
 
 		// Re-read + reset (vanilla writes 0 unconditionally between the two
 		// reads — preserves the race window with DB_AddZonesToQueue).
-		int pendingCount = *T4::g_zonesToLoad;
-		*T4::g_zonesToLoad = 0;
+		int pendingCount = *T4::engine::g_zonesToLoad;
+		*T4::engine::g_zonesToLoad = 0;
 
 		if (pendingCount > 0)
 		{
-			XZoneQueueEntry*entry = &T4::g_zoneLoadQueue[0];
+			XZoneQueueEntry*entry = &T4::engine::g_zoneLoadQueue[0];
 
 			for (int i = 0; i < pendingCount; i++)
 			{
-				int ok = T4::DB_OpenZoneFile(entry, entry->allocFlags);
+				int ok = T4::engine::DB_OpenZoneFile(entry, entry->allocFlags);
 
 				if (ok == 0)
 				{
@@ -455,13 +473,13 @@ namespace T4M
 					if (strstr(entry->name, "_patch") != nullptr)
 					{
 						strcpy(entry->name, "default");
-						ok = T4::DB_OpenZoneFile(entry, entry->allocFlags);
+						ok = T4::engine::DB_OpenZoneFile(entry, entry->allocFlags);
 						if (ok == 0)
-							*T4::g_pendingZoneCount -= 1;
+							*T4::engine::g_pendingZoneCount -= 1;
 					}
 					else*/
 					{
-						*T4::g_pendingZoneCount -= 1;
+						*T4::engine::g_pendingZoneCount -= 1;
 					}
 				}
 
@@ -469,7 +487,7 @@ namespace T4M
 			}
 		}
 
-		SetEvent(*T4::g_dbSecondaryEvent);
+		SetEvent(*T4::engine::g_dbSecondaryEvent);
 	}
 } // namespace T4M
 

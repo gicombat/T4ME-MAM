@@ -19,7 +19,7 @@ FILE* fopen_hook(const char* file, const char* mode)
 {
 	if (openFiles2.find(std::string(file)) != openFiles2.end())
 	{
-		T4::Com_Printf(0, "File '%s' is already open! Returning previous handle\n", file);
+		T4::engine::Com_Printf(0, "File '%s' is already open! Returning previous handle\n", file);
 		return openFiles2[std::string(file)];
 	}
 
@@ -36,7 +36,7 @@ FILE* fopen_hook(const char* file, const char* mode)
 
 	openFiles1[fp] = std::string(file);
 	openFiles2[std::string(file)] = fp;
-	T4::Com_Printf(0, "File '%s' opened\n", file);
+	T4::engine::Com_Printf(0, "File '%s' opened\n", file);
 	return fp;
 }
 
@@ -56,13 +56,13 @@ void* fclose_hook(FILE* f)
 	if (openFiles1.find(f) != openFiles1.end())
 	{
 		std::string s = openFiles1[f];
-		T4::Com_Printf(0, "File '%s' closed\n", openFiles1[f].c_str());
+		T4::engine::Com_Printf(0, "File '%s' closed\n", openFiles1[f].c_str());
 		openFiles2.erase(openFiles2.find(openFiles1[f]));
 		openFiles1.erase(openFiles1.find(f));
 		return r;
 	}
 
-	T4::Com_Printf(0, "Got file we don't know about!\n");
+	T4::engine::Com_Printf(0, "Got file we don't know about!\n");
 	return r;
 }
 

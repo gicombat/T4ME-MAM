@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<int(scriptInstance_t inst, int nodeNum)>MT_GetSubTreeSize{ 0x0, 0x689EF0 };
 	WEAK symbol<void(scriptInstance_t inst)>MT_DumpTree{ 0x0, 0x689F40 };
 	WEAK symbol<void(scriptInstance_t inst, int newNode, int size)>MT_AddMemoryNode{ 0x0, 0x68A0E0 };
@@ -27,4 +26,4 @@ namespace game
 	char* MT_Alloc(int numBytes, scriptInstance_t inst, void* call_addr = MT_Alloc_ADDR());
 
 	RefVector* GetRefVector(scriptInstance_t inst, unsigned int id);
-}
+} } // namespace T4::engine

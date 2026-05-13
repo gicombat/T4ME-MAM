@@ -137,7 +137,7 @@ void PatchT4_SteamDRM()
 
 void PatchT4_Menus()
 {
-	dvar_t* enable_scoreboard = T4::Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
+	dvar_t* enable_scoreboard = T4::dvar::Dvar_RegisterBool(0, "enable_scoreboard", DVAR_FLAG_ARCHIVE, "Enable the scoreboard in solo play (requires restart).");
 
 	if (enable_scoreboard->current.value)
 	{
@@ -167,9 +167,9 @@ void PatchT4_Menus()
 
 	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) 
 	{
-		game::cg_s* cgArray = (game::cg_s*)0x034732B8;
+		T4::engine::cg_s* cgArray = (T4::engine::cg_s*)0x034732B8;
 
-		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == game::pmtype_t::PM_INTERMISSION) 
+		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == T4::engine::pmtype_t::PM_INTERMISSION) 
 		{
 			ctx.eip = 0x006680DD;
 			return;

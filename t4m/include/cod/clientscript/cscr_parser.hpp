@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<char* (scriptInstance_t inst, int unused, char* filename, const char* codepos, int archive)>Scr_ReadFile_FastFile{ 0x0, 0x68AE30 };
 	WEAK symbol<char* (scriptInstance_t inst, int unused_arg1, const char* filename, const char* codepos, int archive)>Scr_ReadFile_LoadObj{ 0x0, 0x68AED0 };
 	WEAK symbol<void(scriptInstance_t inst, unsigned int codePos, const char* msg, ...)>CompileError{ 0x0, 0x68B470 };
@@ -49,4 +48,4 @@ namespace game
 
 	unsigned int Scr_GetPrevSourcePos(scriptInstance_t inst, const char* codePos, unsigned int index);
 	void Scr_ShutdownAllocNode(scriptInstance_t inst);
-}
+} } // namespace T4::engine

@@ -1,5 +1,5 @@
-#include "t4_headers.h"
 #include "StdInc.h"
+#include "t4_headers.h"
 #include <algorithm>
 
 #include <safetyhook.hpp>
@@ -214,7 +214,8 @@ pathnode_t* __cdecl Path_NearestNodeNotCrossPlanes_lol(
 					goto failed_node;
 			}
 			hitNum = 0;
-			SV_SightTraceCapsule(&hitNum, vOrigin, mins, maxs, node->constant.vOrigin, (CONTENTS_SOLID | CONTENTS_GLASS | CONTENTS_MONSTERCLIP | CONTENTS_VEHICLE));
+			SV_SightTraceCapsule(&hitNum, vOrigin, mins, maxs, node->constant.vOrigin, 
+				(T4::engine::CONTENTS_SOLID | T4::engine::CONTENTS_GLASS | T4::engine::CONTENTS_MONSTERCLIP | T4::engine::CONTENTS_VEHICLE));
 			if (!hitNum)
 				return node;
 		}
@@ -227,7 +228,8 @@ pathnode_t* __cdecl Path_NearestNodeNotCrossPlanes_lol(
 	for (i = 0; i < iFailedNodeCount; ++i)
 	{
 		hitNum = 0;
-		SV_SightTraceCapsule(&hitNum, vOrigin, mins, maxs, failedNodes[i]->constant.vOrigin, (CONTENTS_SOLID | CONTENTS_GLASS | CONTENTS_MONSTERCLIP | CONTENTS_VEHICLE));
+		SV_SightTraceCapsule(&hitNum, vOrigin, mins, maxs, failedNodes[i]->constant.vOrigin, 
+			(T4::engine::CONTENTS_SOLID | T4::engine::CONTENTS_GLASS | T4::engine::CONTENTS_MONSTERCLIP | T4::engine::CONTENTS_VEHICLE));
 		if (!hitNum)
 			return failedNodes[i];
 	}
@@ -298,7 +300,7 @@ void __declspec(naked) Path_NearestNodeNotCrossPlanes_stub()
 }
 
 void PatchT4E_Pathing() {
-	g_t5_pathing = T4::Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
+	g_t5_pathing = T4::dvar::Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
 	static auto testingthehack = safetyhook::create_mid(0x55C210, [](SafetyHookContext& ctx) {
 		if (g_t5_pathing->isEnabled()) {
 			ctx.eax = (uintptr_t)Path_NearestNodeNotCrossPlanes_lol(

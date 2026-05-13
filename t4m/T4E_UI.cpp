@@ -247,7 +247,7 @@ float get_cg_scoreboardTextOffset_per_player(int client) {
 
 }
 
-int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale);
+int __cdecl UI_TextWidth(const char* text, int maxChars, T4::engine::Font_s* font, float scale);
 
 dvar_t* cg_drawAmmoClipOffset{};
 
@@ -262,8 +262,8 @@ const char* cg_drawAmmoModStrings[] = { "off","offset only","better anchor & off
 void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) {
     float* x = (float*)ctx.esp;
     float* scale = (float*)(ctx.esp + 0x8);
-    game::Font_s* current_font = (game::Font_s*)ctx.ebp;
-    game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+    T4::engine::Font_s* current_font = (T4::engine::Font_s*)ctx.ebp;
+    T4::engine::rectDef_s* rect = (T4::engine::rectDef_s*)ctx.esi;
     const char* current_text = lowclip ? (const char*)ctx.edx : (const char*)ctx.eax;
 
     //// Skip leading spaces
@@ -297,10 +297,10 @@ void CG_DrawPlayerAmmoValueClip_normal(SafetyHookContext& ctx) {
 
 void PatchT4E_UI() {
 
-    cg_scoreboardTextOffset_player_0 = T4::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_0", 0.64f, 0, FLT_MAX, 0);
-    cg_scoreboardTextOffset_player_1 = T4::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_1", 0.64f, 0, FLT_MAX, 0);
-    cg_scoreboardTextOffset_player_2 = T4::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_2", 0.64f, 0, FLT_MAX, 0);
-    cg_scoreboardTextOffset_player_3 = T4::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_3", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_0 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_0", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_1 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_1", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_2 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_2", 0.64f, 0, FLT_MAX, 0);
+    cg_scoreboardTextOffset_player_3 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_3", 0.64f, 0, FLT_MAX, 0);
 
     Memory::VP::InjectHook(0x0042B814, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoMagazine);
     Memory::VP::InjectHook(0x0042B954, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShortMagazine);
@@ -308,7 +308,7 @@ void PatchT4E_UI() {
     Memory::VP::InjectHook(0x0042BC10, R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoRockets);
     Memory::VP::InjectHook(0x0042BE13, R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoBeltfed);
 
-    r_hud_scale_fix = T4::Dvar_RegisterBool(true, "r_hud_scale_fix", DVAR_FLAG_ARCHIVE);
+    r_hud_scale_fix = T4::dvar::Dvar_RegisterBool(true, "r_hud_scale_fix", DVAR_FLAG_ARCHIVE);
 
     static auto CG_DrawOverheadNames_scale_fix = safetyhook::create_mid(0x43C0C9, [](SafetyHookContext& ctx) {
 
@@ -362,15 +362,15 @@ void PatchT4E_UI() {
     //    base[1] += r_drawclipammo_y->current.value;
     //    });
 
-    static auto cg_scoreboard_w = T4::Dvar_RegisterFloat("cg_scoreboard_w", 100.f, 1.f, FLT_MAX,DVAR_FLAG_ARCHIVE);
+    static auto cg_scoreboard_w = T4::dvar::Dvar_RegisterFloat("cg_scoreboard_w", 100.f, 1.f, FLT_MAX,DVAR_FLAG_ARCHIVE);
 
-    static auto cg_scoreboard_h = T4::Dvar_RegisterFloat("cg_scoreboard_h", 21.f, 1.f, FLT_MAX, DVAR_FLAG_ARCHIVE);
+    static auto cg_scoreboard_h = T4::dvar::Dvar_RegisterFloat("cg_scoreboard_h", 21.f, 1.f, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    static auto cg_scoreboard_textscale = T4::Dvar_RegisterFloat("cg_scoreboard_textscale", 1.f, 0.1f, FLT_MAX, DVAR_FLAG_ARCHIVE);
+    static auto cg_scoreboard_textscale = T4::dvar::Dvar_RegisterFloat("cg_scoreboard_textscale", 1.f, 0.1f, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    static auto cg_scoreboard_zombie_console_hud = T4::Dvar_RegisterBool(false, "cg_scoreboard_zombie_console_hud", DVAR_FLAG_ARCHIVE);
+    static auto cg_scoreboard_zombie_console_hud = T4::dvar::Dvar_RegisterBool(false, "cg_scoreboard_zombie_console_hud", DVAR_FLAG_ARCHIVE);
 
-    static auto playerSpectatingHide = T4::Dvar_RegisterBool(false, "playerSpectatingHide", 0);
+    static auto playerSpectatingHide = T4::dvar::Dvar_RegisterBool(false, "playerSpectatingHide", 0);
 
     static auto ForJB = safetyhook::create_mid(0x00668A87, [](SafetyHookContext& ctx) {
 
@@ -428,16 +428,16 @@ void PatchT4E_UI() {
             ctx.eip = 0x43873C;
         });
 
-    cg_drawAmmoDivider = T4::Dvar_RegisterInt('|', "cg_drawAmmoDivider", 0, CHAR_MAX, 0);
+    cg_drawAmmoDivider = T4::dvar::Dvar_RegisterInt('|', "cg_drawAmmoDivider", 0, CHAR_MAX, 0);
 
     Memory::VP::Patch<void*>(0x0044F3CC + 1, &cg_drawAmmoDivider->current.integer);
     Memory::VP::Patch<void*>(0x44F418 + 1, &cg_drawAmmoDivider->current.integer);
 
-    cg_drawAmmoClipOffset = T4::Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
+    cg_drawAmmoClipOffset = T4::dvar::Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    cg_drawAmmoReserveOffset = T4::Dvar_RegisterFloat("cg_drawAmmoReserveOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
+    cg_drawAmmoReserveOffset = T4::dvar::Dvar_RegisterFloat("cg_drawAmmoReserveOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
-    cg_drawAmmoMod = T4::Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", DVAR_FLAG_ARCHIVE," ");
+    cg_drawAmmoMod = T4::dvar::Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", DVAR_FLAG_ARCHIVE," ");
 
     static auto cg_draw_ammo_clip = safetyhook::create_mid(0x0044F2FA, CG_DrawPlayerAmmoValueClip_normal);
 
@@ -448,8 +448,8 @@ void PatchT4E_UI() {
     static auto cg_draw_ammo_reserve = safetyhook::create_mid(0x0044F3AA, [](SafetyHookContext& ctx) {
         float* x = (float*)ctx.esp;
         float* scale = (float*)(ctx.esp + 0x8);
-        game::Font_s* current_font = (game::Font_s*)ctx.ebp;
-        game::rectDef_s* rect = (game::rectDef_s*)ctx.esi;
+        T4::engine::Font_s* current_font = (T4::engine::Font_s*)ctx.ebp;
+        T4::engine::rectDef_s* rect = (T4::engine::rectDef_s*)ctx.esi;
         const char* current_text = (const char*)(ctx.esp + 0x154);
 
         if (cg_drawAmmoMod->current.integer == 2) {

@@ -1,4 +1,4 @@
-﻿// ==========================================================
+// ==========================================================
 // T4M project
 // 
 // Component: clientdll
@@ -14,8 +14,13 @@
 #include "Timeapi.h" 
 #pragma comment(lib, "winmm.lib")
 
+
 namespace T4
 {
+	using namespace engine;  // local convenience: unqualified engine symbols inside T4.cpp
+	using namespace game;    // unqualified GSC / CG_ / *_GetMethod symbols
+	using namespace dvar; 
+	// unqualified Dvar_* helpers
 	extern "C"
 	{
 		// console commands
@@ -166,6 +171,11 @@ namespace T4
 		int*          g_copyInfoCount = (int*)          0x00957E8C;   // dword_957E8C
 		XAssetEntry** g_copyInfo      = (XAssetEntry**) 0x00AD1DD8;   // dword_AD1DD8
 
+		gentity_s* g_entities = (gentity_s*)0x0176C6F0;
+
+		WeaponDef**       bg_weaponDefs = (WeaponDef**)       0x008F6770;
+		AimAssistGlobals* aaGlobArray   = (AimAssistGlobals*) 0x008E8690;
+
 		ZoneFileEntry* g_zoneFileNames = (ZoneFileEntry*)0xD04CB0;
 		PMem_Pool* g_pmem_pools = (PMem_Pool*)0x224F9D8;
 
@@ -183,13 +193,11 @@ namespace T4
 	} // extern "C"
 } // namespace T4
 
-using namespace T4;  // local convenience: unqualified engine symbols inside T4.cpp
-
 dvar_t emptydvar{};
 
 dvar_t* Dvar_FindVars(const char* name) 
 {
-	auto dvar = Dvar_FindMalleableVar(name);
+	auto dvar = T4::Dvar_FindMalleableVar(name);
 	if (dvar)
 		return dvar;
 
@@ -211,7 +219,7 @@ namespace Dvars
 
 // fucking __usercall
 // @wrapper — asm usercall to sub_5EEE20
-dvar_t* T4::Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description)
+dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description)
 {
 	DWORD func = 0x5EEE20;
 	dvar_t* ret;
@@ -232,7 +240,7 @@ dvar_t* T4::Dvar_RegisterBool(bool value, const char *dvarName, int flags, const
 //DvarRegisterFloatFunc Dvar_RegisterFloat = (DvarRegisterFloatFunc)0x5EEF10;
 // fucking __usercall -- Clippy95 ~10 years later.
 // @wrapper — asm usercall to sub_5EEF10
-dvar_t* T4::Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description)
+dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description)
 {
 	DWORD func = 0x5EEF10;
 	dvar_t* ret;
@@ -257,7 +265,7 @@ dvar_t* T4::Dvar_RegisterFloat(const char* dvarName, float defaultValue, float m
 }
 
 // @wrapper — asm usercall to sub_5EF150
-dvar_t* T4::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
+dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = 0x5EF150;
 	dvar_t* ret;
@@ -278,7 +286,7 @@ dvar_t* T4::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const ch
 }
 
 // @wrapper — asm usercall to sub_6E8DA0
-int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
+int R_TextWidth(const char* text, int maxChars, T4::engine::Font_s* font)
 {
 	int result;
 	static uintptr_t textwidth_addr = 0x6E8DA0;
@@ -295,12 +303,12 @@ int R_TextWidth(const char* text, int maxChars, game::Font_s* font)
 	return result;
 }
 
-inline float R_NormalizedTextScale(game::Font_s* font, float scale) 
+inline float R_NormalizedTextScale(T4::engine::Font_s* font, float scale) 
 {
 	return scale * 48.0 / (double)font->pixelHeight;
 }
 
-int __cdecl UI_TextWidth(const char* text, int maxChars, game::Font_s* font, float scale)
+int __cdecl UI_TextWidth(const char* text, int maxChars, T4::engine::Font_s* font, float scale)
 {
 	float v4; // xmm0_4
 	float actualScale; // [esp+10h] [ebp-4h]
@@ -350,7 +358,7 @@ uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* 
 }
 
 // @wrapper — asm usercall vers sub_5EEEA0
-dvar_t* T4::Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description)
+dvar_t* T4::dvar::Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description)
 {
 	//return (dvar_t*)Dvar_RegisterInt_asm(default_value, name, min, max, flags, description);
 	__asm pushad
@@ -380,7 +388,7 @@ dvar_t* T4::Dvar_RegisterInt(int default_value, const char* name, int mina, int 
 
 //int __usercall CBuf_AddText@<eax>(int a1@<eax>, int a2@<ecx>), a1 = text, a2 = localClientNum
 // @wrapper — asm usercall vers sub_594200
-void T4::Cbuf_AddText(const char* text, int localClientNum)
+void T4::engine::Cbuf_AddText(const char* text, int localClientNum)
 {
 	DWORD func = 0x00594200;
 
@@ -394,7 +402,7 @@ void T4::Cbuf_AddText(const char* text, int localClientNum)
 
 // @wrapper — sub_5F6D00  __usercall: edi=dest, esi=size, [esp+4]=fmt, [esp+8]=val.
 // Equivalent to _snprintf(dest, size, fmt, val).
-void T4::Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
+void T4::engine::Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
 {
 	const void* fn = (const void*)0x005F6D00;
 	__asm
@@ -413,7 +421,7 @@ void T4::Com_sprintf(char* dest, int nBytes, const char* fmt, DWORD val)
 }
 
 // @wrapper — asm usercall vers sub_439160
-double T4::CG_CornerDebugPrint(const char* text, float x, float y,float label_width, char* label, float* color)
+double T4::game::CG_CornerDebugPrint(const char* text, float x, float y,float label_width, char* label, float* color)
 {
 	DWORD func = 0x00439160;
 	float result;
@@ -438,7 +446,7 @@ uintptr_t pFS_AddUserMapDir = 0x5DD8A0;
 
 // Naked wrapper — exposes a plain cdecl signature to T4M callers
 // @wrapper — naked asm to sub_5DD8A0
-__declspec(naked) void T4::FS_AddUserMapDir(const char* dirPath)
+__declspec(naked) void T4::engine::FS_AddUserMapDir(const char* dirPath)
 {
 	__asm
 	{
@@ -460,11 +468,14 @@ void T4M::Cmd_AddCommand(const char *cmd_name, xcommand_t function) {
 	cmd_function_s *cmd;
 
 	// fail if the command already exists
-	for (cmd = *cmd_functions; cmd; cmd = cmd->next) {
-		if (!strcmp(cmd_name, cmd->name)) {
+	for (cmd = *cmd_functions; cmd; cmd = cmd->next) 
+	{
+		if (!strcmp(cmd_name, cmd->name)) 
+		{
 			// allow completion-only commands to be silently doubled
-			if (function != NULL) {
-				Com_Printf(0, "Cmd_AddCommand: %s already defined\n", cmd_name);
+			if (function != NULL) 
+			{
+				T4::Com_Printf(0, "Cmd_AddCommand: %s already defined\n", cmd_name);
 			}
 			return;
 		}
@@ -474,40 +485,44 @@ void T4M::Cmd_AddCommand(const char *cmd_name, xcommand_t function) {
 	cmd = (cmd_function_s *)malloc(sizeof(cmd_function_s) + strlen(cmd_name) + 1);
 	strcpy((char*)(cmd + 1), cmd_name);
 	cmd->name = (char*)(cmd + 1);
-	cmd->autocomplete1 = NULL;
-	cmd->autocomplete2 = NULL;
+	cmd->autoCompleteDir = NULL;
+	cmd->autoCompleteExt = NULL;
 	cmd->function = function;
 	cmd->next = *cmd_functions;
 	*cmd_functions = cmd;
 }
 
 
-namespace T4 { extern "C" {
-unsigned int* g_poolSize = (unsigned int*)0x8DC5D0;
+namespace T4 
+{ 
+	extern "C" 
+	{
+	unsigned int* g_poolSize = (unsigned int*)0x8DC5D0;
 
-dvar_t** fs_localAppData = (dvar_t**)0x2122AF0;
-dvar_t** fs_game = (dvar_t**)0x2122B00;
-dvar_t** fs_basepath = (dvar_t**)0x02123C14;
-dvar_t** dedicated = (dvar_t**)0x0212B2F4;
-dvar_t** loc_language = (dvar_t**)0x208B2EC;
-DWORD& db_streamEnabled = *(DWORD*)0x957404;
-DWORD& db_streamReadBlocksTotal = *(DWORD*)0x957400;
-DWORD& db_streamReadBlocksDone = *(DWORD*)0x957408;
-DWORD& db_streamDecompBytesTotal = *(DWORD*)0x95740C;
-DWORD& db_streamDecompBytesDone = *(DWORD*)0x9571A4;
-// Pointer to the slot containing the "english"/"french"/etc. string pointer.
-// Filled by sub_5FE000 (localization.txt read) AFTER the DLL loads.
-// A direct snapshot at init reads NULL (BSS) because localization.txt is
-// not yet loaded when the T4M DLL initializes. Always dereference at use.
-const char** language_system = (const char**)0x22BA528;
-} } // extern "C" / namespace T4
+	dvar_t** fs_localAppData = (dvar_t**)0x2122AF0;
+	dvar_t** fs_game = (dvar_t**)0x2122B00;
+	dvar_t** fs_basepath = (dvar_t**)0x02123C14;
+	dvar_t** dedicated = (dvar_t**)0x0212B2F4;
+	dvar_t** loc_language = (dvar_t**)0x208B2EC;
+	DWORD& db_streamEnabled = *(DWORD*)0x957404;
+	DWORD& db_streamReadBlocksTotal = *(DWORD*)0x957400;
+	DWORD& db_streamReadBlocksDone = *(DWORD*)0x957408;
+	DWORD& db_streamDecompBytesTotal = *(DWORD*)0x95740C;
+	DWORD& db_streamDecompBytesDone = *(DWORD*)0x9571A4;
+	// Pointer to the slot containing the "english"/"french"/etc. string pointer.
+	// Filled by sub_5FE000 (localization.txt read) AFTER the DLL loads.
+	// A direct snapshot at init reads NULL (BSS) because localization.txt is
+	// not yet loaded when the T4M DLL initializes. Always dereference at use.
+	const char** language_system = (const char**)0x22BA528;
+	} // extern "C"
+}  // namespace T4
 
 void* T4M::DB_ReallocXAssetPool(XAssetType type, unsigned int size)
 {
 	int elSize = T4M::DB_GetXAssetTypeSize(type);
 	void* poolEntry = malloc(size * elSize);
-	DB_XAssetPool[type] = poolEntry;
-	g_poolSize[type] = size;
+	T4::DB_XAssetPool[type] = poolEntry;
+	T4::g_poolSize[type] = size;
 	return poolEntry;
 }
 
@@ -532,39 +547,39 @@ void __cdecl T4M::DB_ListAssetPool(XAssetType type, bool count_only)
 	v1 = T4M::DB_GetXAssetTypeName(type);
 	
 	if (!count_only)
-		Com_Printf(0, "[T4M] Listing assets in %s pool.\n", v1);
+		T4::Com_Printf(0, "[T4M] Listing assets in %s pool.\n", v1);
 
 	for (hash = 0; hash < 0x8000; ++hash)
 	{
-		for (assetEntryIndex = db_hashTable[hash]; assetEntryIndex; assetEntryIndex = nextAssetEntryIndex)
+		for (assetEntryIndex = T4::db_hashTable[hash]; assetEntryIndex; assetEntryIndex = nextAssetEntryIndex)
 		{
-			assetEntry = &g_assetEntryPool[assetEntryIndex].entry;
-			nextAssetEntryIndex = g_assetEntryPool[assetEntryIndex].entry.nextHash;
-			if (g_assetEntryPool[assetEntryIndex].entry.asset.type == type)
+			assetEntry = &T4::g_assetEntryPool[assetEntryIndex].entry;
+			nextAssetEntryIndex = T4::g_assetEntryPool[assetEntryIndex].entry.nextHash;
+			if (T4::g_assetEntryPool[assetEntryIndex].entry.asset.type == type)
 			{
 				++assetPoolCount;
-				v2 = &g_zoneNames[assetEntry->zoneIndex];
+				v2 = &T4::g_zoneNames[assetEntry->zoneIndex];
 				v3 = T4M::DB_GetXAssetName(&assetEntry->asset);
 				if (!count_only)
-					Com_Printf(0, "[T4M] Asset: %s FF: %s\n", v3, v2->name);
+					T4::Com_Printf(0, "[T4M] Asset: %s FF: %s\n", v3, v2->name);
 				assetPoolSize += T4M::DB_GetXAssetTypeSize(assetEntry->asset.type);
 				for (overrideAssetEntryIndex = assetEntry->nextOverride;
 					overrideAssetEntryIndex;
 					overrideAssetEntryIndex = overrideAssetEntry->nextOverride)
 				{
-					overrideAssetEntry = &g_assetEntryPool[overrideAssetEntryIndex].entry;
+					overrideAssetEntry = &T4::g_assetEntryPool[overrideAssetEntryIndex].entry;
 					++assetPoolCount;
-					v5 = &g_zoneNames[g_assetEntryPool[overrideAssetEntryIndex].entry.zoneIndex];
-					v6 = T4M::DB_GetXAssetName(&g_assetEntryPool[overrideAssetEntryIndex].entry.asset);
+					v5 = &T4::g_zoneNames[T4::g_assetEntryPool[overrideAssetEntryIndex].entry.zoneIndex];
+					v6 = T4M::DB_GetXAssetName(&T4::g_assetEntryPool[overrideAssetEntryIndex].entry.asset);
 					if (!count_only)
-						Com_Printf(0, "[T4M] Asset: %s FF: %s | overriden\n", v6, v5);
+						T4::engine::Com_Printf(0, "[T4M] Asset: %s FF: %s | overriden\n", v6, v5);
 					assetPoolSize += T4M::DB_GetXAssetTypeSize(overrideAssetEntry->asset.type);
 				}
 			}
 		}
 	}
 	v7 = T4M::DB_GetXAssetTypeName(type);
-	Com_Printf(16, "[T4M] Total of %d assets in %s pool, max %d, size %d\n", assetPoolCount, v7, g_poolSize[type], assetPoolSize);
+	T4::engine::Com_Printf(16, "[T4M] Total of %d assets in %s pool, max %d, size %d\n", assetPoolCount, v7, T4::g_poolSize[type], assetPoolSize);
 }
 
 char *__cdecl T4M::DB_GetXAssetTypeName(int type)
@@ -582,13 +597,13 @@ const char *__cdecl T4M::DB_GetXAssetHeaderName(int type, XAssetHeader *header)
 {
 	int v2;
 	const char *name;
-	name = DB_XAssetGetNameHandlers[type](header);
+	name = T4::DB_XAssetGetNameHandlers[type](header);
 	return name;
 }
 
 int __cdecl T4M::DB_GetXAssetTypeSize(int type)
 {
-	return DB_GetXAssetSizeHandler[type]();
+	return T4::DB_GetXAssetSizeHandler[type]();
 }
 
 bool T4M::isZombieMode() {
@@ -636,17 +651,17 @@ bool T4M::IsReflectionMode()
 // @faithful — sub_48E3D0
 void T4M::FS_BuildZonePath(char* dst, int mode, const char* mapName)
 {
-	const char* binaryPath = Sys_BinaryPath();                       // sub_5F7F20
+	const char* binaryPath = T4::Sys_BinaryPath();                       // sub_5F7F20
 
 	switch (mode)
 	{
 	case 0: // zone stock du jeu
-		_snprintf(dst, 256, "%s\\zone\\%s\\%s.ff", binaryPath, *language_system, mapName);
+		_snprintf(dst, 256, "%s\\zone\\%s\\%s.ff", binaryPath, *T4::language_system, mapName);
 		dst[255] = '\0';
 		break;
 
 	case 1: // zone dans le dossier fs_game (mod)
-		_snprintf(dst, 256, "%s\\%s\\%s.ff", (*fs_localAppData)->current.string, (*fs_game)->current.string, mapName);
+		_snprintf(dst, 256, "%s\\%s\\%s.ff", (*T4::fs_localAppData)->current.string, (*T4::fs_game)->current.string, mapName);
 		dst[255] = '\0';
 		break;
 
@@ -665,7 +680,7 @@ void T4M::FS_BuildZonePath(char* dst, int mode, const char* mapName)
 			strncpy(parent, mapName, 63);
 			parent[63] = '\0';
 		}
-		_snprintf(dst, 256, "%s\\%s\\%s\\%s.ff", (*fs_localAppData)->current.string, "usermaps", parent, mapName);
+		_snprintf(dst, 256, "%s\\%s\\%s\\%s.ff", (*T4::fs_localAppData)->current.string, "usermaps", parent, mapName);
 		dst[255] = '\0';
 		break;
 	}
@@ -738,21 +753,21 @@ void T4M::DB_WriterAcquire()
 	for (;;)
 	{
 		// 1. Wait until no reader is active
-		if (*g_dbReaderCount != 0)
+		if (*T4::g_dbReaderCount != 0)
 		{
 			Sleep(0);
 			continue;
 		}
 
 		// 2. Try to atomically increment the writer count
-		LONG newCount = InterlockedIncrement((LONG*)g_dbWriterCount);
+		LONG newCount = InterlockedIncrement((LONG*)T4::g_dbWriterCount);
 
 		// 3. If we are the first writer and no reader raced in, lock acquired.
-		if (newCount == 1 && *g_dbReaderCount == 0)
+		if (newCount == 1 && *T4::g_dbReaderCount == 0)
 			return;
 
 		// 4. Rollback and retry
-		InterlockedDecrement((LONG*)g_dbWriterCount);
+		InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 		Sleep(0);
 	}
 }
@@ -760,21 +775,21 @@ void T4M::DB_WriterAcquire()
 // @faithful — sub_48D020 (release half)
 void T4M::DB_WriterRelease()
 {
-	InterlockedDecrement((LONG*)g_dbWriterCount);
+	InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 }
 
 // @faithful — sub_48D560 (reader lock acquire)
 void T4M::DB_ReaderAcquire()
 {
-	InterlockedIncrement((LONG*)g_dbReaderCount);
-	while (*g_dbWriterCount != 0)
+	InterlockedIncrement((LONG*)T4::g_dbReaderCount);
+	while (*T4::g_dbWriterCount != 0)
 		Sleep(0);
 }
 
 // @faithful — sub_48D560 (reader lock release)
 void T4M::DB_ReaderRelease()
 {
-	InterlockedDecrement((LONG*)g_dbReaderCount);
+	InterlockedDecrement((LONG*)T4::g_dbReaderCount);
 }
 
 // =====================================================================
@@ -803,7 +818,7 @@ void T4M::DB_EnumAssetPool(int type,
 
 	for (unsigned int b = 0; b < 0x8000; ++b)
 	{
-		unsigned short idx = db_hashTable[b];
+		unsigned short idx = T4::db_hashTable[b];
 		while (idx != 0)
 		{
 			XAssetEntry* e = T4M::POOL_ENTRY(idx);
@@ -866,8 +881,8 @@ unsigned int T4_Reconstructed::DB_HashAssetName(int /*type*/, const char* /*name
 // =====================================================================
 static void __cdecl DB_PoolDumpAsset_cb(void* assetData, int* pType)
 {
-	const char* name = DB_XAssetGetNameHandlers[*pType]((XAssetHeader*)&assetData);
-	Com_Printf(0, "%s\n", name);
+	const char* name = T4::DB_XAssetGetNameHandlers[*pType]((XAssetHeader*)&assetData);
+	T4::Com_Printf(0, "%s\n", name);
 }
 
 // sub_59A380 — non-fatal error channel print (^1Error: prefix, channel 1).
@@ -961,16 +976,16 @@ static const DWORD* const s_dvar_1F552FC_ptr = (const DWORD*)0x01F552FC;
 __declspec(noinline)
 static void* DB_AllocAssetHeader(int type)
 {
-	void* pool = DB_XAssetPool[type];
-	void* slot = DB_XAssetAllocHandlers[type](pool);
+	void* pool = T4::engine::DB_XAssetPool[type];
+	void* slot = T4::engine::DB_XAssetAllocHandlers[type](pool);
 
 	if (slot)
 		return slot;
 
-	InterlockedDecrement((LONG*)g_dbWriterCount);
+	InterlockedDecrement((LONG*)T4::engine::g_dbWriterCount);
 
 	DB_PrintError(1, "Exceeded limit of %d '%s' assets.\n",
-		g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
+		T4::g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
 
 	{
 		const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*s_dvar_1F552FC_ptr);
@@ -981,7 +996,7 @@ static void* DB_AllocAssetHeader(int type)
 	}
 
 	DB_FatalError(1, "Exceeded limit of %d '%s' assets.\n",
-		g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
+		T4::g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
 
 	return nullptr;
 }
@@ -997,16 +1012,16 @@ __declspec(noinline)
 XAssetEntry* T4_Reconstructed::DB_AllocXAssetEntry(int type, unsigned char zoneIndex)
 {
 	// 1. Pop from free list
-	XAssetEntryPoolEntry* head = *g_freeAssetEntries;
+	XAssetEntryPoolEntry* head = *T4::g_freeAssetEntries;
 	if (!head)
 	{
-		InterlockedDecrement((LONG*)g_dbWriterCount);
+		InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 		DB_FatalError(1, "Could not allocate asset - increase XASSET_SIZE or XASSET_ENTRY_SIZE.\n");
 		return nullptr;
 	}
 
 	// The `next` field (union) overlaps asset.type — read BEFORE writing type
-	*g_freeAssetEntries = head->next;
+	*T4::g_freeAssetEntries = head->next;
 
 	// 2. Fill the entry
 	XAssetEntry* e = &head->entry;
@@ -1028,7 +1043,7 @@ __declspec(noinline)
 XAssetEntry* T4_Reconstructed::DB_FindXAssetByName(int type, const char* name)
 {
 	unsigned int bucket = T4_Reconstructed::DB_HashAssetName(type, name);
-	unsigned short idx  = db_hashTable[bucket];
+	unsigned short idx  = T4::db_hashTable[bucket];
 	while (idx != 0)
 	{
 		XAssetEntry* e = T4M::POOL_ENTRY(idx);
@@ -1052,11 +1067,11 @@ XAssetEntry* T4_Reconstructed::DB_FindXAssetByName(int type, const char* name)
 __declspec(noinline)
 void* T4_Reconstructed::DB_FindDefaultAsset(int type)
 {
-	const char* defName = DB_XAssetDefaultNames[type];
+	const char* defName = T4::DB_XAssetDefaultNames[type];
 	if (!defName) return nullptr;
 
 	unsigned int bucket = T4_Reconstructed::DB_HashAssetName(type, defName);
-	unsigned short idx  = db_hashTable[bucket];
+	unsigned short idx  = T4::db_hashTable[bucket];
 
 	XAssetEntry* e = nullptr;
 	while (idx != 0)
@@ -1178,14 +1193,14 @@ void* T4_Reconstructed::DB_FindXAssetHeader(int type, const char* name, bool use
 
 loc_48DA44:
 	// Reader acquire: inc reader count, then spin while writer count != 0.
-	InterlockedIncrement((LONG*)g_dbReaderCount);
-	while (*g_dbWriterCount != 0) Sleep(0);
+	InterlockedIncrement((LONG*)T4::g_dbReaderCount);
+	while (*T4::g_dbWriterCount != 0) Sleep(0);
 
 	// Lookup
 	entry = T4_Reconstructed::DB_FindXAssetByName(type, name);
 
 	// Reader release
-	InterlockedDecrement((LONG*)g_dbReaderCount);
+	InterlockedDecrement((LONG*)T4::g_dbReaderCount);
 
 	if (entry == nullptr) goto loc_48DAC9;
 
@@ -1194,59 +1209,76 @@ loc_48DA44:
 
 	// Entry exists but zoneIndex == 0: poll the worker event once.
 	{
-		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		DWORD w = WaitForSingleObject(*T4::g_dbWorkerEvent, 0);
 		int signaled = (w == 0) ? 1 : 0;     // mirrors neg/sbb/inc idiom
-		if (signaled == 0) DB_WaitForPendingLoads();  // sub_5FDBF0
-		if (signaled != 0) goto loc_48DD4F;
+
+		if (signaled == 0) 
+			T4::DB_WaitForPendingLoads();  // sub_5FDBF0
+		if (signaled != 0) 
+			goto loc_48DD4F;
 	}
 	// fall through
 
 loc_48DAC9:
 	{
 		DWORD* tid = DB_TlsCachedTidSlot();
-		if (*tid == 0) *tid = GetCurrentThreadId();
-		if (*tid == *g_dbWorkerThreadId) goto loc_48DD20;
+
+		if (*tid == 0) 
+			*tid = GetCurrentThreadId();
+
+		if (*tid == *T4::g_dbWorkerThreadId) 
+			goto loc_48DD20;
 	}
 
-	if (waitStartDelta != 0) goto loc_48DB76;
+	if (waitStartDelta != 0) 
+		goto loc_48DB76;
 
-	if (*g_waitTimerStarted == 0)
+	if (*T4::g_waitTimerStarted == 0)
 	{
-		*g_waitStartTime = timeGetTime();
-		*g_waitTimerStarted = 1;
+		*T4::g_waitStartTime = timeGetTime();
+		*T4::g_waitTimerStarted = 1;
 	}
-	waitStartDelta = timeGetTime() - *g_waitStartTime;
+	waitStartDelta = timeGetTime() - *T4::g_waitStartTime;
 
 	{
-		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		DWORD w = WaitForSingleObject(*T4::g_dbWorkerEvent, 0);
 		int signaled = (w == 0) ? 1 : 0;
-		if (signaled == 0) DB_WaitForPendingLoads();
+
+		if (signaled == 0) 
+			T4::DB_WaitForPendingLoads();
+
 		// Vanilla loc_48DB4E: `test esi, esi; jnz loc_48DA44` — retry if signaled.
-		if (signaled != 0) goto loc_48DA44;
+		if (signaled != 0) 
+			goto loc_48DA44;
 
 		// Not signaled: cache current-thread-id if slot is empty.
 		DWORD* tid = DB_TlsCachedTidSlot();
-		if (*tid == 0) *tid = GetCurrentThreadId();
+
+		if (*tid == 0) 
+			*tid = GetCurrentThreadId();
 	}
 	// fall through
 
 loc_48DB76:
 	{
-		DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+		DWORD w = WaitForSingleObject(*T4::g_dbWorkerEvent, 0);
 		int signaled = (w == 0) ? 1 : 0;
-		if (signaled == 0) DB_WaitForPendingLoads();
+		if (signaled == 0) T4::DB_WaitForPendingLoads();
 		// Vanilla loc_48DB9C: `test esi, esi; jnz loc_48DD20` — bail if signaled.
 		if (signaled != 0) goto loc_48DD20;
 	}
 
-	if (*g_dbHasLoadedZones != 0 && *g_dbFlag951A02 != 0) goto loc_48DD20;
+	if (*T4::g_dbHasLoadedZones != 0 && *T4::g_dbFlag951A02 != 0) goto loc_48DD20;
 
 	{
-		DWORD w = WaitForSingleObject(*g_dbSecondaryEvent, 0);
+		DWORD w = WaitForSingleObject(*T4::g_dbSecondaryEvent, 0);
 		int signaled = (w == 0) ? 1 : 0;
-		if (signaled == 0) DB_WaitForPendingLoads();
+
+		if (signaled == 0) 
+			T4::DB_WaitForPendingLoads();
 		// Vanilla loc_48DBDB: `test esi, esi; jz loc_48DC45` — go to pump path if NOT signaled.
-		if (signaled == 0) goto loc_48DC45;
+		if (signaled == 0) 
+			goto loc_48DC45;
 	}
 
 	// Secondary event signaled: ensure TLS tid cached, then branch on tid.
@@ -1254,7 +1286,8 @@ loc_48DB76:
 	// GetCurrentThreadId and cache it.
 	{
 		DWORD* tid = DB_TlsCachedTidSlot();
-		if (*tid == 0) *tid = GetCurrentThreadId();
+		if (*tid == 0) 
+			*tid = GetCurrentThreadId();
 	}
 
 	// Vanilla loc_48DBFC:
@@ -1268,19 +1301,27 @@ loc_48DB76:
 	{
 		DWORD* tid = DB_TlsCachedTidSlot();
 		DWORD cached = *tid;
-		if (cached == *g_dbAltThreadId) goto loc_48DC3B;
+		if (cached == *T4::g_dbAltThreadId) 
+			goto loc_48DC3B;
+
 		if (cached == 0)
 		{
 			*tid = GetCurrentThreadId();
 			cached = *tid;
 		}
-		if (cached != *g_dbSecondaryThreadId) goto loc_48DC45;
-		if (*g_dbFlag3BED85D == 0)            goto loc_48DC45;
-		if (*g_dbPtr99724C == 0)              goto loc_48DC45;
+
+		if (cached != *T4::g_dbSecondaryThreadId) 
+			goto loc_48DC45;
+
+		if (*T4::g_dbFlag3BED85D == 0)       
+			goto loc_48DC45;
+
+		if (*T4::g_dbPtr99724C == 0)  
+			goto loc_48DC45;
 	}
 
 loc_48DC3B:
-	DB_CheckPendingComplete();   // sub_48E560
+	T4::DB_CheckPendingComplete();   // sub_48E560
 	goto loc_48DCDF;
 
 loc_48DC45:
@@ -1288,30 +1329,31 @@ loc_48DC45:
 		DWORD* tid = DB_TlsCachedTidSlot();
 		if (*tid == 0) *tid = GetCurrentThreadId();
 	}
+
 	{
 		// If the DB worker is currently paused (flag==1), temporarily unpause
 		// it, pump, and re-pause at the end.
-		int needRepause = (*g_dbWorkerPausedFlag == 1) ? 1 : 0;
+		int needRepause = (*T4::g_dbWorkerPausedFlag == 1) ? 1 : 0;
 		if (needRepause)
 		{
 			// Vanilla order: clear flag first, then SetEvent
-			*g_dbWorkerPausedFlag = 0;
-			SetEvent(*g_dbPauseEventHandle);
+			*T4::g_dbWorkerPausedFlag = 0;
+			SetEvent(*T4::g_dbPauseEventHandle);
 		}
 
 		int lockCtx = Sys_LeaveRecursiveLock();
-		Sys_SyncDatabase();                     // sub_6F6CE0
+		T4::Sys_SyncDatabase();                     // sub_6F6CE0
 		Sys_DequeueLoadEvent(sub5FEC60Buf, 1);
 		DB_WaitForWorkerEvent();
 		Sleep(0);
-		Sys_WakeDatabase();                     // sub_6F6D60
+		T4::Sys_WakeDatabase();                     // sub_6F6D60
 		if (lockCtx != 0) Sys_EnterRecursiveLock();
 
 		if (needRepause)
 		{
 			// Vanilla order: set flag first, then ResetEvent
-			*g_dbWorkerPausedFlag = 1;
-			ResetEvent(*g_dbPauseEventHandle);
+			*T4::g_dbWorkerPausedFlag = 1;
+			ResetEvent(*T4::g_dbPauseEventHandle);
 		}
 	}
 	// fall through
@@ -1319,14 +1361,16 @@ loc_48DC45:
 loc_48DCDF:
 	if (timeoutMs == (int)0xFFFFFFFF) goto loc_48DA44;   // infinite → retry forever
 
-	if (*g_waitTimerStarted == 0)
+	if (*T4::g_waitTimerStarted == 0)
 	{
-		*g_waitStartTime = timeGetTime();
-		*g_waitTimerStarted = 1;
+		*T4::g_waitStartTime = timeGetTime();
+		*T4::g_waitTimerStarted = 1;
 	}
 	{
-		DWORD elapsed = timeGetTime() - *g_waitStartTime - waitStartDelta;
-		if ((int)elapsed < timeoutMs) goto loc_48DA44;
+		DWORD elapsed = timeGetTime() - *T4::g_waitStartTime - waitStartDelta;
+
+		if ((int)elapsed < timeoutMs) 
+			goto loc_48DA44;
 	}
 	// fall through to timeout bailout
 
@@ -1336,21 +1380,24 @@ loc_48DD20:
 	// Take writer lock and re-search. If still missing → synthesize default.
 	T4M::DB_WriterAcquire();
 	entry = T4_Reconstructed::DB_FindXAssetByName(type, name);
-	if (entry == nullptr) goto loc_48DDB0;
-	InterlockedDecrement((LONG*)g_dbWriterCount);
+
+	if (entry == nullptr) 
+		goto loc_48DDB0;
+
+	InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 	// fall through
 
 loc_48DD4F:
 	entry->inuse = true;
 	if (waitStartDelta != 0)
 	{
-		if (*g_waitTimerStarted == 0)
+		if (*T4::g_waitTimerStarted == 0)
 		{
-			*g_waitStartTime = timeGetTime();
-			*g_waitTimerStarted = 1;
+			*T4::g_waitStartTime = timeGetTime();
+			*T4::g_waitTimerStarted = 1;
 		}
-		DWORD waited = timeGetTime() - *g_waitStartTime - waitStartDelta;
-		Com_PrintfChannel(0x0A, "Waited %i msec for asset '%s' of type '%s'\n",
+		DWORD waited = timeGetTime() - *T4::g_waitStartTime - waitStartDelta;
+		T4::Com_PrintfChannel(0x0A, "Waited %i msec for asset '%s' of type '%s'\n",
 			(int)waited, name, T4M::DB_GetXAssetTypeName(type));
 	}
 	return entry->asset.header.data;
@@ -1363,7 +1410,7 @@ loc_48DDB0:
 		if (useAlt)
 		{
 			// [edx+0x10] = dvar->current (first byte) — vanilla: cmp byte ptr [edx+0x10], 0
-			const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*g_dbAltDefaultDvarPtr);
+			const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*T4::g_dbAltDefaultDvarPtr);
 			useAlt = dvar && dvar[0x10] != 0;
 		}
 		if (useAlt) Call_DB_RecordMissingAsset(type);
@@ -1377,12 +1424,12 @@ loc_48DDB0:
 
 	if (type == 0x17 || type == 0x20)
 	{
-		InterlockedDecrement((LONG*)g_dbWriterCount);
+		InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 		return nullptr;
 	}
 
 	entry = T4_Reconstructed::DB_LinkXAssetEntry(type, name);
-	InterlockedDecrement((LONG*)g_dbWriterCount);
+	InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 
 	if (!entry) return nullptr;
 	return entry->asset.header.data;
@@ -1414,7 +1461,7 @@ loc_48DDB0:
 //     7. entry->inuse = 1; return entry.
 // =====================================================================
 __declspec(noinline)
-XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const char* name)
+T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const char* name)
 {
 	// Com_Printf(0, "T4M Link[%d] %s ...\n", type, name ? name : "<null>");
 
@@ -1422,7 +1469,7 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const char* name)
 	void* defaultHdr = T4_Reconstructed::DB_FindDefaultAsset(type);
 	if (!defaultHdr)
 	{
-		InterlockedDecrement((LONG*)g_dbWriterCount);
+		InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 		if (type == 0xB || type == 0xC)
 		{
 			DB_FatalError(1,
@@ -1435,15 +1482,15 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const char* name)
 			DB_FatalError(1,
 				"Could not load default asset '%s' for asset type '%s'.\n"
 				"Tried to load asset '%s'.",
-				DB_XAssetDefaultNames[type],
+				T4::DB_XAssetDefaultNames[type],
 				T4M::DB_GetXAssetTypeName(type),
 				name);
 		}
 	}
 
 	// 2. Increment asset ref-count; allocate entry (zoneIndex=0 = permanent zone)
-	*g_assetRefCount += 1;
-	XAssetEntry* entry = T4_Reconstructed::DB_AllocXAssetEntry(type, 0);
+	*T4::g_assetRefCount += 1;
+	T4::engine::XAssetEntry* entry = T4_Reconstructed::DB_AllocXAssetEntry(type, 0);
 
 	// 3. Copy default data — unconditional (T4M::Sys_MemCpyFix = detour of vanilla sub_7AFFC0).
 	// ASM: `push eax/size; push ebp/defaultHdr; push edx/entry->header.data; call sub_7AFFC0`.
@@ -1463,18 +1510,18 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const char* name)
 	// 5. Hash-insert at HEAD of bucket
 	unsigned int   bucket = T4_Reconstructed::DB_HashAssetName(type, name);
 	unsigned short newIdx = T4M::POOL_INDEX(entry);
-	entry->nextHash      = db_hashTable[bucket];
-	db_hashTable[bucket] = newIdx;
+	entry->nextHash      = T4::db_hashTable[bucket];
+	T4::db_hashTable[bucket] = newIdx;
 
 	// 6. Intern name in global string table; call setName handler.
 	// ASM: test eax,eax / jz loc_48D956 → loc_48D956: xor eax,eax (NULL).
 	// When StringTable_Find returns 0, vanilla explicitly passes NULL to the handler.
 	int nameLen   = static_cast<int>(strlen(name)) + 1;
-	int stringIdx = StringTable_Find(0, name, 4, nameLen);
+	int stringIdx = T4::StringTable_Find(0, name, 4, nameLen);
 	const char* stringAddr = nullptr;
 	if (stringIdx != 0)
-		stringAddr = *g_stringTableBase + stringIdx * 12 + 4;
-	DB_XAssetSetNameHandlers[entry->asset.type](&entry->asset.header, stringAddr);
+		stringAddr = *T4::g_stringTableBase + stringIdx * 12 + 4;
+	T4::DB_XAssetSetNameHandlers[entry->asset.type](&entry->asset.header, stringAddr);
 
 	// 7. Mark inuse; return entry
 	entry->inuse = true;
@@ -1503,7 +1550,7 @@ void T4_Reconstructed::DB_PromoteOverride(XAssetEntry* main, XAssetEntry* overri
 	//    Vanilla loc_48F4C3:
 	//      push ebx (isPerm); push ecx (OVERRIDE->header); push edx (MAIN->header); call
 	//    Call order: promoter(MAIN, OVERRIDE, isPermZone)
-	DB_XAssetOverridePromoter_t promoter = DB_XAssetOverridePromoters[type];
+	T4::DB_XAssetOverridePromoter_t promoter = T4::DB_XAssetOverridePromoters[type];
 	if (promoter)
 	{
 		bool isPermZone = (main->zoneIndex == 0);
@@ -1519,13 +1566,13 @@ void T4_Reconstructed::DB_PromoteOverride(XAssetEntry* main, XAssetEntry* overri
 	main->nextOverride = override->nextOverride;
 
 	// 4. Free the override's typed data
-	void* pool = DB_XAssetPool[type];
-	DB_XAssetFreeHandlers[type](pool, override->asset.header.data);
+	void* pool = T4::DB_XAssetPool[type];
+	T4::DB_XAssetFreeHandlers[type](pool, override->asset.header.data);
 
 	// 5. Return the override entry to the free-list
-	XAssetEntryPoolEntry* ovPE = reinterpret_cast<XAssetEntryPoolEntry*>(override);
-	ovPE->next = *g_freeAssetEntries;
-	*g_freeAssetEntries = ovPE;
+	T4::engine::XAssetEntryPoolEntry* ovPE = reinterpret_cast<T4::engine::XAssetEntryPoolEntry*>(override);
+	ovPE->next = *T4::g_freeAssetEntries;
+	*T4::g_freeAssetEntries = ovPE;
 }
 
 // =====================================================================
@@ -1558,25 +1605,25 @@ void T4_Reconstructed::DB_PromoteOverride(XAssetEntry* main, XAssetEntry* overri
 //     copyData = 1 and routed through the full arbitration logic.
 // =====================================================================
 __declspec(noinline)
-void T4_Reconstructed::DB_PushCopyInfo(XAssetEntry* entry)
+void T4_Reconstructed::DB_PushCopyInfo(T4::engine::XAssetEntry* entry)
 {
 	// Branch 1: sync-load — link now, copyData = 1.
-	if (*g_syncValue != 0)
+	if (*T4::g_syncValue != 0)
 	{
 		T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(entry, 1);
 		return;
 	}
 
 	// Branch 2: async — enqueue for deferred processing.
-	int count = *g_copyInfoCount;
+	int count = *T4::g_copyInfoCount;
 	if (count >= 0xC00)
 	{
 		// Vanilla: push "g_copyInfo exceeded" string, call sub_5FE8C0 (noreturn).
 		// Com_Error is the engine's noreturn fatal path and matches sub_5FE8C0's role.
-		Com_Error(1, "g_copyInfo exceeded");
+		T4::Com_Error(1, "g_copyInfo exceeded");
 	}
-	g_copyInfo[count] = entry;
-	*g_copyInfoCount  = count + 1;
+	T4::g_copyInfo[count] = entry;
+	*T4::g_copyInfoCount  = count + 1;
 }
 
 // =====================================================================
@@ -1601,7 +1648,7 @@ void T4_Reconstructed::DB_PushCopyInfo(XAssetEntry* entry)
 //     - copyData≠0:                full arbitration
 // =====================================================================
 __declspec(noinline)
-XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newEntry, int copyData)
+T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(T4::engine::XAssetEntry* newEntry, int copyData)
 {
 
 	int type = newEntry->asset.type;
@@ -1616,7 +1663,7 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	}
 	*/
 	// --- 1. Read name, detect ',' soft-override prefix ---
-	const char* name    = DB_XAssetGetNameHandlers[type](&newEntry->asset.header);
+	const char* name    = T4::DB_XAssetGetNameHandlers[type](&newEntry->asset.header);
 	bool softOverride   = (name[0] == ',');
 	if (softOverride) name = name + 1;
 
@@ -1624,14 +1671,14 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 
 	// --- 2. Look up an existing entry in the bucket (same name & type) ---
 	unsigned int bucket = T4_Reconstructed::DB_HashAssetName(type, name);
-	unsigned short idx  = db_hashTable[bucket];
+	unsigned short idx  = T4::db_hashTable[bucket];
 	XAssetEntry* existing = nullptr;
 	while (idx != 0)
 	{
 		XAssetEntry* e = T4M::POOL_ENTRY(idx);
 		if (e->asset.type == type)
 		{
-			const char* n = DB_XAssetGetNameHandlers[type](&e->asset.header);
+			const char* n = T4::DB_XAssetGetNameHandlers[type](&e->asset.header);
 			if (T4M::Q_stricmpn(n, name, 0x7FFFFFFF) == 0) { existing = e; break; }
 		}
 		idx = e->nextHash;
@@ -1660,7 +1707,7 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 		// type and header.data initialized — its zoneIndex byte is garbage.
 		//XAssetEntry* fresh = T4_Reconstructed::DB_AllocXAssetEntry(type, (unsigned char)*g_currentZoneIndex);
 
-		XAssetEntry* fresh = T4_Reconstructed::DB_AllocXAssetEntry(type, (unsigned char)*g_currentZoneIndex);
+		XAssetEntry* fresh = T4_Reconstructed::DB_AllocXAssetEntry(type, (unsigned char)*T4::g_currentZoneIndex);
 		int size = T4M::GetSize(type);
 		memcpy(fresh->asset.header.data, newEntry->asset.header.data, static_cast<size_t>(size));
 		// Ensure getName(fresh->header) hashes to the same bucket that fresh is
@@ -1677,8 +1724,8 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	// =================================================================
 	if (!existing)
 	{
-		entry->nextHash      = db_hashTable[bucket];
-		db_hashTable[bucket] = T4M::POOL_INDEX(entry);
+		entry->nextHash      = T4::db_hashTable[bucket];
+		T4::db_hashTable[bucket] = T4M::POOL_INDEX(entry);
 		return entry;
 	}
 
@@ -1723,19 +1770,19 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 		}
 
 		// g_assetRefCount--
-		*g_assetRefCount -= 1;
+		*T4::g_assetRefCount -= 1;
 
 		// inuse dispatch
 		if (existing->inuse)
 		{
-			*g_inuseEntry  = existing;
-			*g_inuseHeader = &existing->asset.header;
-			DB_InUseHandlerDispatch();
+			*T4::g_inuseEntry  = existing;
+			*T4::g_inuseHeader = &existing->asset.header;
+			T4::DB_InUseHandlerDispatch();
 		}
 
 		// Emulate sub_48D6D0: promoter + memcpy + zoneIndex transfer
 		int type0 = existing->asset.type;
-		DB_XAssetOverridePromoter_t promoterZ = DB_XAssetOverridePromoters[type0];
+		T4::DB_XAssetOverridePromoter_t promoterZ = T4::DB_XAssetOverridePromoters[type0];
 		if (promoterZ)
 		{
 			// isPerm = (existing->zoneIndex == 0) which is TRUE in this branch
@@ -1746,13 +1793,13 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 		existing->zoneIndex = newEntry->zoneIndex;
 
 		// Free newEntry's typed header
-		void* poolZ = DB_XAssetPool[newEntry->asset.type];
-		DB_XAssetFreeHandlers[newEntry->asset.type](poolZ, newEntry->asset.header.data);
+		void* poolZ = T4::DB_XAssetPool[newEntry->asset.type];
+		T4::DB_XAssetFreeHandlers[newEntry->asset.type](poolZ, newEntry->asset.header.data);
 
 		// Return newEntry entry to the free list
 		XAssetEntryPoolEntry* pe = reinterpret_cast<XAssetEntryPoolEntry*>(newEntry);
-		pe->next = *g_freeAssetEntries;
-		*g_freeAssetEntries = pe;
+		pe->next = *T4::g_freeAssetEntries;
+		*T4::g_freeAssetEntries = pe;
 
 		return existing;
 	}
@@ -1761,16 +1808,16 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	// the asset has NO default name AND type is not 0x10 / 0x20.
 	// (ASM loc_48E131: cmp [defaultName], 0 / jnz skip — skips the normal case)
 	{
-		const char* defName = T4::DB_XAssetDefaultNames[type];
+		const char* defName = T4::engine::DB_XAssetDefaultNames[type];
 		bool hasEmptyDefault = (!defName || defName[0] == '\0');
 		if (hasEmptyDefault && type != 0x20 && type != 0x10)
 		{
-			InterlockedDecrement((LONG*)g_dbWriterCount);
+			InterlockedDecrement((LONG*)T4::g_dbWriterCount);
 			DB_FatalError(1,
 				"Attempting to override asset '%s' from '%s' with '%s'",
 				name,
-				g_zoneFileNames[existing->zoneIndex].name,
-				g_zoneFileNames[newEntry->zoneIndex].name);
+				T4::g_zoneFileNames[existing->zoneIndex].name,
+				T4::g_zoneFileNames[newEntry->zoneIndex].name);
 		}
 	}
 
@@ -1780,8 +1827,8 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	// ----- C.1 — NOUVEAU PERD : insertion dans nextOverride -----
 	if (pNew < pOld)
 	{
-		T4::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
-			name, pOld, g_zoneFileNames[existing->zoneIndex].name, pNew, g_zoneFileNames[newEntry->zoneIndex].name);
+		T4::engine::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
+			name, pOld, T4::g_zoneFileNames[existing->zoneIndex].name, pNew, T4::g_zoneFileNames[newEntry->zoneIndex].name);
 
 		// Cherche la position d'insertion : on descend tant que la zone
 		// du nœud courant est plus prioritaire que pNew.
@@ -1822,7 +1869,7 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	// 1. copyData==0: discard newEntry (fresh alloc) and return existing unchanged
 	// (ASM loc_48E25A: cmp [ebp+arg_4], 0 / jz loc_48E2E4)
 
-	 // T4::Com_PrintfChannel(0, "[T4M] - Override succesful for asset %s. Old priority one %d from zone %s <= new priority one %d, from zone %s\n",
+	 // T4::engine::Com_PrintfChannel(0, "[T4M] - Override succesful for asset %s. Old priority one %d from zone %s <= new priority one %d, from zone %s\n",
 	// name, pOld, g_zoneFileNames[existing->zoneIndex].name, pNew, g_zoneFileNames[newEntry->zoneIndex].name);
 
 	if (copyData == 0)
@@ -1834,9 +1881,9 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	// 2. InUse dispatch
 	if (existing->inuse)
 	{
-		*g_inuseEntry  = existing;
-		*g_inuseHeader = &existing->asset.header;
-		DB_InUseHandlerDispatch();
+		*T4::g_inuseEntry  = existing;
+		*T4::g_inuseHeader = &existing->asset.header;
+		T4::DB_InUseHandlerDispatch();
 	}
 
 	// 3. Swap nextOverride
@@ -1852,7 +1899,7 @@ XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(XAssetEntry* newE
 	unsigned char savedExistingZone = existing->zoneIndex;
 
 	// 7a. Call promoter BEFORE data overwrite (existing still has old data)
-	DB_XAssetOverridePromoter_t promoter = DB_XAssetOverridePromoters[type];
+	T4::DB_XAssetOverridePromoter_t promoter = T4::DB_XAssetOverridePromoters[type];
 	if (promoter)
 	{
 		bool isPermZone = (existing->zoneIndex == 0);
@@ -1901,10 +1948,10 @@ static const fn_void_void_t DB_PostFlushBeginRegistration = (fn_void_void_t)0x00
 // on a dvar byte. Clears g_assetsDirty as a side effect.
 static const fn_void_void_t DB_NotifyRendererAssetChange = (fn_void_void_t)0x007126C0;
 
-// sub_6F6D60 — already exposed as T4::Sys_WakeDatabase (0x6F6D60).
+// sub_6F6D60 — already exposed as T4::engine::Sys_WakeDatabase (0x6F6D60).
 // Each call decrements dword_3BED864 by 1 (with extra bookkeeping).
 
-// sub_6F6CE0 — already exposed as T4::Sys_SyncDatabase (0x6F6CE0).
+// sub_6F6CE0 — already exposed as T4::engine::Sys_SyncDatabase (0x6F6CE0).
 
 // dword_3BED864 — nested-sync recursion counter driven by Sys_WakeDatabase /
 // Sys_SyncDatabase. Read directly during the drain/restore pair below.
@@ -1917,7 +1964,7 @@ static int DB_DrainRenderSyncRecursion()
 {
 	int saved = *g_renderSyncRecursion;
 	while (*g_renderSyncRecursion != 0)
-		Sys_WakeDatabase();       // sub_6F6D60
+		T4::Sys_WakeDatabase();       // sub_6F6D60
 	return saved;
 }
 
@@ -1926,7 +1973,7 @@ static int DB_DrainRenderSyncRecursion()
 static void DB_RestoreRenderSyncRecursion(int count)
 {
 	for (int i = 0; i < count; ++i)
-		Sys_SyncDatabase();       // sub_6F6CE0
+		T4::Sys_SyncDatabase();       // sub_6F6CE0
 }
 
 // DB_CurrentThreadIsAltDb — inline reconstruction of sub_5A33C0.
@@ -1936,7 +1983,7 @@ static bool DB_CurrentThreadIsAltDb()
 {
 	DWORD* tid = DB_TlsCachedTidSlot();
 	if (*tid == 0) *tid = GetCurrentThreadId();
-	return *tid == *g_dbAltThreadId;
+	return *tid == *T4::g_dbAltThreadId;
 }
 
 // =====================================================================
@@ -1944,7 +1991,7 @@ static bool DB_CurrentThreadIsAltDb()
 // @faithful (full reconstruction).
 //
 //   Vanilla signature: void __cdecl(void). Same flat C name as
-//   T4::DB_CheckPendingComplete would collide via extern "C", so this
+//   T4::engine::DB_CheckPendingComplete would collide via extern "C", so this
 //   recon uses DB_FlushCopyInfoQueue. Detour at 0x48E560 (if installed) +
 //   manual call-site updates are how this replaces the vanilla entry.
 //
@@ -1994,19 +2041,19 @@ __declspec(noinline)
 void T4_Reconstructed::DB_FlushCopyInfoQueue()
 {
 	// ----- Step 1 — gate on the worker event (auto-reset, 0 ms poll). -----
-	DWORD w = WaitForSingleObject(*g_dbWorkerEvent, 0);
+	DWORD w = WaitForSingleObject(*T4::g_dbWorkerEvent, 0);
 	int signaled = (w == 0) ? 1 : 0;            // neg/sbb/inc idiom
 	if (signaled == 0)
-		DB_WaitForPendingLoads();                // sub_5FDBF0
+		T4::DB_WaitForPendingLoads();                // sub_5FDBF0
 	if (signaled != 0)
 		return;                                  // skip-token path (loc_48E699)
 
 	// ----- Step 2 — empty queue: mark dirty, sync, re-signal, return. -----
-	if (*g_copyInfoCount == 0)
+	if (*T4::g_copyInfoCount == 0)
 	{
-		*g_assetsDirty = true;
-		DB_SyncAssets();                         // sub_41D3A0
-		SetEvent(*g_dbWorkerEvent);
+		*T4::g_assetsDirty = true;
+		T4::DB_SyncAssets();                         // sub_41D3A0
+		SetEvent(*T4::g_dbWorkerEvent);
 		return;
 	}
 
@@ -2014,14 +2061,14 @@ void T4_Reconstructed::DB_FlushCopyInfoQueue()
 	int savedRecursion = 0;
 	if (DB_CurrentThreadIsAltDb())               // sub_5A33C0
 	{
-		(*g_dbPtr99724C) += 1;
+		(*T4::g_dbPtr99724C) += 1;
 		savedRecursion = DB_DrainRenderSyncRecursion();  // sub_6F6E90
-		(*g_dbPtr99724C) -= 1;
+		(*T4::g_dbPtr99724C) -= 1;
 
 		// Vanilla: if the queue was drained by another caller during the
 		// recursion unwind, rebuild the counter and exit — note this path
 		// does NOT call SetEvent (no token to hand back).
-		if (*g_copyInfoCount == 0)
+		if (*T4::g_copyInfoCount == 0)
 		{
 			DB_RestoreRenderSyncRecursion(savedRecursion);  // sub_6F6E70
 			return;
@@ -2033,16 +2080,16 @@ void T4_Reconstructed::DB_FlushCopyInfoQueue()
 	T4M::DB_WriterAcquire();                     // sub_48D020 (esi=g_dbReaderCount)
 
 	// ----- Step 5 — drain the queue. ------------------------------------
-	int n = *g_copyInfoCount;
+	int n = *T4::g_copyInfoCount;
 	for (int i = 0; i < n; ++i)
 	{
-		T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(g_copyInfo[i], /*copyData=*/1);
+		T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(T4::g_copyInfo[i], /*copyData=*/1);
 	}
-	*g_copyInfoCount = 0;
+	*T4::g_copyInfoCount = 0;
 
 	// ----- Step 6 — release writer lock + post-flush plumbing. ----------
 	T4M::DB_WriterRelease();                     // InterlockedDecrement g_dbWriterCount
-	*g_assetsDirty = true;
+	*T4::g_assetsDirty = true;
 	DB_NotifyRendererAssetChange();              // sub_7126C0
 	DB_PostFlushBeginRegistration();             // sub_48FB00
 
@@ -2053,15 +2100,15 @@ void T4_Reconstructed::DB_FlushCopyInfoQueue()
 	{
 		DWORD* tid = DB_TlsCachedTidSlot();
 		if (*tid == 0) *tid = GetCurrentThreadId();
-		if (*tid == *g_dbAltThreadId && savedRecursion != 0)
+		if (*tid == *T4::g_dbAltThreadId && savedRecursion != 0)
 		{
 			for (int i = 0; i < savedRecursion; ++i)
-				Sys_SyncDatabase();              // sub_6F6CE0
+				T4::Sys_SyncDatabase();              // sub_6F6CE0
 		}
 	}
 
 	// ----- Step 8 — hand the token to the next caller. ------------------
-	SetEvent(*g_dbWorkerEvent);
+	SetEvent(*T4::g_dbWorkerEvent);
 }
 
 // =====================================================================
@@ -2081,13 +2128,13 @@ void T4_Reconstructed::DB_FlushCopyInfoQueue()
 __declspec(noinline)
 void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 {
-	Com_PrintfChannel(0x10,
+	T4::Com_PrintfChannel(0x10,
 		"[T4M] T4_Reconstructed::DB_UnloadZoneAssets(zone=%d, copyDefaults=%d)\n",
 		zoneToUnload, copyDefaults ? 1 : 0);
 
 	for (int bucket = 0; bucket < 0x8000; ++bucket)
 	{
-		unsigned short* prev = &db_hashTable[bucket];
+		unsigned short* prev = &T4::db_hashTable[bucket];
 		while (*prev != 0)
 		{
 			XAssetEntry* e = T4M::POOL_ENTRY(*prev);
@@ -2103,16 +2150,19 @@ void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 					XAssetEntry* ov = T4M::POOL_ENTRY(*ovPrev);
 					if (ov->zoneIndex == zoneToUnload)
 					{
-						DB_XAssetUnloadHandler_t u = DB_XAssetUnloadHandlers[ov->asset.type];
-						if (u) u(ov->asset.header.data);
+						T4::DB_XAssetUnloadHandler_t u = T4::DB_XAssetUnloadHandlers[ov->asset.type];
+
+						if (u) 
+							u(ov->asset.header.data);
+
 						*ovPrev = ov->nextOverride;
 
-						void* pool = DB_XAssetPool[ov->asset.type];
-						DB_XAssetFreeHandlers[ov->asset.type](pool, ov->asset.header.data);
+						void* pool = T4::DB_XAssetPool[ov->asset.type];
+						T4::DB_XAssetFreeHandlers[ov->asset.type](pool, ov->asset.header.data);
 
 						XAssetEntryPoolEntry* ovPE = reinterpret_cast<XAssetEntryPoolEntry*>(ov);
-						ovPE->next = *g_freeAssetEntries;
-						*g_freeAssetEntries = ovPE;
+						ovPE->next = *T4::g_freeAssetEntries;
+						*T4::g_freeAssetEntries = ovPE;
 					}
 					else
 					{
@@ -2129,19 +2179,21 @@ void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 			// A.1 — inuse dispatch
 			if (e->inuse && copyDefaults)
 			{
-				*g_inuseEntry  = e;
-				*g_inuseHeader = &e->asset.header;
-				DB_InUseHandlerDispatch();
+				*T4::g_inuseEntry  = e;
+				*T4::g_inuseHeader = &e->asset.header;
+				T4::DB_InUseHandlerDispatch();
 			}
 
 			// A.2 — unload GPU handler
-			DB_XAssetUnloadHandler_t u = DB_XAssetUnloadHandlers[type];
-			if (u) u(e->asset.header.data);
+			T4::DB_XAssetUnloadHandler_t u = T4::DB_XAssetUnloadHandlers[type];
+
+			if (u) 
+				u(e->asset.header.data);
 
 			// A.3 — Promote an override if the chain is non-empty
 			if (e->nextOverride != 0)
 			{
-				XAssetEntry* ov = T4M::POOL_ENTRY(e->nextOverride);
+				T4::engine::XAssetEntry* ov = T4M::POOL_ENTRY(e->nextOverride);
 				T4_Reconstructed::DB_PromoteOverride(e, ov);
 				prev = &e->nextHash;
 				continue;
@@ -2151,12 +2203,12 @@ void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 			if (!copyDefaults)
 			{
 				*prev = e->nextHash;
-				void* pool = DB_XAssetPool[type];
-				DB_XAssetFreeHandlers[type](pool, e->asset.header.data);
+				void* pool = T4::DB_XAssetPool[type];
+				T4::DB_XAssetFreeHandlers[type](pool, e->asset.header.data);
 
-				XAssetEntryPoolEntry* pe = reinterpret_cast<XAssetEntryPoolEntry*>(e);
-				pe->next = *g_freeAssetEntries;
-				*g_freeAssetEntries = pe;
+				T4::engine::XAssetEntryPoolEntry* pe = reinterpret_cast<T4::engine::XAssetEntryPoolEntry*>(e);
+				pe->next = *T4::g_freeAssetEntries;
+				*T4::g_freeAssetEntries = pe;
 				// *prev was updated: do not advance
 				continue;
 			}
@@ -2168,17 +2220,17 @@ void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 				{
 					// No default available: fully remove
 					*prev = e->nextHash;
-					void* pool = DB_XAssetPool[type];
-					DB_XAssetFreeHandlers[type](pool, e->asset.header.data);
+					void* pool = T4::DB_XAssetPool[type];
+					T4::DB_XAssetFreeHandlers[type](pool, e->asset.header.data);
 
-					XAssetEntryPoolEntry* pe = reinterpret_cast<XAssetEntryPoolEntry*>(e);
-					pe->next = *g_freeAssetEntries;
-					*g_freeAssetEntries = pe;
+					T4::engine::XAssetEntryPoolEntry* pe = reinterpret_cast<T4::engine::XAssetEntryPoolEntry*>(e);
+					pe->next = *T4::g_freeAssetEntries;
+					*T4::g_freeAssetEntries = pe;
 
-					const char* defName = DB_XAssetDefaultNames[type];
+					const char* defName = T4::DB_XAssetDefaultNames[type];
 					if (defName && defName[0] != '\0')
 					{
-						Com_PrintfChannel(1,
+						T4::Com_PrintfChannel(1,
 							"[T4M] No default asset for type %s during unload\n",
 							T4M::DB_GetXAssetTypeName(type));
 					}
@@ -2198,19 +2250,19 @@ void T4_Reconstructed::DB_UnloadZoneAssets(int zoneToUnload, bool copyDefaults)
 				// name (e.g. "$default") while the entry stays in the bucket
 				// of the original name. Any hash+getName lookup fails → hang
 				// in sub_48E370 (hash-chain scan not terminated on 0).
-				const char* savedName = DB_XAssetGetNameHandlers[type](&e->asset.header);
-				*g_assetRefCount += 1;
+				const char* savedName = T4::DB_XAssetGetNameHandlers[type](&e->asset.header);
+				*T4::g_assetRefCount += 1;
 				e->zoneIndex = 0;
 
 				int size = T4M::GetSize(type);
 				memcpy(e->asset.header.data, defHdr, static_cast<size_t>(size));
 
-				DB_XAssetSetNameHandlers[type](&e->asset.header, savedName);
+				T4::DB_XAssetSetNameHandlers[type](&e->asset.header, savedName);
 
 				prev = &e->nextHash;
 			}
 		}
 	}
 
-	Com_PrintfChannel(0x10, "[T4M] T4_Reconstructed::DB_UnloadZoneAssets(zone=%d) done\n", zoneToUnload);
+	T4::Com_PrintfChannel(0x10, "[T4M] T4_Reconstructed::DB_UnloadZoneAssets(zone=%d) done\n", zoneToUnload);
 }

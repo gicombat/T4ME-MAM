@@ -1,7 +1,6 @@
 #pragma once
 
-namespace game
-{
+namespace T4 { namespace engine {
 	WEAK symbol<void(scriptInstance_t inst, const char * errorMsg)>AnimTreeCompileError{ 0x0, 0x67D4B0};
 	WEAK symbol<int(scriptInstance_t inst)>GetAnimTreeParseProperties{ 0x0, 0x67D510};
 	WEAK symbol<char(scriptInstance_t inst, int parentId, int names, int bIncludeParent, int bLoop, int bComplete)>AnimTreeParseInternal{ 0x0, 0x67D770};
@@ -32,4 +31,4 @@ namespace game
 	scr_animtree_t Scr_FindAnimTree(const char * filename, void* call_addr = Scr_FindAnimTree_ADDR());
 	inline void* Scr_FindAnim_ADDR() { return CALL_ADDR(0x0, 0x67EB10); }
 	void Scr_FindAnim(const char * animName, scr_anim_s a2, int user, void* call_addr = Scr_FindAnim_ADDR());
-}
+} } // namespace T4::engine
