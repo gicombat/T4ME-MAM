@@ -278,3 +278,13 @@ namespace T4 { namespace engine {
 	//	return *((float*)&v2 + 1);
 	//}
 } } // namespace T4::engine
+
+// Exe-variant detection (declared in game.hpp). Detected ONCE via the first DWORD of .text
+// @0x401000 (German Steam .text starts with 0xFA90BF6E). Must run before PatchT4_SteamDRM
+// decrypts, after which ENG and GER both read 0x83EC8B55 and become indistinguishable.
+T4::engine::environment::ExeVariant T4::engine::environment::exeVariant()
+{
+	static const ExeVariant cached =
+		(*reinterpret_cast<unsigned int*>(0x401000) == 0xFA90BF6E) ? EXE_GER : EXE_DEFAULT;
+	return cached;
+}

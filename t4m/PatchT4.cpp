@@ -119,13 +119,16 @@ void PatchT4_PreLoad()
 
 void PatchT4_SteamDRM()
 {
-	// check if steam exe before continuing, fixes LAN issues, code from ineedbots
-	if (*(DWORD*)0x401000 != 0x9EF490B8)
+	// check if steam exe before continuing, fixes LAN issues, code from ineedbots.
+	// Per-variant decrypted .text resource (OEP 0x3AF316 measured identical for ENG & GER).
+	DWORD t4m_sig = *(DWORD*)0x401000;
+	int t4m_resId = (t4m_sig == 0xFA90BF6E) ? IDB_TEXT_GER : IDB_TEXT;
+	if (t4m_sig != 0x9EF490B8 && t4m_sig != 0xFA90BF6E)
 		return;
 
 	// Replace encrypted .text segment
 	DWORD size = 0x3EA000;
-	std::string data = GetBinaryResource(IDB_TEXT);
+	std::string data = GetBinaryResource(t4m_resId);
 	uncompress((unsigned char*)0x401000, &size, (unsigned char*)data.data(), data.size());
 
 	// Apply new entry point

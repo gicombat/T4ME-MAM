@@ -19,6 +19,7 @@
 
 #include "T4.h"
 #include "Utils.h"
+#include "AddrMap.h"
 #include "Utils\FileIO.h"
 #include "io.h"
 #define __thread __declspec(thread)

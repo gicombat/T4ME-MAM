@@ -25,6 +25,10 @@ namespace T4 { namespace engine {
 	{
 		bool t4mp();
 		bool t4sp();
+
+		// Which game exe are we running inside? Detected once from *(DWORD*)0x401000.
+		enum ExeVariant { EXE_DEFAULT, EXE_GER };   // default = LanFixed / Steam-ENG layout
+		ExeVariant exeVariant();
 	}
 
 	template <typename T>

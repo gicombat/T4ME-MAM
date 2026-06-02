@@ -158,6 +158,7 @@ popd</Command>
     <ClInclude Include="T4.h" />
     <ClInclude Include="t4_headers.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="AddrMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\cod\game.cpp" />
@@ -199,6 +200,7 @@ popd</Command>
     <ClCompile Include="T4E_items.ixx" />
     <ClCompile Include="T4E_UI.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="AddrMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc" />
