@@ -207,6 +207,8 @@ popd</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\.text" />
+    <None Include="Resource\.text_ger" />
+    <None Include="Resource\addr_mapping.csv" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="Resource\detours.lib" />

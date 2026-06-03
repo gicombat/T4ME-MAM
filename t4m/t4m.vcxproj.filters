@@ -109,6 +109,9 @@
     <ClCompile Include="PatchT4MAM_WeaponState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AddrMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StdInc.h">
@@ -213,6 +216,12 @@
     <ClInclude Include="Resource\Typedef.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="t4m_version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AddrMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc">
@@ -221,6 +230,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\.text">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resource\addr_mapping.csv">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resource\.text_ger">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

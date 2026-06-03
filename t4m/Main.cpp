@@ -126,14 +126,24 @@ bool __stdcall DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 {
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
-		// Detect & cache the exe variant (default/GER) BEFORE PatchT4_SteamDRM decrypts .text.
-		T4::engine::environment::exeVariant();
 
 		DWORD sig = *(DWORD*)0x401000;
-		if (sig == 0x9EF490B8 || sig == 0x83EC8B55 || sig == 0xFA90BF6E) // Steam-ENG | LanFixed | Steam-GER
+		if (sig == T4M::ExeVariant::LanFixed || sig == T4M::ExeVariant::SteamDefault || sig == T4M::ExeVariant::SteamGer) // LanFixed | Steam | Steam-GER
+		{
+			// Detect & cache the exe variant (default/GER) BEFORE PatchT4_SteamDRM decrypts .text.
+			T4M::SetExeVariant(sig);
+			T4M::AddrMap_Load(true);
 			Main_SetSafeInit();
-		//else
-		//	MessageBoxA(0, "Incompatiable Call of Duty World at War exe.\nT4M will not be loaded.", "Error", MB_OK);
+		}
+		else
+		{
+			// We don't support Steam MP for now, but we know they exist, so don't throw an error at user
+			if (sig != T4M::ExeVariant::SteamDefaultMP && sig != T4M::ExeVariant::SteamGerMP)
+			{
+				MessageBoxA(0, "Incompatible Call of Duty World at War exe.\nT4M will not be loaded.\nCheck if you have updated or contact dev to tell them about this exe"
+					, "Error", MB_OK);
+			}
+		}
 	}
 	return true;
 }

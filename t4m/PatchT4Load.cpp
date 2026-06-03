@@ -494,20 +494,20 @@ namespace T4M
 void PatchT4_Load()
 {
 	// Working DO NOT TOUCH
-	Detours::X86::DetourFunction((uintptr_t)0x006D5728, (uintptr_t)&T4M::CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x006D5672, (uintptr_t)&T4M::ModFFLoadHook, Detours::X86Option::USE_CALL);
-
+	Detours::X86::DetourFunction(T4M::GetAddress("Load_CodePostGFX"), (uintptr_t)&T4M::CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction(T4M::GetAddress("Load_Mod"), (uintptr_t)&T4M::ModFFLoadHook, Detours::X86Option::USE_CALL);
+	
 	// Original address of T4M::DB_LoadMapZones
-	Detours::X86::DetourFunction((uintptr_t)0x0059E050,(uintptr_t)&T4M::DB_LoadMapZones,Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_LoadMapZones"), (uintptr_t)&T4M::DB_LoadMapZones,Detours::X86Option::USE_JUMP);
 
 	// Fully replace sub_48F720 (DB_UnloadAllZones) with our reconstruction
-	Detours::X86::DetourFunction((uintptr_t)0x0048F720,(uintptr_t)&T4M::DB_UnloadAllZones,Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_UnloadAllZones"), (uintptr_t)&T4M::DB_UnloadAllZones,Detours::X86Option::USE_JUMP);
 
-	Detours::X86::DetourFunction((uintptr_t)0x0048E7B0, (uintptr_t)&T4M::DB_LoadXAssets, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_LoadXAssets"), (uintptr_t)&T4M::DB_LoadXAssets, Detours::X86Option::USE_JUMP);
 
 	// DB worker queue dispatch — modified C++ reconstruction of sub_48F260.
 	// Disabled the "_patch → default.ff" fallback
-	Detours::X86::DetourFunction((uintptr_t)0x0048F260, (uintptr_t)&T4M::DB_ProcessZoneQueue, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_ProcessZoneQueue"), (uintptr_t)&T4M::DB_ProcessZoneQueue, Detours::X86Option::USE_JUMP);
 
 	//00644C5D, r_init
 	//if ((*dedicated)->current.integer > 0)

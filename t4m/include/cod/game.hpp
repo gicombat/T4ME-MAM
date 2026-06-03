@@ -11,72 +11,71 @@
 	((sizeof(arrayn)) / (sizeof(arrayn[0])))
 
 
-namespace T4 { namespace engine {
-	enum gamemode
+namespace T4
+{
+	namespace engine
 	{
-		multiplayer,
-		singleplayer,
-		none
-	};
-
-	extern gamemode current;
-
-	namespace environment
-	{
-		bool t4mp();
-		bool t4sp();
-
-		// Which game exe are we running inside? Detected once from *(DWORD*)0x401000.
-		enum ExeVariant { EXE_DEFAULT, EXE_GER };   // default = LanFixed / Steam-ENG layout
-		ExeVariant exeVariant();
-	}
-
-	template <typename T>
-	class symbol
-	{
-	public:
-		symbol(const size_t t4mp, const size_t t4sp)
-			: t4mp_(reinterpret_cast<T*>(t4mp))
-			, t4sp_(reinterpret_cast<T*>(t4sp))
+		enum gamemode
 		{
+			multiplayer,
+			singleplayer,
+			none
+		};
+
+		extern gamemode current;
+
+		namespace environment
+		{
+			bool t4mp();
+			bool t4sp();
 		}
 
-		T* get() const
+		template <typename T>
+		class symbol
 		{
-			if (environment::t4mp())
+		public:
+			symbol(const size_t t4mp, const size_t t4sp)
+				: t4mp_(reinterpret_cast<T*>(t4mp))
+				, t4sp_(reinterpret_cast<T*>(t4sp))
 			{
-				return t4mp_;
 			}
 
-			return t4sp_;
-		}
+			T* get() const
+			{
+				if (environment::t4mp())
+				{
+					return t4mp_;
+				}
 
-		void set(const size_t ptr)
-		{
-			this->t4mp_ = reinterpret_cast<T*>(ptr);
-			this->t4sp_ = reinterpret_cast<T*>(ptr);
-		}
+				return t4sp_;
+			}
 
-		operator T* () const
-		{
-			return this->get();
-		}
+			void set(const size_t ptr)
+			{
+				this->t4mp_ = reinterpret_cast<T*>(ptr);
+				this->t4sp_ = reinterpret_cast<T*>(ptr);
+			}
 
-		T* operator->() const
-		{
-			return this->get();
-		}
+			operator T* () const
+			{
+				return this->get();
+			}
 
-	private:
-		T* t4mp_;
-		T* t4sp_;
-	};
+			T* operator->() const
+			{
+				return this->get();
+			}
+
+		private:
+			T* t4mp_;
+			T* t4sp_;
+		};
 
 
-	//extern AimAssistGlobals* aaGlobArray;
-	//extern WeaponDef** bg_weaponDefs;
+		//extern AimAssistGlobals* aaGlobArray;
+		//extern WeaponDef** bg_weaponDefs;
 
-	//float DiffTrackAngle(int a1, int a2, float a3, float a4);
-	//float AngleSubtract(double a1, double a2);
-
-} } // namespace T4::engine
+		//float DiffTrackAngle(int a1, int a2, float a3, float a4);
+		//float AngleSubtract(double a1, double a2);
+	}
+} // namespace T4::engine

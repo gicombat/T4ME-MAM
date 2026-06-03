@@ -102,7 +102,7 @@ namespace T4
 		//   0x8DCAF8  funcs_48D282  = DB_XAssetGetNameHandlers
 		//   0x8DCB88  funcs_48D966  = DB_XAssetSetNameHandlers
 		//   0x8DCC18  funcs_48D6FD  = DB_GetXAssetSizeHandler
-		DB_XAssetUnloadHandler_t*     DB_XAssetUnloadHandlers     = (DB_XAssetUnloadHandler_t*)     0x008DC948;
+		DB_XAssetUnloadHandler_t*	  DB_XAssetUnloadHandlers	  = (DB_XAssetUnloadHandler_t*)T4M::GetAddress("DB_XAssetUnloadHandlers");//0x008DC948;
 		DB_XAssetOverridePromoter_t*  DB_XAssetOverridePromoters  = (DB_XAssetOverridePromoter_t*)  0x008DC9D8;
 		DB_XAssetSetNameHandler_t*    DB_XAssetSetNameHandlers    = (DB_XAssetSetNameHandler_t*)    0x008DCB88;
 		DB_XAssetFreeHandler_t*       DB_XAssetFreeHandlers       = (DB_XAssetFreeHandler_t*)       0x008DC798;

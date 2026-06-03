@@ -16,6 +16,7 @@
 #include "resource.h"
 
 #include "Hooking.h"
+#include "AddrMap.h"
 
 #include "T4.h"
 #include "Utils.h"

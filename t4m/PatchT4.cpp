@@ -45,13 +45,15 @@ void PatchT4E_UI();
 
 void Sys_RunInit()
 {
-	if (*(DWORD*)0x881CAC != 0x62616E55)// SP!
+	if (T4M::IsMpVersion())
+	{
+		PatchT4MP();
+	}
+	else
 	{
 		LAACheck();
 		PatchT4();
-	} 
-	else
-		PatchT4MP();
+	}
 }
 
 void PatchT4()
@@ -107,24 +109,24 @@ void PatchT4_PreLoad()
 	UINT useFixedXAudio = GetPrivateProfileInt("Fixes", "UseFixedXAudio", 0, CONFIG_FILE_LOCATION);
 	if (useFixedXAudio != 0){
 		GUID xaudio = { 0x4c5e637a, 0x16c7, 0x4de3, 0x9c, 0x46, 0x5e, 0xd2, 0x21, 0x81, 0x96, 0x2d }; // XAudio 2.3
-		Memory::VP::Patch(0x0089DA98, xaudio);
+		Memory::VP::Patch(0x0089DA98, xaudio); //xaudio
 	}
 	// Increase hunk total
-	Memory::VP::Patch<uint32_t>((0x005E3CD1 + 6), 15728640);
+	Memory::VP::Patch<uint32_t>((0x005E3CD1 + 6), 15728640); //hunk total
 
 	// Remove duplicate calls in serverthread
-	Memory::VP::Nop(0x00636686, 0x2D);
+	Memory::VP::Nop(0x00636686, 0x2D); //duplicate_call_serverthread
 
 }
 
 void PatchT4_SteamDRM()
 {
 	// check if steam exe before continuing, fixes LAN issues, code from ineedbots.
-	// Per-variant decrypted .text resource (OEP 0x3AF316 measured identical for ENG & GER).
-	DWORD t4m_sig = *(DWORD*)0x401000;
-	int t4m_resId = (t4m_sig == 0xFA90BF6E) ? IDB_TEXT_GER : IDB_TEXT;
-	if (t4m_sig != 0x9EF490B8 && t4m_sig != 0xFA90BF6E)
+	if (!T4M::IsSteamVersion())
 		return;
+
+	// Per-variant decrypted .text resource (OEP 0x3AF316 measured identical for ENG & GER).
+	int t4m_resId = T4M::IsGermanVersion() ? IDB_TEXT_GER : IDB_TEXT;
 
 	// Replace encrypted .text segment
 	DWORD size = 0x3EA000;
@@ -145,7 +147,7 @@ void PatchT4_Menus()
 	if (enable_scoreboard->current.value)
 	{
 		nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
-		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check (jmp_onlinegame_dvar_check)
 	}
 
 	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(0x004379D0, [](SafetyHookContext& ctx) 
