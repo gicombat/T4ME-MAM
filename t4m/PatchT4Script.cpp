@@ -70,9 +70,8 @@ namespace T4M
 
 	int BG_GetWeaponIndexForName(const char* name)
 	{
-		if (*(bool*)0x018F6DB8);
-		return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
-
+		if (*(bool*)0x018F6DB8)
+			return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
 		return ((int(__cdecl*)(const char*))0x41D470)(name);
 	}
 

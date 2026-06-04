@@ -1827,8 +1827,8 @@ T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(T4::e
 	// ----- C.1 — NOUVEAU PERD : insertion dans nextOverride -----
 	if (pNew < pOld)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
-			name, pOld, T4::g_zoneFileNames[existing->zoneIndex].name, pNew, T4::g_zoneFileNames[newEntry->zoneIndex].name);
+	//	T4::engine::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
+		//	name, pOld, T4::g_zoneFileNames[existing->zoneIndex].name, pNew, T4::g_zoneFileNames[newEntry->zoneIndex].name);
 
 		// Cherche la position d'insertion : on descend tant que la zone
 		// du nœud courant est plus prioritaire que pNew.
