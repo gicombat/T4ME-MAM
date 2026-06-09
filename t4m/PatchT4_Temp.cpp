@@ -92,27 +92,17 @@ namespace Engine
 	typedef void(__cdecl* HandleCfg_t)         (void);                               // sub_5FB560
 	typedef void(__cdecl* DB_RegisterDvars_t)  (void);                               // sub_5FEDE0
 	typedef void(__cdecl* DB_ReloadAssets_t)   (void);                               // sub_5FC640
-	typedef void(__cdecl* Com_AllocEventsBuf_t)(void);                               // sub_677E90
-	typedef void(__cdecl* SV_Init_t)           (int zero);                           // sub_68EF90
-	typedef void(__cdecl* SL_Init_t)           (int zero);                           // sub_693C20
-	typedef void(__cdecl* Scr_InitSystem_t)    (void);                               // sub_60C5C0
-	typedef void(__cdecl* Input_Init_t)        (int evtType, int zero, void* buf, int zero2); // sub_68DE50
+	typedef void(__cdecl* XAnimInit_t)         (void);                               // sub_60C5C0 (was mislabeled Scr_InitSystem; real Scr_InitSystem is sub_699860)
 	typedef void(__cdecl* UI_Init_t)           (void);                               // sub_632B10
-	typedef void(__cdecl* Com_InitEventSystem_t)(void);                              // sub_68D9F0
 	typedef void(__cdecl* Cinema_Init_t)       (void);                               // sub_600CC0
 	typedef void(__cdecl* Cinema_SetInitialized_t)(int v);                           // sub_600ED0
 	typedef void(__cdecl* Com_InitSessionWork_t)(void);                              // sub_645860
 	typedef void(__cdecl* Com_InitSessionClient_t)(void);                            // sub_647710
-	typedef void(__cdecl* Com_StartTrace_t)    (void);                               // sub_59FE70
 	typedef void(__cdecl* Com_InitBuildStr_t)  (void* out, const char* fmt, ...);    // sub_7AA926 — sprintf-like
 	typedef void(__cdecl* Com_PrintBanner_t)   (void* ebx0, int one);                // sub_6B47C0 — console banner
 	typedef void* (__cdecl* Mem_Memset_t)        (void* dst, int c, int n);            // sub_7AFF40
 	typedef void(__cdecl* SetBranding_t)       (int mode);                           // sub_59AFA0
-	typedef void(__cdecl* FS_LoadEventsFile_t) (void);                               // sub_59FE70 ? kept separate
-	typedef int(__cdecl* SEH_TryHandler_t)    (void* exReg, int one);               // sub_7E1894 — CRT _except_handler
 	typedef void(__cdecl* R_ResetToDefault_t)  (void);                               // sub_72D000
-	typedef void(__cdecl* R_FrameTailCleanup_t)(void);                               // sub_70E3A0  (tail jmp)
-	typedef void(__cdecl* R_BeginRegistration_t)(void);                              // sub_70E340
 	typedef int(__cdecl* R_CreateSunOcclusion_t)(void);                             // sub_72BFA0
 	typedef void* (__cdecl* R_LoadFont_SP_t)     (const char* name, int param);        // sub_6E8CE0
 	typedef void* (__cdecl* R_LoadFont_MP_t)     (const char* name, int param);        // sub_6E8D80
@@ -123,7 +113,6 @@ namespace Engine
 	typedef void(__cdecl* R_InitDeviceAndWindow_t)(void);                            // sub_6D6880
 	typedef void(__cdecl* R_InitRTPool_t)      (void);                               // sub_70E8F0
 	typedef void(__cdecl* UI_LoadCinematic_t)  (void);                               // sub_71EFC0
-	typedef void* (__cdecl* DB_FindXAssetHeader_full_t)(int type, const char* name, int createIfMissing, int user); // sub_48DA30
 	typedef void(__cdecl* MatReg_Singlethread_t)(const char* name, int flags);       // sub_6E9B80
 
 	// Com_PostInit_Video internals
@@ -172,26 +161,17 @@ namespace Engine
 	static const HandleCfg_t                   HandleCfg = (HandleCfg_t)0x005FB560;
 	static const DB_RegisterDvars_t            DB_RegisterDvars = (DB_RegisterDvars_t)0x005FEDE0;
 	static const DB_ReloadAssets_t             DB_ReloadAssets = (DB_ReloadAssets_t)0x005FC640;
-	static const Com_AllocEventsBuf_t          Com_AllocEventsBuf = (Com_AllocEventsBuf_t)0x00677E90;
-	static const SV_Init_t                     SV_Init = (SV_Init_t)0x0068EF90;
-	static const SL_Init_t                     SL_Init = (SL_Init_t)0x00693C20;
-	static const Scr_InitSystem_t              Scr_InitSystem = (Scr_InitSystem_t)0x0060C5C0;
+	static const XAnimInit_t                   XAnimInit = (XAnimInit_t)0x0060C5C0;
 	static const UI_Init_t                     UI_Init = (UI_Init_t)0x00632B10;
-	static const Input_Init_t                  Input_Init = (Input_Init_t)0x0068DE50;
-	static const Com_InitEventSystem_t         Com_InitEventSystem = (Com_InitEventSystem_t)0x0068D9F0;
 	static const Cinema_Init_t                 Cinema_Init = (Cinema_Init_t)0x00600CC0;
 	static const Cinema_SetInitialized_t       Cinema_SetInitialized = (Cinema_SetInitialized_t)0x00600ED0;
 	static const Com_InitSessionWork_t         Com_InitSessionWork = (Com_InitSessionWork_t)0x00645860;
 	static const Com_InitSessionClient_t       Com_InitSessionClient = (Com_InitSessionClient_t)0x00647710;
-	static const Com_StartTrace_t              Com_StartTrace = (Com_StartTrace_t)0x0059FE70;
 	static const Com_InitBuildStr_t            Com_InitBuildStr = (Com_InitBuildStr_t)0x007AA926;
 	static const Com_PrintBanner_t             Com_PrintBanner = (Com_PrintBanner_t)0x006B47C0;
 	static const Mem_Memset_t                  Mem_Memset = (Mem_Memset_t)0x007AFF40;
 	static const SetBranding_t                 SetBranding = (SetBranding_t)0x0059AFA0;
-	static const SEH_TryHandler_t              SEH_TryHandler = (SEH_TryHandler_t)0x007E1894;
 	static const R_ResetToDefault_t            R_ResetToDefault = (R_ResetToDefault_t)0x0072D000;
-	static const R_FrameTailCleanup_t          R_FrameTailCleanup = (R_FrameTailCleanup_t)0x0070E3A0;
-	static const R_BeginRegistration_t         R_BeginRegistration = (R_BeginRegistration_t)0x0070E340;
 	static const R_CreateSunOcclusion_t        R_CreateSunOcclusion = (R_CreateSunOcclusion_t)0x0072BFA0;
 	static const R_LoadFont_SP_t               R_LoadFont_SP = (R_LoadFont_SP_t)0x006E8CE0;
 	static const R_LoadFont_MP_t               R_LoadFont_MP = (R_LoadFont_MP_t)0x006E8D80;
@@ -202,7 +182,6 @@ namespace Engine
 	static const R_InitDeviceAndWindow_t       R_InitDeviceAndWindow = (R_InitDeviceAndWindow_t)0x006D6880;
 	static const R_InitRTPool_t                R_InitRTPool = (R_InitRTPool_t)0x0070E8F0;
 	static const UI_LoadCinematic_t            UI_LoadCinematic = (UI_LoadCinematic_t)0x0071EFC0;
-	static const DB_FindXAssetHeader_full_t    DB_FindXAssetHeader4 = (DB_FindXAssetHeader_full_t)0x0048DA30;
 	static const MatReg_Singlethread_t         Material_Register_ST = (MatReg_Singlethread_t)0x006E9B80;
 	static const Com_InitSessionFinalize_t     Com_InitSessionFinalize = (Com_InitSessionFinalize_t)0x0046FA40;
 }
@@ -214,18 +193,12 @@ namespace Engine
 namespace G
 {
 	// --- engine-wide ---------------------------------------------------------
-	static dvar_t** const dvar_singlethreadRender = (dvar_t**)0x01F552FC; // dword_1F552FC
-	static dvar_t** const dvar_developer = (dvar_t**)0x01F55288; // dword_1F55288
-	static dvar_t** const dvar_dedicated = (dvar_t**)0x0212B2F4; // dword_212B2F4
 	static dvar_t** const dvar_comLogVerbose = (dvar_t**)0x01F964B4; // dword_1F964B4
 	static dvar_t** const dvar_comRecommendedSet = (dvar_t**)0x01F96490; // dword_1F96490 — stored cache
 	static dvar_t** const dvar_debugCurves = (dvar_t**)0x021ACF28; // dword_21ACF28 — stored cache
 	static dvar_t** const dvar_sv_running = (dvar_t**)0x01F96494; // dword_1F96494
 	static void** const firstHunkTable = (void**)0x01F3FAB8; // unk_1F3FAB8 — zero'd, 0x200 bytes
 
-	static DWORD* const    g_initStartMs = (DWORD*)0x022BEC34; // dword_22BEC34
-	static DWORD* const    g_initHasStart = (DWORD*)0x04DE7054; // dword_4DE7054
-	static BYTE* const    g_comInitDone = (BYTE*)0x00951A02; // byte_951A02
 	static DWORD* const    g_hunkIndex = (DWORD*)0x0224FAE8; // dword_224FAE8
 	static DWORD* const    g_hunkBaseRel = (DWORD*)0x0224FAE4; // dword_224FAE4
 	static DWORD* const    g_hunkLimit = (DWORD*)0x0224FAEC; // dword_224FAEC
@@ -245,7 +218,6 @@ namespace G
 	static DWORD* const    g_46E50B0_netUp = (DWORD*)0x046E50B0; // dword_46E50B0
 	static DWORD* const    g_1F9648C_initMs = (DWORD*)0x01F9648C; // dword_1F9648C
 	static DWORD* const    g_1F964B0_done = (DWORD*)0x01F964B0; // dword_1F964B0
-	static DWORD* const    g_1F964B4_flag = (DWORD*)0x01F964B4; // dword_1F964B4
 	static DWORD* const    g_ioRingBase = (DWORD*)0x0488E874; // unk_488E874 base of Input system ring
 	static DWORD* const    g_ioRingEnd = (DWORD*)0x048AB374; // unk_48AB374 end
 	static DWORD* const    g_defaultSfxBankCount = (DWORD*)0x01FF51C0; // dword_1FF51C0 — recommended worker hint
@@ -312,7 +284,8 @@ static const uintptr_t ADDR_defaultMaterialTable_end = 0x0082AFA0;
 // ---------------------------------------------------------------------------
 extern "C" void* __cdecl Material_RegisterHandle(const char* name)
 {
-	return Engine::DB_FindXAssetHeader4(/*ASSET_TYPE_MATERIAL=*/6, name, /*create=*/1, /*user=*/-1);
+	// Route through the detoured reconstruction (sub_48DA30) instead of the raw vanilla pointer.
+	return T4_Reconstructed::DB_FindXAssetHeader(/*ASSET_TYPE_MATERIAL=*/6, name, /*useDefault=*/true, /*timeoutMs=*/-1);
 }
 
 // ===========================================================================
@@ -329,7 +302,7 @@ extern "C" void __cdecl Material_InitDefault()
 
 	for (; e < end; ++e)
 	{
-		const dvar_t* dvSt = *G::dvar_singlethreadRender;
+		const dvar_t* dvSt = *T4::engine::dvar_singlethreadRender;
 		void* mat;
 
 		if (dvSt && dvSt->current.boolean)
@@ -379,7 +352,7 @@ extern "C" void __cdecl R_Init()
 	Engine::R_InitDeviceAndWindow();      // sub_6D6880
 
 	// Load default UI font — SP vs MP loader dispatch by dvar_singlethreadRender
-	const dvar_t* dvSt = *G::dvar_singlethreadRender;
+	const dvar_t* dvSt = *T4::engine::dvar_singlethreadRender;
 	void* fontDefault = (dvSt && dvSt->current.boolean)
 		? Engine::R_LoadFont_MP("fonts/smalldevfont", 1)   // sub_6E8D80
 		: Engine::R_LoadFont_SP("fonts/smalldevfont", 1);  // sub_6E8CE0
@@ -389,16 +362,8 @@ extern "C" void __cdecl R_Init()
 
 	// Try to create the sun-sprite occlusion query.  sub_70E340 returns a
 	// barrier/flush handle in EAX (preserved in ESI), then sub_72BFA0 runs.
-	void* gpuBarrier = (void*)(uintptr_t)1;
-	Engine::R_BeginRegistration();        // sub_70E340 — sets esi = eax
-	// Note: in asm we have `call sub_70E340; mov esi, eax; call sub_72BFA0`.
-	// R_BeginRegistration is void() in our typedef; we can't recover esi.
-	// We inline via the engine pointer instead:
-	{
-		typedef void* (__cdecl* R_Barrier_t)(void);
-		R_Barrier_t R_Barrier = (R_Barrier_t)0x0070E340;
-		gpuBarrier = R_Barrier();
-	}
+	// sub_70E340 — Sys_EnterRecursiveLock; eax (barrier handle) = esi in asm.
+	void* gpuBarrier = T4::engine::Sys_EnterRecursiveLock();
 
 	int sunOK = Engine::R_CreateSunOcclusion(); // sub_72BFA0
 	*G::g_3BF6768_sunQuery = (DWORD)sunOK;
@@ -411,7 +376,7 @@ extern "C" void __cdecl R_Init()
 
 	// If the barrier handle is non-null, tail-call R_FrameTailCleanup.
 	if (gpuBarrier != nullptr)
-		Engine::R_FrameTailCleanup();     // jmp sub_70E3A0 (tail-call)
+		T4::engine::Sys_LeaveRecursiveLock();   // sub_70E3A0 (tail-call)
 }
 
 // ===========================================================================
@@ -492,7 +457,7 @@ extern "C" void __cdecl Com_PostInit_Video()
 	}
 
 	// --- Phase 6: register default "white" + "console" materials ----------
-	const dvar_t* dvSt = *G::dvar_singlethreadRender;
+	const dvar_t* dvSt = *T4::engine::dvar_singlethreadRender;
 
 	typedef void* (__cdecl* MatReg_t)(const char* name, int flags);
 	MatReg_t MatRegister = (dvSt && dvSt->current.boolean)
@@ -558,8 +523,8 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 
 	// ---- Preliminaries ----------------------------------------------------
 	Engine::SetBranding((int)(intptr_t)cmdLineTail);    // sub_59AFA0 ((cmdLineTail))
-	Engine::Com_InitEventSystem();                       // sub_68D9F0 (eax = 0 then 1)
-	Engine::Com_InitEventSystem();
+	T4::engine::SL_Init(T4::engine::SCRIPTINSTANCE_SERVER);  // sub_68D9F0 — real SL_Init (server instance, eax=0)
+	T4::engine::SL_Init(T4::engine::SCRIPTINSTANCE_CLIENT);  // sub_68D9F0 — real SL_Init (client instance, eax=1)
 
 	// ---- Fullscreen/windowed mode list -----------------------------------
 	const bool fullscreen = true;
@@ -572,21 +537,21 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	Engine::Dvar_Init();                                 // sub_59C8B0
 
 	// ---- Dedicated-only $init hunk block ---------------------------------
-	if (*G::dvar_singlethreadRender
-		&& (*G::dvar_singlethreadRender)->current.boolean)
+	if (*T4::engine::dvar_singlethreadRender
+		&& (*T4::engine::dvar_singlethreadRender)->current.boolean)
 	{
 		Engine::Hunk_InitMemory();                       // sub_5F5480
 		T4::engine::Com_Printf(7, "begin $init\n");
 
-		*G::g_comInitDone = 1;
-		if (*G::g_initHasStart == 0)
+		*T4::engine::g_comInitDone = 1;
+		if (*T4::engine::g_waitTimerStarted == 0)
 		{
-			*G::g_initStartMs = timeGetTime();
-			*G::g_initHasStart = 1;
+			*T4::engine::g_waitStartTime = timeGetTime();
+			*T4::engine::g_waitTimerStarted = 1;
 		}
 
 		// Push $init marker into the hunk event ring:
-		DWORD now = timeGetTime() - *G::g_initStartMs;
+		DWORD now = timeGetTime() - *T4::engine::g_waitStartTime;
 		// (storing the delta + "$init" into the hunk ring)
 		*G::g_hunkBaseRel = (DWORD)(uintptr_t)G::c_strInit;
 		DWORD idx = *G::g_hunkIndex;
@@ -598,8 +563,8 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	}
 
 	// ---- Database worker thread (dedicated only) --------------------------
-	if (*G::dvar_singlethreadRender
-		&& (*G::dvar_singlethreadRender)->current.boolean)
+	if (*T4::engine::dvar_singlethreadRender
+		&& (*T4::engine::dvar_singlethreadRender)->current.boolean)
 	{
 		if (!Engine::Sys_SpawnDBThread())
 			Engine::Com_Fatal("Failed to create database thread");
@@ -645,11 +610,11 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	Engine::Com_EnqueueEvent(0);
 
 	// ---- Session init (non-dedicated path) --------------------------------
-	if (!(*G::dvar_singlethreadRender
-		&& (*G::dvar_singlethreadRender)->current.boolean))
+	if (!(*T4::engine::dvar_singlethreadRender
+		&& (*T4::engine::dvar_singlethreadRender)->current.boolean))
 		Engine::Session_Init();                           // sub_5ACB10
 
-	if ((*G::dvar_dedicated)->current.boolean)
+	if ((*T4::engine::dedicated)->current.boolean)
 		Engine::DedicatedInit();                          // sub_644F40
 
 	// ---- Net/NetChan ------------------------------------------------------
@@ -660,7 +625,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	Engine::HandleCfg();                                  // sub_5FB560
 
 	// ---- Developer-only crash/quit/writeconfig cmds ----------------------
-	if ((*G::dvar_developer)->current.boolean)
+	if ((*T4::engine::developer)->current.boolean)
 	{
 		// A series of vanilla Cmd_AddCommand calls — we funnel through the
 		// engine's Cmd_AddCommand equivalent when the sub_594DB0 check says
@@ -697,27 +662,26 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 		"shortversion", 7, (void*)"1", "Short game version");
 	Engine::HandleCfg();                                  // sub_5FEE60 in asm
 
-	// ---- Seed PRNG from perf counter -------------------------------------
+	// ---- NET_RegisterDvars (sub_677E90); perf low-word feeds a net value -
 	LARGE_INTEGER perf;
 	QueryPerformanceCounter(&perf);
-	{
-		typedef void(__cdecl* Seed_t)(DWORD seed);
-		Seed_t Seed = (Seed_t)0x00677E90;
-		Seed(perf.LowPart);
-	}
+	T4::engine::NET_RegisterDvars(perf.LowPart);
 
-	// ---- SV_Init pairs ----------------------------------------------------
-	Engine::SV_Init(0);                                   // (esi=0x5FFF, edi=0)
-	Engine::SV_Init(0);                                   // (esi=0x15FFE, edi=0x6000)
+	// ---- Scr_InitVariableRange pairs (was mislabeled SV_Init; sub_68EF90) -
+	// begin@edi, end@esi, inst@stack0 — both for the server instance (push 0).
+	T4::engine::Scr_InitVariableRange(0, 0x5FFF, T4::engine::SCRIPTINSTANCE_SERVER);
+	T4::engine::Scr_InitVariableRange(0x6000, 0x15FFE, T4::engine::SCRIPTINSTANCE_SERVER);
 
-	Engine::SL_Init(0);                                   // sub_693C20
+	T4::engine::Scr_Init(T4::engine::SCRIPTINSTANCE_SERVER); // sub_693C20 — real Scr_Init (calls Scr_VM_Init sub_693B20)
 	Engine::Dvar_ForEach();                               // sub_59C840
-	Engine::Scr_InitSystem();                             // sub_60C5C0
+	Engine::XAnimInit();                                  // sub_60C5C0 (XAnim node-pool init)
 
 	// ---- Input_Init with a 32-byte cleared struct on stack ---------------
 	{
 		BYTE inputBuf[0x20] = { 0 };
-		Engine::Input_Init(0x11, 0, inputBuf, 0);         // sub_68DE50
+		// FIXME: sub_68DE50 = SL_GetStringOfSize; these args don't fit its (inst,str,user,len)
+		// signature — likely a reconstruction mislabel. Kept faithful to the address + args.
+		T4::engine::SL_GetStringOfSize((T4::engine::scriptInstance_t)0x11, (const char*)0, (unsigned int)(uintptr_t)inputBuf, 0);
 		*G::g_46E5110 = 0;
 	}
 
@@ -749,29 +713,29 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	}
 
 	// ---- Dedicated server bypasses session client setup ------------------
-	if ((*G::dvar_dedicated)->current.boolean)
+	if ((*T4::engine::dedicated)->current.boolean)
 	{
-		*(BYTE*)(((DWORD)*G::dvar_dedicated) + 0x0B) = 0;
+		*(BYTE*)(((DWORD)*T4::engine::dedicated) + 0x0B) = 0;
 		Engine::Com_InitSessionWork();                    // sub_645860
 	}
 	else
 	{
-		*(BYTE*)(((DWORD)*G::dvar_dedicated) + 0x0B) = 0;
+		*(BYTE*)(((DWORD)*T4::engine::dedicated) + 0x0B) = 0;
 		Engine::Com_InitSessionWork();                    // sub_645860
 		Engine::Com_InitSessionClient();                  // sub_647710
 	}
 
 	// ---- Init timestamp baseline -----------------------------------------
-	if (*G::g_initHasStart == 0)
+	if (*T4::engine::g_waitTimerStarted == 0)
 	{
-		*G::g_initStartMs = timeGetTime();
-		*G::g_initHasStart = 1;
+		*T4::engine::g_waitStartTime = timeGetTime();
+		*T4::engine::g_waitTimerStarted = 1;
 	}
-	*G::g_1F9648C_initMs = timeGetTime() - *G::g_initStartMs;
+	*G::g_1F9648C_initMs = timeGetTime() - *T4::engine::g_waitStartTime;
 	Engine::Com_EnqueueEvent(0);
 
 	// ---- Dedicated path shortcut (skip SMP banner) ------------------------
-	if ((*G::dvar_dedicated)->current.boolean)
+	if ((*T4::engine::dedicated)->current.boolean)
 		goto finish_banner;
 
 	// ---- Worker-threads recommendation -----------------------------------
@@ -806,7 +770,7 @@ finish_banner:
 	Engine::DB_ReloadAssets();                             // sub_5FC640
 
 	// ---- Treyarch cinematic splash (unless dedicated / sv_running) -------
-	if (!(*G::dvar_dedicated)->current.boolean
+	if (!(*T4::engine::dedicated)->current.boolean
 		&& !(*G::dvar_sv_running)->current.boolean)
 	{
 		typedef void(__cdecl* Cbuf_AddText_uc_t)(const char* text, int localCli);
@@ -815,15 +779,15 @@ finish_banner:
 	}
 
 	// ---- $init end marker (dedicated only) -------------------------------
-	if (*G::dvar_singlethreadRender
-		&& (*G::dvar_singlethreadRender)->current.boolean)
+	if (*T4::engine::dvar_singlethreadRender
+		&& (*T4::engine::dvar_singlethreadRender)->current.boolean)
 	{
-		if (*G::g_initHasStart == 0)
+		if (*T4::engine::g_waitTimerStarted == 0)
 		{
-			*G::g_initStartMs = timeGetTime();
-			*G::g_initHasStart = 1;
+			*T4::engine::g_waitStartTime = timeGetTime();
+			*T4::engine::g_waitTimerStarted = 1;
 		}
-		DWORD end = timeGetTime() - *G::g_initStartMs;
+		DWORD end = timeGetTime() - *T4::engine::g_waitStartTime;
 		T4::engine::Com_Printf(0x10, "end $init %d ms\n", end);
 	}
 
@@ -831,11 +795,7 @@ finish_banner:
 	T4::engine::Com_Printf(0x10, "--- Common Initialization Complete ---\n");
 	*G::g_1F964B0_done = 1;
 
-	{
-		typedef void(__cdecl* Com_FS_t)(int zero, int six);
-		Com_FS_t Com_FS = (Com_FS_t)0x0059FE70;
-		Com_FS(0, 6);                                      // sub_59FE70 — tail call
-	}
+	T4::engine::Com_DvarDump(0, 6);                        // sub_59FE70 — tail call
 }
 
 // ===========================================================================
@@ -855,11 +815,11 @@ extern "C" void __cdecl Com_Init_TryBlock(void* cmdLineTail)
 
 		// Successful path post-ops — in vanilla these run *inside* the __try
 		// but only when sub_7E1894 confirms the scope is still unwound OK.
-		if (!(*G::dvar_singlethreadRender
-			&& (*G::dvar_singlethreadRender)->current.boolean))
+		if (!(*T4::engine::dvar_singlethreadRender
+			&& (*T4::engine::dvar_singlethreadRender)->current.boolean))
 			Engine::Sys_Milliseconds();                   // sub_59A6F0
 
-		if (!(*G::dvar_dedicated)->current.boolean)
+		if (!(*T4::engine::dedicated)->current.boolean)
 		{
 			if (*G::g_48AE4D4_inCgame == 0)
 				Com_PostInit_Video();                     // sub_644BE0

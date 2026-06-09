@@ -2264,87 +2264,150 @@ namespace T4 { namespace engine {
 #ifdef __cplusplus
 #pragma region "data"
 #include <setjmp.h>
-	WEAK symbol<scrVmPub_t> gScrVmPub{ 0x0, 0x3BD4700 };
-	WEAK symbol<scrVmGlob_t> gScrVmGlob{ 0x0, 0x3BDDDF8 };
-	WEAK symbol<scrVarPub_t> gScrVarPub{ 0x0, 0x3882B70 };
-	WEAK symbol<scrCompilePub_t> gScrCompilePub{ 0x0, 0x36BFF70 };
-	WEAK symbol<scrAnimPub_t> gScrAnimPub{ 0x0, 0x36BF738 };
-	WEAK symbol<jmp_buf> g_script_error{ 0x0, 0x3BDCD40 };
-	WEAK symbol<int> g_script_error_level{ 0x0, 0x3BDDDC0 };
-	WEAK symbol<function_stack_t> gFs{ 0x0, 0x3BDDDD0 };
-	WEAK symbol<OpcodeVM> gOpcode{ 0x0, 0x3BDDDC8 };
-	WEAK symbol<scrVarGlob_t> gScrVarGlob{ 0x0, 0x3914700 };
-	WEAK symbol<scrMemTreePub_t> gScrMemTreePub{ 0x0, 0x3702390 };
-	WEAK symbol<const char*> var_typename{ 0x0, 0x8CF4B0 };
-	WEAK symbol<int> gThreadCount{ 0x0, 0x3882B5C };
-	WEAK symbol<int> gCaseCount{ 0x0, 0x3882B54 };
-	WEAK symbol<scrMemTreeGlob_t> gScrMemTreeGlob{ 0x0, 0x3702400 };
-	WEAK symbol<int> gScrExecuteTime{ 0x0, 0x3882B4C };
-	WEAK symbol<char> g_EndPos{ 0x0, 0x46E54C3 };
-	WEAK symbol<scrStringGlob_t> gScrStringGlob{ 0x0, 0x38B2C00 };
-	WEAK symbol<scrParserGlob_t> gScrParserGlob{ 0x0, 0x3702398 };
-	WEAK symbol<scrParserPub_t> gScrParserPub{ 0x0, 0x3882B00 };
-	WEAK symbol<scr_classStruct_t*> gScrClassMap{ 0x0, 0x8CF568 };
-	WEAK symbol<scr_const_t> scr_const{ 0x0, 0x1F33B90 };
-	WEAK symbol<bool> loadedImpureScript{ 0x0, 0x22C1352 };
-	WEAK symbol<dvar_s*> sv_clientside{ 0x0, 0x3882B6C };
-	WEAK symbol<char> error_message_buff{ 0x0, 0x3BE1E30 };
-	WEAK symbol<scrCompileGlob_t> gScrCompileGlob{ 0x0, 0x3701FE0 };
-	WEAK symbol<scrAnimGlob_t> gScrAnimGlob{ 0x0, 0x36BF320 };
+	WEAK symbol<scrVmPub_t> gScrVmPub{ "gScrVmPub" };
+	WEAK symbol<scrVmGlob_t> gScrVmGlob{ "gScrVmGlob" };
+	WEAK symbol<scrVarPub_t> gScrVarPub{ "gScrVarPub" };
+	WEAK symbol<scrCompilePub_t> gScrCompilePub{ "gScrCompilePub" };
+	WEAK symbol<scrAnimPub_t> gScrAnimPub{ "gScrAnimPub" };
+	WEAK symbol<jmp_buf> g_script_error{ "g_script_error" };
+	WEAK symbol<int> g_script_error_level{ "g_script_error_level" };
+	WEAK symbol<function_stack_t> gFs{ "gFs" };
+	WEAK symbol<OpcodeVM> gOpcode{ "gOpcode" };
+	WEAK symbol<scrVarGlob_t> gScrVarGlob{ "gScrVarGlob" };
+	WEAK symbol<scrMemTreePub_t> gScrMemTreePub{ "gScrMemTreePub" };
+	WEAK symbol<const char*> var_typename{ "var_typename" };
+	WEAK symbol<int> gThreadCount{ "gThreadCount" };
+	WEAK symbol<int> gCaseCount{ "gCaseCount" };
+	WEAK symbol<scrMemTreeGlob_t> gScrMemTreeGlob{ "gScrMemTreeGlob" };
+	WEAK symbol<int> gScrExecuteTime{ "gScrExecuteTime" };
+	WEAK symbol<char> g_EndPos{ "g_EndPos" };
+	WEAK symbol<scrStringGlob_t> gScrStringGlob{ "gScrStringGlob" };
+	WEAK symbol<scrParserGlob_t> gScrParserGlob{ "gScrParserGlob" };
+	WEAK symbol<scrParserPub_t> gScrParserPub{ "gScrParserPub" };
+	WEAK symbol<scr_classStruct_t*> gScrClassMap{ "gScrClassMap" };
+	WEAK symbol<scr_const_t> scr_const{ "scr_const" };
+	WEAK symbol<bool> loadedImpureScript{ "loadedImpureScript" };
+	WEAK symbol<dvar_s*> sv_clientside{ "sv_clientside" };
+	WEAK symbol<char> error_message_buff{ "error_message_buff" };
+	WEAK symbol<scrCompileGlob_t> gScrCompileGlob{ "gScrCompileGlob" };
+	WEAK symbol<scrAnimGlob_t> gScrAnimGlob{ "gScrAnimGlob" };
 
-	WEAK symbol<unsigned char> g_parse_user{ 0x0, 0x234F72E };
-	WEAK symbol<scriptInstance_t> gInst{ 0x0, 0x3BE624C };
-	WEAK symbol<int> yynerrs{ 0x0, 0x3BE6264 };
-	WEAK symbol<int> yychar{ 0x0, 0x3BE6260 };
-	WEAK symbol<stype_t> yylval{ 0x0, 0x3BE6240 };
-	WEAK symbol<unsigned int> g_sourcePos{ 0x0, 0x3BE623C };
-	WEAK symbol<sval_u> yaccResult{ 0x0, 0x3BE6258 };
-	WEAK symbol<sval_u> g_dummyVal{ 0x0, 0x3BE6254 };
-	WEAK symbol<int> yy_init{ 0x0, 0x8CF4A0 };
-	WEAK symbol<int> yy_start{ 0x0, 0x46E54D4 };
-	WEAK symbol<FILE*> yyin{ 0x0, 0x46E54D8 };
-	WEAK symbol<FILE*> yyout{ 0x0, 0x46E54DC };
-	WEAK symbol<yy_buffer_state*> yy_current_buffer{ 0x0, 0x46E54CC };
-	WEAK symbol<int> yy_n_chars{ 0x0, 0x3BE6250 };
-	WEAK symbol<char> yy_hold_char{ 0x0, 0x22C1353 };
-	WEAK symbol<char*> yy_c_buf_p{ 0x0, 0x46E54D0 };
-	WEAK symbol<int> yy_last_accepting_state{ 0x0, 0x3BE626C };
-	WEAK symbol<char*> yy_last_accepting_cpos{ 0x0, 0x3BE2230 };
-	WEAK symbol<size_t> yyleng{ 0x0, 0x3BE6248 };
-	WEAK symbol<char*> yytext{ 0x0, 0x3BE2234 };
-	WEAK symbol<int> yy_did_buffer_switch_on_eof{ 0x0, 0x3BE6268 };
-	WEAK symbol<unsigned int> g_out_pos{ 0x0, 0x3BE625C };
-	WEAK symbol<char> ch_buf{ 0x0, 0x3BE2238 };
-	WEAK symbol<short> yypact{ 0x0, 0x82F2D0 };
-	WEAK symbol<char> yytranslate{ 0x0, 0x82ED08 };
-	WEAK symbol<short> yycheck{ 0x0, 0x82FFA0 };
-	WEAK symbol<short> yytable{ 0x0, 0x82F518 };
-	WEAK symbol<short> yyr1{ 0x0, 0x82EE68 };
-	WEAK symbol<short> yyr2{ 0x0, 0x82EF78 };
-	WEAK symbol<short> yydefact{ 0x0, 0x82F088 };
-	WEAK symbol<int> yy_ec{ 0x0, 0x830C30 };
-	WEAK symbol<short> yy_accept{ 0x0, 0x830A28 };
-	WEAK symbol<short> yy_chk{ 0x0, 0x831930 };
-	WEAK symbol<short> yy_base{ 0x0, 0x831120 };
-	WEAK symbol<short> yy_def{ 0x0, 0x831338 };
-	WEAK symbol<short> yy_nxt{ 0x0, 0x831550 };
-	WEAK symbol<int> yy_meta{ 0x0, 0x831030 };
-	WEAK symbol<short> yypgoto{ 0x0, 0x82F426 };
-	WEAK symbol<short> yydefgoto{ 0x0, 0x82F1DE };
+	WEAK symbol<unsigned char> g_parse_user{ "g_parse_user" };
+	WEAK symbol<scriptInstance_t> gInst{ "gInst" };
+	WEAK symbol<int> yynerrs{ "yynerrs" };
+	WEAK symbol<int> yychar{ "yychar" };
+	WEAK symbol<stype_t> yylval{ "yylval" };
+	WEAK symbol<unsigned int> g_sourcePos{ "g_sourcePos" };
+	WEAK symbol<sval_u> yaccResult{ "yaccResult" };
+	WEAK symbol<sval_u> g_dummyVal{ "g_dummyVal" };
+	WEAK symbol<int> yy_init{ "yy_init" };
+	WEAK symbol<int> yy_start{ "yy_start" };
+	WEAK symbol<FILE*> yyin{ "yyin" };
+	WEAK symbol<FILE*> yyout{ "yyout" };
+	WEAK symbol<yy_buffer_state*> yy_current_buffer{ "yy_current_buffer" };
+	WEAK symbol<int> yy_n_chars{ "yy_n_chars" };
+	WEAK symbol<char> yy_hold_char{ "yy_hold_char" };
+	WEAK symbol<char*> yy_c_buf_p{ "yy_c_buf_p" };
+	WEAK symbol<int> yy_last_accepting_state{ "yy_last_accepting_state" };
+	WEAK symbol<char*> yy_last_accepting_cpos{ "yy_last_accepting_cpos" };
+	WEAK symbol<size_t> yyleng{ "yyleng" };
+	WEAK symbol<char*> yytext{ "yytext" };
+	WEAK symbol<int> yy_did_buffer_switch_on_eof{ "yy_did_buffer_switch_on_eof" };
+	WEAK symbol<unsigned int> g_out_pos{ "g_out_pos" };
+	WEAK symbol<char> ch_buf{ "ch_buf" };
+	WEAK symbol<short> yypact{ "yypact" };
+	WEAK symbol<char> yytranslate{ "yytranslate" };
+	WEAK symbol<short> yycheck{ "yycheck" };
+	WEAK symbol<short> yytable{ "yytable" };
+	WEAK symbol<short> yyr1{ "yyr1" };
+	WEAK symbol<short> yyr2{ "yyr2" };
+	WEAK symbol<short> yydefact{ "yydefact" };
+	WEAK symbol<int> yy_ec{ "yy_ec" };
+	WEAK symbol<short> yy_accept{ "yy_accept" };
+	WEAK symbol<short> yy_chk{ "yy_chk" };
+	WEAK symbol<short> yy_base{ "yy_base" };
+	WEAK symbol<short> yy_def{ "yy_def" };
+	WEAK symbol<short> yy_nxt{ "yy_nxt" };
+	WEAK symbol<int> yy_meta{ "yy_meta" };
+	WEAK symbol<short> yypgoto{ "yypgoto" };
+	WEAK symbol<short> yydefgoto{ "yydefgoto" };
 #pragma endregion
 
 #pragma region "functions"
-	WEAK symbol<int(jmp_buf buf, int count)>_setjmp3{ 0x0, 0x7E1894 };
-	WEAK symbol<void(jmp_buf Buf, int Value)>longjmp{ 0x0, 0x7AD57C };
+	WEAK symbol<int(jmp_buf buf, int count)>_setjmp3{ "_setjmp3" };
+	WEAK symbol<void(jmp_buf Buf, int Value)>longjmp{ "longjmp" };
 
-	inline void* CScr_SetEntityField_ADDR() { return CALL_ADDR(0x0, 0x671470); }
-	int CScr_SetEntityField(int ofs, int entnum, unsigned int clientnum, void* call_addr = CScr_SetEntityField_ADDR());
-	inline void* Scr_SetObjectField_ADDR() { return CALL_ADDR(0x0, 0x5469C0); }
-	int Scr_SetObjectField(int ofs, int entnum, classNum_e classnum, scriptInstance_t inst, void* call_addr = Scr_SetObjectField_ADDR());
-	inline void* CScr_GetEntityField_ADDR() { return CALL_ADDR(0x0, 0x671410); }
-	void CScr_GetEntityField(int ofs, int entnum, unsigned int clientnum, void* call_addr = CScr_GetEntityField_ADDR());
-	inline void* Scr_GetObjectField_ADDR() { return CALL_ADDR(0x0, 0x546D30); }
-	void Scr_GetObjectField(int ofs, int inst, classNum_e classnum, int entnum, void* call_addr = Scr_GetObjectField_ADDR());
+	// WaW sub_671470 — __usercall(ofs@stack, entnum@ecx, fieldId@edx) -> int@eax ; caller-cleans
+	inline int CScr_SetEntityField(int ofs, int entnum, int fieldId)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("CScr_SetEntityField"));
+		int result;
+		__asm
+		{
+			mov   eax, ofs
+			push  eax
+			mov   ecx, entnum
+			mov   edx, fieldId
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+
+	// WaW sub_5469C0 — __usercall(ofs@eax, entnum@edx, classnum@stack0, inst@stack1) -> int@eax ; caller-cleans
+	inline int Scr_SetObjectField(int ofs, int entnum, classNum_e classnum, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_SetObjectField"));
+		int result;
+		__asm
+		{
+			push  inst
+			push  classnum
+			mov   eax, ofs
+			mov   edx, entnum
+			call  fn
+			add   esp, 8
+			mov   result, eax
+		}
+		return result;
+	}
+
+	// WaW sub_671410 — __usercall(ofs@stack, entnum@ecx, fieldId@edx) -> int@eax ; caller-cleans
+	inline int CScr_GetEntityField(int ofs, int entnum, int fieldId)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("CScr_GetEntityField"));
+		int result;
+		__asm
+		{
+			mov   eax, ofs
+			push  eax
+			mov   ecx, entnum
+			mov   edx, fieldId
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+
+	// WaW sub_546D30 — __usercall(ofs@eax, inst@edx, classnum@stack0, entnum@stack1) -> int@eax ; caller-cleans
+	inline int Scr_GetObjectField(int ofs, int inst, classNum_e classnum, int entnum)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetObjectField"));
+		int result;
+		__asm
+		{
+			push  entnum
+			push  classnum
+			mov   eax, ofs
+			mov   edx, inst
+			call  fn
+			add   esp, 8
+			mov   result, eax
+		}
+		return result;
+	}
 #pragma endregion
 } } // namespace T4::engine
 

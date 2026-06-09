@@ -6,23 +6,6 @@ namespace T4
 {
 	namespace engine
 	{
-		gamemode current = reinterpret_cast<const char*>(0x88A5DC) != "CoDWaW.exe"
-			? gamemode::multiplayer
-			: gamemode::singleplayer;
-
-		namespace environment
-		{
-			bool t4mp()
-			{
-				return current == gamemode::multiplayer;
-			}
-
-			bool t4sp()
-			{
-				return current == gamemode::singleplayer;
-			}
-		}
-
 		// HunkUser* __usercall Hunk_UserCreate@<eax>(signed int maxSize@<edi>, char* name, char fixed, char tempMem, char debugMem, int type);
 		HunkUser* Hunk_UserCreate(signed int maxSize, const char* name, int fixed, int tempMem, int debugMem, int typ, void* call_addr)
 		{

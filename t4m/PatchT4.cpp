@@ -98,11 +98,10 @@ void* T4M::Sys_MemCpyFix(void *a1, void **a2, int len)
 void PatchT4_PreLoad()
 {
 	Detours::X86::DetourFunction((uintptr_t)0x007AFFC0, (uintptr_t)&T4M::Sys_MemCpyFix);
-	nop(0x0059D6F4, 5); // disable Com_DvarDump from Com_Init_Try_Block_Function
+	nop(T4M::GetAddress("Com_DvarDump_callsite_ComInit"), 5); // disable Com_DvarDump from Com_Init_Try_Block_Function 
 	nop(0x005FF743, 5); // disable Sys_CreateSplash
 	//nop(0x005FF698, 5); // disable Sys_CheckCrashOrRerun
 	//nop(0x005FE685, 5); // disable Sys_HasConfigureChecksumChanged
-	//CIniReader ini;
 
 	// as done in Juiced Patch https://github.com/kobraworksmodding/Saints-Row-2-Juiced-Patch/blob/main/Monkey%20Patch/Audio/XACT.cpp , although SR2 uses XACT and XACT's version is supposed to be inline with XAudio,
 	// in SR2 this might cause a rare crash to occur that I've fixed there, hopefully this doesn't raise much issues - Clippy95

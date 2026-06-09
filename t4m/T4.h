@@ -32,7 +32,6 @@ using T4::engine::ASSET_TYPE_MAX;
 using XZoneInfo            = ::T4::engine::XZoneInfo;
 using XZoneLoadedEntry     = ::T4::engine::XZoneLoadedEntry;
 using XZoneQueueEntry      = ::T4::engine::XZoneQueueEntry;
-using XZoneName            = ::T4::engine::XZoneName;
 using ZoneFileEntry        = ::T4::engine::ZoneFileEntry;
 using PMem_Pool            = ::T4::engine::PMem_Pool;
 using cmd_function_s       = ::T4::engine::cmd_function_s;
@@ -110,7 +109,6 @@ namespace T4
 	typedef void(__cdecl * Com_Error_t)(int type, const char* message, ...);
 	typedef void(*Com_Printf_t)(int channel, const char* format, ...);
 	typedef void(__cdecl * Com_PrintMessage_t)(int channel, const char *fmt, int error);
-	typedef void(__cdecl* Com_PrintfChannel_t)(int channel, const char* fmt, ...);
 	typedef void(__cdecl* Com_PrintError_t)(int channel, const char* fmt, ...);
 	typedef int (__cdecl* Com_sscanf_t)(const char* src, const char* fmt, ...);
 	typedef const char *(__cdecl * DB_EnumXAssets_t)(XAssetType type, void(__cdecl *func)(XAssetHeader, void *), void *inData, bool includeOverride);
@@ -145,7 +143,10 @@ namespace T4
 	typedef void(__cdecl * DB_XAssetSetNameHandler_t)(XAssetHeader* header, const char* stringTableEntry);
 	typedef void(__cdecl * DB_XAssetFreeHandler_t)(void* pool, void* header);
 	typedef void*(__cdecl * DB_XAssetAllocHandler_t)(void* pool);
-	typedef int(__cdecl * StringTable_Find_t)(int arg_0, const char* name, int arg_2, int len);
+	typedef void*(__cdecl* Sys_EnterRecursiveLock_t)(void);                          // sub_70E340 (eax = recursion ctx)
+	typedef int(__cdecl* Sys_LeaveRecursiveLock_t)(void);                            // sub_70E3A0 (returns ctx int)
+	typedef void(__cdecl* Com_DvarDump_t)(int channel, int arg);                     // sub_59FE70
+	typedef void(__cdecl* NET_RegisterDvars_t)(DWORD arg);                           // sub_677E90
 	typedef int(__cdecl* DB_GetXAssetSizeHandler_t)();
 	typedef const char *(__cdecl *DB_XAssetGetNameHandler)(XAssetHeader *);
 	typedef int(__cdecl* DB_OpenZoneFile_t)(XZoneQueueEntry* entry, int allocFlags);
@@ -179,7 +180,6 @@ namespace T4
 			extern Com_Error_t Com_Error;
 			extern Com_Printf_t Com_Printf;
 			extern Com_PrintMessage_t Com_PrintMessage;
-			extern Com_PrintfChannel_t Com_PrintfChannel;
 			extern Com_PrintError_t Com_PrintError;        // sub_59A440
 			extern Com_sscanf_t Com_sscanf;                // sub_7AB559 (static-CRT sscanf)
 			extern DB_EnumXAssets_t DB_EnumXAssets;
@@ -223,9 +223,11 @@ namespace T4
 			extern DB_XAssetGetNameHandler*      DB_XAssetGetNameHandlers;
 			extern DB_GetXAssetSizeHandler_t*    DB_GetXAssetSizeHandler;
 
-			// ── String table ────────────────────────────────────────────────────────
-			extern StringTable_Find_t            StringTable_Find;        // 0x68DE50
-			extern char**                        g_stringTableBase;       // &dword_3702390
+			// ── Misc engine functions (true names; see addr_mapping.csv) ────────────
+			extern Sys_EnterRecursiveLock_t      Sys_EnterRecursiveLock;  // 0x70E340
+			extern Sys_LeaveRecursiveLock_t      Sys_LeaveRecursiveLock;  // 0x70E3A0
+			extern Com_DvarDump_t                Com_DvarDump;            // 0x59FE70
+			extern NET_RegisterDvars_t           NET_RegisterDvars;       // 0x677E90
 
 			// ── Override-system globals ────────────────────────────────────────────
 			extern XAssetEntryPoolEntry**   g_freeAssetEntries;       // 0x957884
@@ -235,14 +237,16 @@ namespace T4
 
 			// ── Engine state globals ────────────────────────────────────────────────
 			extern XAssetEntryPoolEntry* g_assetEntryPool;
-			extern XZoneName*            g_zoneNames;
 			extern bool*                 g_dbInitialized;
 			extern bool*                 g_dbHasLoadedZones;
+			extern uint8_t*              g_comInitDone;     // byte_951A02 — set during Com_Init, gates DB busy check
 			extern int*                  g_zoneCount;
 			extern XZoneLoadedEntry*     g_zoneLoaded;
 			extern ZoneFileEntry*        g_zoneFileNames;
 			extern PMem_Pool*            g_pmem_pools;
 			extern bool*                 g_dbInUse;
+			extern DWORD*                g_waitStartTime;     // 0x22BEC34 — timeGetTime() at first DB wait
+			extern int*                  g_waitTimerStarted;  // 0x4DE7054 — set once g_waitStartTime initialized
 			extern int*                  g_syncValue;
 			extern int*                  g_dbReaderCount;
 			extern int*                  g_dbWriterCount;
@@ -282,6 +286,8 @@ namespace T4
 			extern dvar_t** fs_localAppData;
 			extern dvar_t** fs_basepath;
 			extern dvar_t** dedicated;
+			extern dvar_t** dvar_singlethreadRender;       // dword_1F552FC
+			extern dvar_t** developer;                     // dword_1F55288
 
 			// ── db stream globals ───────────────────────────────────────────────────
 			extern unsigned long& db_streamEnabled;

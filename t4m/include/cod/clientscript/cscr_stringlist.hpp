@@ -1,64 +1,329 @@
 #pragma once
 
 namespace T4 { namespace engine {
-	WEAK symbol<unsigned int(const char* str, scriptInstance_t inst)>SL_FindLowercaseString{ 0x0, 0x68DD50 };
-	WEAK symbol<unsigned int(scriptInstance_t inst, const char* string, unsigned int user, unsigned int len)>SL_GetStringOfSize{ 0x0, 0x68DE50 };
-	WEAK symbol<unsigned int(scriptInstance_t inst, const char* str, unsigned int user, unsigned int len)>SL_GetLowercaseStringOfLen{ 0x0, 0x68E390 };
-	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int stringVal, unsigned int user)>SL_ConvertToLowercase{ 0x0, 0x68E450 };
-	WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue, RefString* refStr, unsigned int len)>SL_FreeString{ 0x0, 0x68E570 };
-	WEAK symbol<void()>SL_TransferSystem{ 0x0, 0x68E9D0 };
-	WEAK symbol<unsigned int(scriptInstance_t inst, const char* filename)>Scr_CreateCanonicalFilename{ 0x0, 0x68EB00 };
+	WEAK symbol<unsigned int(const char* str, scriptInstance_t inst)>SL_FindLowercaseString{ "SL_FindLowercaseString" };
+	WEAK symbol<unsigned int(scriptInstance_t inst, const char* string, unsigned int user, unsigned int len)>SL_GetStringOfSize{ "SL_GetStringOfSize" };
+	WEAK symbol<unsigned int(scriptInstance_t inst, const char* str, unsigned int user, unsigned int len)>SL_GetLowercaseStringOfLen{ "SL_GetLowercaseStringOfLen" };
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int stringVal, unsigned int user)>SL_ConvertToLowercase{ "SL_ConvertToLowercase" };
+	WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue, RefString* refStr, unsigned int len)>SL_FreeString{ "SL_FreeString" };
+	WEAK symbol<void()>SL_TransferSystem{ "SL_TransferSystem" };
+	WEAK symbol<unsigned int(scriptInstance_t inst, const char* filename)>Scr_CreateCanonicalFilename{ "Scr_CreateCanonicalFilename" };
 
-	inline void* SL_ConvertToString_ADDR() { return CALL_ADDR(0x0, 0x68D950); }
-	char* SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst, void* call_addr = SL_ConvertToString_ADDR());
-	inline void* SL_GetStringLen_ADDR() { return CALL_ADDR(0x0, 0x68D970); }
-	int SL_GetStringLen(unsigned int stringValue, scriptInstance_t inst, void* call_addr = SL_GetStringLen_ADDR());
-	inline void* GetHashCode_ADDR() { return CALL_ADDR(0x0, 0x68D9A0); }
-	unsigned int GetHashCode(unsigned int len, const char* str, void* call_addr = GetHashCode_ADDR());
-	inline void* SL_Init_ADDR() { return CALL_ADDR(0x0, 0x68D9F0); }
-	void SL_Init(scriptInstance_t inst, void* call_addr = SL_Init_ADDR());
-	inline void* SL_FindStringOfSize_ADDR() { return CALL_ADDR(0x0, 0x68DA90); }
-	unsigned int SL_FindStringOfSize(scriptInstance_t inst, const char* str, unsigned int len, void* call_addr = SL_FindStringOfSize_ADDR());
-	inline void* SL_FindString_ADDR() { return CALL_ADDR(0x0, 0x68DD20); }
-	unsigned int SL_FindString(const char* str, scriptInstance_t inst, void* call_addr = SL_FindString_ADDR());
-	inline void* SL_AddUserInternal_ADDR() { return CALL_ADDR(0x0, 0x68DDE0); }
-	signed __int32 SL_AddUserInternal(unsigned int user, RefString* refStr, void* call_addr = SL_AddUserInternal_ADDR());
-	inline void* Mark_ScriptStringCustom_ADDR() { return CALL_ADDR(0x0, 0x68DE10); }
-	int Mark_ScriptStringCustom(unsigned int stringValue, void* call_addr = Mark_ScriptStringCustom_ADDR());
-	inline void* SL_GetString__ADDR() { return CALL_ADDR(0x0, 0x68E330); }
-	unsigned int SL_GetString_(const char* str, scriptInstance_t inst, unsigned int user, void* call_addr = SL_GetString__ADDR());
-	inline void* SL_GetString__0_ADDR() { return CALL_ADDR(0x0, 0x68E360); }
-	unsigned int SL_GetString__0(const char* str, unsigned int user, scriptInstance_t inst, void* call_addr = SL_GetString__0_ADDR());
-	inline void* SL_GetLowercaseString_ADDR() { return CALL_ADDR(0x0, 0x68E420); }
-	unsigned int SL_GetLowercaseString(const char* str, void* call_addr = SL_GetLowercaseString_ADDR());
-	inline void* SL_TransferRefToUser_ADDR() { return CALL_ADDR(0x0, 0x68E530); }
-	void SL_TransferRefToUser(unsigned int stringValue, int user, scriptInstance_t inst, void* call_addr = SL_TransferRefToUser_ADDR());
-	inline void* SL_RemoveRefToString_ADDR() { return CALL_ADDR(0x0, 0x68E680); }
-	void SL_RemoveRefToString(unsigned int stringVal, scriptInstance_t inst, void* call_addr = SL_RemoveRefToString_ADDR());
-	inline void* Scr_SetString_ADDR() { return CALL_ADDR(0x0, 0x68E6E0); }
-	void Scr_SetString(scriptInstance_t inst, unsigned int from, unsigned __int16* to, void* call_addr = Scr_SetString_ADDR());
-	inline void* Scr_SetStringFromCharString_ADDR() { return CALL_ADDR(0x0, 0x68E720); }
-	void Scr_SetStringFromCharString(const char* from, unsigned short* to, void* call_addr = Scr_SetStringFromCharString_ADDR());
-	inline void* GScr_AllocString_ADDR() { return CALL_ADDR(0x0, 0x68E770); }
-	unsigned int GScr_AllocString(const char* str, scriptInstance_t inst, void* call_addr = GScr_AllocString_ADDR());
-	inline void* SL_GetStringForFloat_ADDR() { return CALL_ADDR(0x0, 0x68E7A0); }
-	unsigned int SL_GetStringForFloat(float value, scriptInstance_t inst, void* call_addr = SL_GetStringForFloat_ADDR());
-	inline void* SL_GetStringForInt_ADDR() { return CALL_ADDR(0x0, 0x68E800); }
-	unsigned int SL_GetStringForInt(int value, scriptInstance_t inst, void* call_addr = SL_GetStringForInt_ADDR());
-	inline void* SL_GetStringForVector_ADDR() { return CALL_ADDR(0x0, 0x68E850); }
-	unsigned int SL_GetStringForVector(float* value, scriptInstance_t inst, void* call_addr = SL_GetStringForVector_ADDR());
-	inline void* SL_ShutdownSystem_ADDR() { return CALL_ADDR(0x0, 0x68E8D0); }
-	void SL_ShutdownSystem(scriptInstance_t inst, unsigned int user, void* call_addr = SL_ShutdownSystem_ADDR());
-	inline void* SL_CreateCanonicalFilename_ADDR() { return CALL_ADDR(0x0, 0x68EA80); }
-	void SL_CreateCanonicalFilename(const char* filename, char* newFilename, void* call_addr = SL_CreateCanonicalFilename_ADDR());
+	// WaW sub_68D950 — usercall(stringValue@eax, inst@ecx) -> char*@eax ; no stack args
+	inline char* SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_ConvertToString"));
+		char* result;
+		__asm
+		{
+			mov   eax, stringValue
+			mov   ecx, inst
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	// WaW sub_68D970 — usercall(stringValue@eax, inst@ecx) -> int@eax ; no stack args
+	inline int SL_GetStringLen(unsigned int stringValue, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetStringLen"));
+		int result;
+		__asm
+		{
+			mov   eax, stringValue
+			mov   ecx, inst
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68D9A0 — usercall(len@eax, str@edx) -> uint@eax ; no stack args
+	inline unsigned int GetHashCode(unsigned int len, const char* str)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GetHashCode"));
+		unsigned int result;
+		__asm
+		{
+			mov   eax, len
+			mov   edx, str
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68D9F0 — usercall(inst@eax) -> void ; no stack args
+	inline void SL_Init(scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_Init"));
+		__asm
+		{
+			mov   eax, inst
+			call  fn
+		}
+	}
+	
+	// WaW sub_68DA90 — usercall(inst@eax, str@stack0, len@stack1) -> uint@eax ; caller-cleans
+	inline unsigned int SL_FindStringOfSize(scriptInstance_t inst, const char* str, unsigned int len)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_FindStringOfSize"));
+		unsigned int result;
+		__asm
+		{
+			push  len
+			push  str
+			mov   eax, inst
+			call  fn
+			add   esp, 8
+			mov   result, eax
+		}
+		return result;
+	}
+	// WaW sub_68DD20 — usercall(str@edx, inst@stack0) -> uint@eax ; caller-cleans
+	inline unsigned int SL_FindString(const char* str, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_FindString"));
+		unsigned int result;
+		__asm
+		{
+			push  inst
+			mov   edx, str
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68DDE0 — usercall(user@eax, refStr@edx) -> int32@eax ; no stack args
+	inline signed __int32 SL_AddUserInternal(unsigned int user, RefString* refStr)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_AddUserInternal"));
+		signed __int32 result;
+		__asm
+		{
+			mov   eax, user
+			mov   edx, refStr
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68DE10 — usercall(stringValue@eax) -> int@eax ; no stack args (instance 0 only)
+	inline int Mark_ScriptStringCustom(unsigned int stringValue)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Mark_ScriptStringCustom"));
+		int result;
+		__asm
+		{
+			mov   eax, stringValue
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E330 — usercall(str@edx, inst@stack0, user@stack1) -> uint@eax ; caller-cleans
+	inline unsigned int SL_GetString_(const char* str, scriptInstance_t inst, unsigned int user)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetString_"));
+		unsigned int result;
+		__asm
+		{
+			push  user
+			push  inst
+			mov   edx, str
+			call  fn
+			add   esp, 8
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E360 — usercall(str@edx, user@stack0, inst@stack1) -> uint@eax ; caller-cleans
+	inline unsigned int SL_GetString__0(const char* str, unsigned int user, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetString__0"));
+		unsigned int result;
+		__asm
+		{
+			push  inst
+			push  user
+			mov   edx, str
+			call  fn
+			add   esp, 8
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E420 — usercall(str@edx) -> uint@eax ; no stack args (instance 0 only)
+	inline unsigned int SL_GetLowercaseString(const char* str)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetLowercaseString"));
+		unsigned int result;
+		__asm
+		{
+			mov   edx, str
+			call  fn
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E530 — usercall(stringValue@eax, user@ecx, inst@stack0) -> void ; caller-cleans
+	inline void SL_TransferRefToUser(unsigned int stringValue, int user, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_TransferRefToUser"));
+		__asm
+		{
+			push  inst
+			mov   eax, stringValue
+			mov   ecx, user
+			call  fn
+			add   esp, 4
+		}
+	}
+	
+	// WaW sub_68E680 — usercall(stringVal@edx, inst@esi) -> void ; no stack args
+	inline void SL_RemoveRefToString(unsigned int stringVal, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_RemoveRefToString"));
+		__asm
+		{
+			mov   edx, stringVal
+			mov   esi, inst
+			call  fn
+		}
+	}
+	
+	// WaW sub_68E6E0 — usercall(inst@eax, from@edi, to@stack0) -> void ; caller-cleans
+	inline void Scr_SetString(scriptInstance_t inst, unsigned int from, unsigned __int16* to)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_SetString"));
+		__asm
+		{
+			push  to
+			mov   eax, inst
+			mov   edi, from
+			call  fn
+			add   esp, 4
+		}
+	}
+	
+	// WaW sub_68E720 — usercall(from@edi, to@stack0) -> void ; caller-cleans
+	inline void Scr_SetStringFromCharString(const char* from, unsigned short* to)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_SetStringFromCharString"));
+		__asm
+		{
+			push  to
+			mov   edi, from
+			call  fn
+			add   esp, 4
+		}
+	}
+	
+	// WaW sub_68E770 — usercall(str@edx, inst@stack0) -> uint@eax ; caller-cleans
+	inline unsigned int GScr_AllocString(const char* str, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GScr_AllocString"));
+		unsigned int result;
+		__asm
+		{
+			push  inst
+			mov   edx, str
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E7A0 — usercall(value@xmm0, inst@stack0) -> uint@eax ; caller-cleans (float arg in xmm0)
+	inline unsigned int SL_GetStringForFloat(float value, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetStringForFloat"));
+		unsigned int result;
+		__asm
+		{
+			movss xmm0, value
+			push  inst
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E800 — usercall(value@eax, inst@stack0) -> uint@eax ; caller-cleans
+	inline unsigned int SL_GetStringForInt(int value, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetStringForInt"));
+		unsigned int result;
+		__asm
+		{
+			push  inst
+			mov   eax, value
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E850 — usercall(value@eax, inst@stack0) -> uint@eax ; caller-cleans
+	inline unsigned int SL_GetStringForVector(float* value, scriptInstance_t inst)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetStringForVector"));
+		unsigned int result;
+		__asm
+		{
+			push  inst
+			mov   eax, value
+			call  fn
+			add   esp, 4
+			mov   result, eax
+		}
+		return result;
+	}
+	
+	// WaW sub_68E8D0 — usercall(inst@edi, user@stack0) -> void ; caller-cleans
+	inline void SL_ShutdownSystem(scriptInstance_t inst, unsigned int user)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_ShutdownSystem"));
+		__asm
+		{
+			push  user
+			mov   edi, inst
+			call  fn
+			add   esp, 4
+		}
+	}
+	
+	// WaW sub_68EA80 — usercall(filename@eax, newFilename@stack0) -> void ; caller-cleans
+	inline void SL_CreateCanonicalFilename(const char* filename, char* newFilename)
+	{
+		static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_CreateCanonicalFilename"));
+		__asm
+		{
+			push  newFilename
+			mov   eax, filename
+			call  fn
+			add   esp, 4
+		}
+	}
 
-	RefString* GetRefString(scriptInstance_t inst, unsigned int id);
-	void SL_AddRefToString(scriptInstance_t inst, unsigned int stringValue);
-	void SL_RemoveRefToStringOfSize(scriptInstance_t inst, unsigned int stringValue, unsigned int len);
-	int SL_GetRefStringLen(RefString* refString);
-	void SL_AddUser(unsigned int stringValue, unsigned int user, scriptInstance_t inst);
-	int SL_ConvertFromString(scriptInstance_t inst, const char* str);
-	int SL_ConvertFromRefString(scriptInstance_t inst, RefString* refString);
-	RefString* GetRefString_0(scriptInstance_t inst, const char* str);
-	const char* SL_ConvertToStringSafe(unsigned int id, scriptInstance_t inst);
+	// Warning Adress unknow for now
+	WEAK symbol<RefString*(scriptInstance_t inst, unsigned int id)>GetRefString{ "GetRefString" };
+	WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue)>SL_AddRefToString{ "SL_AddRefToString" };
+	WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue, unsigned int len)>SL_RemoveRefToStringOfSize{ "SL_RemoveRefToStringOfSize" };
+	WEAK symbol<int(RefString* refString)>SL_GetRefStringLen{ "SL_GetRefStringLen" };
+	WEAK symbol<void(unsigned int stringValue, unsigned int user, scriptInstance_t inst)>SL_AddUser{ "SL_AddUser" };
+	WEAK symbol<int(scriptInstance_t inst, const char* str)>SL_ConvertFromString{ "SL_ConvertFromString" };
+	WEAK symbol<int(scriptInstance_t inst, RefString* refString)>SL_ConvertFromRefString{ "SL_ConvertFromRefString" };
+	WEAK symbol<RefString*(scriptInstance_t inst, const char* str)>GetRefString_0{ "GetRefString_0" };
+	WEAK symbol<const char*(unsigned int id, scriptInstance_t inst)>SL_ConvertToStringSafe{ "SL_ConvertToStringSafe" };
 } } // namespace T4::engine

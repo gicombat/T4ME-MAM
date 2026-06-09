@@ -4,15 +4,16 @@
 // Component: clientdll
 // Purpose: Runtime address mapping. Resolves a logical name to
 //          the correct virtual address for the detected exe
-//          variant (LanFixed / Steam-eng / Steam-ger). The data
-//          (name,default,ger) is embedded in the DLL as resource
-//          IDR_ADDR_CSV (t4m.rc -> Resource\addr_mapping.csv);
-//          nothing is read from disk.
+//          variant. The data (name,default,defaultMP,ger,gerMP) is
+//          embedded in the DLL as resource IDR_ADDR_CSV
+//          (t4m.rc -> Resource\addr_mapping.csv); nothing is read from disk.
 //
-// Step 1 only provides the mechanism + the 'default' (eng) column.
-// The 'ger' column is filled later (step 2). Swapping the
-// hardcoded 0x.... call sites over to T4M::GetAddress("name") is done
-// manually.
+// Columns map to the variant detected at 0x401000:
+//   default   = LanFixed / SteamDefault (eng SP)
+//   defaultMP = SteamDefaultMP          (eng MP)
+//   ger       = SteamGer                (ger SP)
+//   gerMP     = SteamGerMP              (ger MP)
+// Empty columns are filled incrementally; the 'symbol<>' name is the CSV key.
 // ==========================================================
 #pragma once
 
@@ -48,8 +49,10 @@ namespace T4M
 	size_t AddrMap_Load(bool force = false);
 
 	// Resolve a logical name to a VA for the current exe variant:
-	//   LanFixed / SteamEng -> 'default' column
-	//   SteamGer            -> 'ger' column when present, else 'default' (fallback)
+	//   LanFixed / SteamDefault -> 'default'
+	//   SteamGer                -> 'ger'   (else 'default' fallback)
+	//   SteamDefaultMP          -> 'defaultMP'
+	//   SteamGerMP              -> 'gerMP' (else 'defaultMP' fallback; never SP)
 	// Returns 0 if the name is unknown. Triggers a lazy load on first use.
 	uintptr_t GetAddress(const char* name);
 	inline uintptr_t GetAddress(const std::string& name) { return GetAddress(name.c_str()); }

@@ -21,7 +21,7 @@ namespace T4M
 	__declspec(noinline)
 	void DB_FreeXZoneMemory(int poolIndex, const char* zoneName)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
+		T4::engine::Com_Printf(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
 		PMem_Pool* pool = &T4::engine::g_pmem_pools[poolIndex];
 		int count = pool->count;
 		int found = -1;
@@ -67,7 +67,7 @@ namespace T4M
 		memset(entry->runtimeData, 0, sizeof(entry->runtimeData));
 
 		const char* zoneName = T4::engine::g_zoneFileNames[entry->zoneFileIndex].name;
-		T4::engine::Com_PrintfChannel(0x10, "Unloaded fastfile %s\n", zoneName);
+		T4::engine::Com_Printf(0x10, "Unloaded fastfile %s\n", zoneName);
 
 		DB_FreeXZoneMemory(entry->memHandle, zoneName);
 
@@ -135,10 +135,10 @@ namespace T4M
 	// @modified — replaces sub_48E7B0 with T4M Phase 3 for zones 0x1000
 	void DB_LoadXAssets(XZoneInfo* zoneInfo, int zoneCount, int sync)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
+		T4::engine::Com_Printf(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
 		for (size_t i = 0; i < zoneCount; i++)
 		{
-			T4::engine::Com_PrintfChannel(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
+			T4::engine::Com_Printf(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
 		}
 
 		bool anyUnloaded = false;
@@ -381,7 +381,7 @@ namespace T4M
 	// @modified — replaces sub_59E050 (FS_AddUserMapDir + PATCH_EX zones)
 	void __cdecl DB_LoadMapZones(const char* mapName)
 	{
-		T4::engine::Com_PrintfChannel(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
+		T4::engine::Com_Printf(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
 		// Reset the fastfile streaming progress counters
 		T4::engine::db_streamReadBlocksTotal = 0;  // 0x957400
 		T4::engine::db_streamReadBlocksDone = 0;  // 0x957408

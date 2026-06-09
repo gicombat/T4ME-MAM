@@ -31,12 +31,24 @@ namespace T4M
 
 	struct AddrEntry
 	{
-		uintptr_t def = 0;   // 'default' column (eng / LanFixed VA)
-		uintptr_t ger = 0;   // 'ger' column (0 when not yet filled)
-		bool      hasGer = false;
+		uintptr_t def    = 0;   // 'default'   column (eng / LanFixed SP VA)
+		uintptr_t defMP  = 0;   // 'defaultMP' column (eng MP VA)
+		uintptr_t ger    = 0;   // 'ger'       column (ger SP VA)
+		uintptr_t gerMP  = 0;   // 'gerMP'     column (ger MP VA)
+		bool      hasDef   = false;
+		bool      hasDefMP = false;
+		bool      hasGer   = false;
+		bool      hasGerMP = false;
 	};
 
-	static std::unordered_map<std::string, AddrEntry> g_map;
+	// Function-local static: constructed on first use. Avoids the static-init-order
+	// fiasco when a name-keyed symbol<> resolves (via T4M::GetAddress) during static
+	// initialization, before this TU's namespace-scope globals are constructed.
+	static std::unordered_map<std::string, AddrEntry>& Map()
+	{
+		static std::unordered_map<std::string, AddrEntry> m;
+		return m;
+	}
 	static bool        g_loaded   = false;
 	static ExeVariant  g_variant  = ExeVariant::Unknown;
 	static bool        g_variantResolved = false;
@@ -131,10 +143,19 @@ namespace T4M
 		return static_cast<uintptr_t>(std::strtoull(s.c_str(), nullptr, 16)); // tolerates "0x" prefix
 	}
 
-	// Parse the CSV text (embedded resource contents) into g_map.
+	// A CSV cell of "-1" marks an address not yet known (placeholder, e.g. a
+	// reconstruction whose VA hasn't been located). Treat it exactly like an
+	// empty cell: the column resolves to 0 and GetAddress() warns if used.
+	// (Without this, strtoull("-1",,16) would yield 0xFFFFFFFF — a garbage VA.)
+	static inline bool IsUnresolvedCell(const std::string& s)
+	{
+		return s.empty() || s == "-1";
+	}
+
+	// Parse the CSV text (embedded resource contents) into Map().
 	static bool ParseBuffer(const std::string& text)
 	{
-		g_map.clear();
+		Map().clear();
 		g_unresolvedGer = 0;
 
 		std::istringstream f(text);
@@ -145,10 +166,10 @@ namespace T4M
 			if (line.empty() || line[0] == '#')
 				continue;
 
-			// split into at most 3 comma fields
-			std::string fields[3];
+			// split into at most 5 comma fields: name,default,defaultMP,ger,gerMP
+			std::string fields[5];
 			size_t fi = 0, start = 0;
-			for (size_t i = 0; i <= line.size() && fi < 3; ++i)
+			for (size_t i = 0; i <= line.size() && fi < 5; ++i)
 			{
 				if (i == line.size() || line[i] == ',')
 				{
@@ -156,9 +177,11 @@ namespace T4M
 					start = i + 1;
 				}
 			}
-			std::string name = fields[0]; Trim(name);
-			std::string def  = fields[1]; Trim(def);
-			std::string ger  = fields[2]; Trim(ger);
+			std::string name  = fields[0]; Trim(name);
+			std::string def   = fields[1]; Trim(def);
+			std::string defMP = fields[2]; Trim(defMP);
+			std::string ger   = fields[3]; Trim(ger);
+			std::string gerMP = fields[4]; Trim(gerMP);
 
 			// skip header row
 			if (name == "name" && def == "default")
@@ -167,22 +190,23 @@ namespace T4M
 				continue;
 
 			AddrEntry e;
-			e.def = ParseHex(def);
-			e.hasGer = !ger.empty();
-			e.ger = e.hasGer ? ParseHex(ger) : 0;
+			e.hasDef   = !IsUnresolvedCell(def);   e.def   = e.hasDef   ? ParseHex(def)   : 0;
+			e.hasDefMP = !IsUnresolvedCell(defMP); e.defMP = e.hasDefMP ? ParseHex(defMP) : 0;
+			e.hasGer   = !IsUnresolvedCell(ger);   e.ger   = e.hasGer   ? ParseHex(ger)   : 0;
+			e.hasGerMP = !IsUnresolvedCell(gerMP); e.gerMP = e.hasGerMP ? ParseHex(gerMP) : 0;
 			if (!e.hasGer)
 				++g_unresolvedGer;
 
-			g_map[name] = e;
+			Map()[name] = e;
 		}
 
-		return !g_map.empty();
+		return !Map().empty();
 	}
 
 	size_t AddrMap_Load(bool force)
 	{
 		if (g_loaded && !force)
-			return g_map.size();
+			return Map().size();
 
 		g_loaded = true; // mark attempted so we don't re-hit the resource on every GetAddress()
 
@@ -197,9 +221,9 @@ namespace T4M
 		char msg[256];
 		_snprintf_s(msg, sizeof(msg), _TRUNCATE,
 		            "[T4M AddrMap] loaded %zu rows from embedded IDR_ADDR_CSV (variant=%s, unresolved-ger=%zu)\n",
-		            g_map.size(), ExeVariantName(CurrentExeVariant()), g_unresolvedGer);
+		            Map().size(), ExeVariantName(CurrentExeVariant()), g_unresolvedGer);
 		Dbg(msg);
-		return g_map.size();
+		return Map().size();
 	}
 
 	// Signal (once per name+variant, to avoid flooding) that a requested address
@@ -226,8 +250,8 @@ namespace T4M
 		if (!g_loaded)
 			AddrMap_Load();
 
-		auto it = g_map.find(name);
-		if (it == g_map.end())
+		auto it = Map().find(name);
+		if (it == Map().end())
 		{
 			WarnMissingAddress(name, "name is not in addr_mapping.csv");
 			return 0;
@@ -235,20 +259,45 @@ namespace T4M
 
 		const AddrEntry& e = it->second;
 
-		uintptr_t va;
-		if (CurrentExeVariant() == ExeVariant::SteamGer)
+		// Pick the column for the running exe variant. Fallbacks never silently
+		// return a cross-layout VA: an MP variant never falls back to an SP column.
+		uintptr_t va = 0;
+		switch (CurrentExeVariant())
 		{
-			if (!e.hasGer)
-			{
-				WarnMissingAddress(name, "no 'ger' value in CSV (falling back to default eng VA)");
-				va = e.def; // fall back to eng until ger is filled
-			}
-			else
-				va = e.ger;
-		}
-		else
-		{
-			va = e.def;
+			case ExeVariant::SteamGer:
+				if (e.hasGer)
+					va = e.ger;
+				else
+				{
+					WarnMissingAddress(name, "no 'ger' value in CSV (falling back to default eng VA)");
+					va = e.def; // ger SP shares the SP layout with eng until ger is filled
+				}
+				break;
+
+			case ExeVariant::SteamDefaultMP:
+				if (e.hasDefMP)
+					va = e.defMP;
+				else
+					WarnMissingAddress(name, "no 'defaultMP' value in CSV (MP layout != SP, no fallback)");
+				break;
+
+			case ExeVariant::SteamGerMP:
+				if (e.hasGerMP)
+					va = e.gerMP;
+				else if (e.hasDefMP)
+				{
+					WarnMissingAddress(name, "no 'gerMP' value in CSV (falling back to defaultMP)");
+					va = e.defMP;
+				}
+				else
+					WarnMissingAddress(name, "no 'gerMP'/'defaultMP' value in CSV (no fallback)");
+				break;
+
+			case ExeVariant::LanFixed:
+			case ExeVariant::SteamDefault:
+			default:
+				va = e.def;
+				break;
 		}
 
 		if (va == 0)
@@ -262,7 +311,7 @@ namespace T4M
 		if (!g_loaded)
 			AddrMap_Load();
 
-		return g_map.find(name) != g_map.end();
+		return Map().find(name) != Map().end();
 	}
 
 	size_t AddrMap_Count()              
@@ -270,7 +319,7 @@ namespace T4M
 		if (!g_loaded) 
 			AddrMap_Load(); 
 
-		return g_map.size(); 
+		return Map().size(); 
 	}
 
 	size_t AddrMap_UnresolvedGerCount() 

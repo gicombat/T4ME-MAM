@@ -20,7 +20,6 @@
 
 // Scr_GetNumParam forward decl already provided by T4.h (T4M::Scr_GetNumParam).
 
-dvar_t** developer = (dvar_t**)0x01F55288;
 dvar_t** developer_script = (dvar_t**)0x01F9646C;
 dvar_t** logfile = (dvar_t**)0x01F552BC;
 
@@ -138,8 +137,10 @@ namespace T4M
 
 	RefString* __cdecl GetRefString(scriptInstance_t inst, unsigned int stringValue)
 	{
-		DWORD* gScrMemTreePub = (DWORD*)0x03702390;
-		return (RefString*)&(&gScrMemTreePub)[3 * stringValue + 1];
+		// 0x3702390 holds gScrMemTreePub.mt_buffer (a pointer to the string buffer);
+		// must deref it — the old &(&local)[...] read the stack (bug).
+		DWORD* mt_buffer = (DWORD*)T4::engine::gScrMemTreePub->mt_buffer;
+		return (RefString*)&mt_buffer[3 * stringValue + 1];
 	}
 
 	char* __cdecl SL_ConvertToString(unsigned int stringValue, scriptInstance_t inst)
