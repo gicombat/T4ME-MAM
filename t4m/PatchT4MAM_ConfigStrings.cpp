@@ -29,26 +29,26 @@
 #include <cstring>   // strlen / strcmp / memcpy / memset
 #include <cstdio>    // sprintf (flip status string)
 
-// --- Gates de détour (validation incrémentale ; 0 = inerte) -----------------
-#define CS_DETOUR_GETCONFIGSTRING   1
-#define CS_DETOUR_CLEARCONFIGSTRING 1
-#define CS_DETOUR_SETCONFIGSTRING   1
-// (next to CS_DETOUR_GETCONFIGSTRING / CS_DETOUR_CLEARCONFIGSTRING / CS_DETOUR_SETCONFIGSTRING)
-#define CS_DETOUR_SENDGAMESTATE  1
-#define CS_DETOUR_PARSEGAMESTATE 1
+// ============================================================================
+// CS subsystem config — SINGLE master switch. Validated stack = CS_ENABLE 1.
+//   1 = ON  : 5 CS detours + flip stage 2a (relocated 0x1000 table, model block @0xBF0)
+//             + model precache cap 1024.
+//   0 = OFF : vanilla CS table & behaviour (kill-switch / A-B baseline).
+// The 3 gates below DERIVE from the master — kept for structure + surgical A-B (edit ONE
+// line: CSF_MODEL_1024 -> 0 runs stage 2a at model cap 512 ; CS_FLIP_STAGE -> 1 is the
+// pure-relocation stepping-stone). LIVE toggles, NOT dead code.
+// ============================================================================
+#define CS_ENABLE 1
 
-// --- Bascule (flip) de la table CS vers un buffer relogé possédé. 0 = table vanilla en place.
-//   Stage 1 = relocation PURE : g_maxCS reste 0xBF0, bloc modèle reste à l'offset 0x58E.
-//   Comportement IDENTIQUE au vanilla → valide la machinerie de repointing sans régression.
-//   (Stage 2, séparé, élargira g_maxCS→0x1000 + re-base modèle→0xBF0 + cap 1024.)
-// 0 = off (table vanilla). 1 = Stage 1 (pure relocation, vanilla behaviour, 0xBF0).
-// 2 = Stage 2a (widen g_maxCS->0x1000, re-base model->0xBF0 cap 512, relocate CS-index companions).
-#define CS_FLIP_STAGE 2
-
-// Stage 2b: raise the MODEL cap 512 -> 1024 on top of stage 2a (relocate the model XModel*/remap
-// tables to 1024-entry buffers + bump the model count caps + g_maxModels). Requires CS_FLIP_STAGE>=2.
-// 0 = model cap stays 512. The destructibles pool (unk_47E87F0) is a SEPARATE 512 limit -> not touched.
-#define CSF_MODEL_1024 1
+// The 3 gates DERIVE from the master CS_ENABLE (final form). SEND/PARSE are coop-verified faithful
+// (lastEntityRef fix, 2026-06-10); GET/SET/CLEAR re-enabled below; flip stage 2 + model-cap 1024 give
+// the >512-model precache. For a surgical A-B, override ONE gate by hand:
+//   CSF_MODEL_1024 -> 0 : stage 2a relocation at the vanilla model cap (512).
+//   CS_FLIP_STAGE  -> 1 : pure-relocation stepping-stone (no model block move).
+//   CS_DETOURS     -> 0 : detours off while keeping the rest (kill-switch).
+#define CS_DETOURS     CS_ENABLE
+#define CS_FLIP_STAGE  (CS_ENABLE ? 2 : 0)
+#define CSF_MODEL_1024 CS_ENABLE
 
 
 
@@ -368,26 +368,7 @@ namespace T4_Reconstructed
 
 // NOTE: everything below lives inside `namespace T4_Reconstructed { ... }`.
 
-    // ========================================================================
-    //  cs_msg_t — vanilla MSG message struct (built on the stack).
-    //  MSG_Init (sub_674C70) memsets 0x2C bytes before populating fields, so the
-    //  struct MUST be >= 0x2C bytes (trailing pad). Byte offsets are load-bearing:
-    //  helpers (sub_67AB80 etc.) read [+8]=data, [+0x10]=maxsize, [+0x14]=cursize,
-    //  [+0x20]=bit, [+0]=overflowed.
-    // ========================================================================
-    struct cs_msg_t {
-        int   overflowed;   // +0x00
-        int   field_4;      // +0x04
-        char* data;         // +0x08
-        int   field_C;      // +0x0C
-        int   maxsize;      // +0x10
-        int   cursize;      // +0x14
-        int   field_18;     // +0x18
-        int   field_1C;     // +0x1C
-        int   bit;          // +0x20  (aliased var_154 in vanilla asm)
-        int   field_24;     // +0x24
-        int   field_28;     // +0x28  PAD: MSG_Init zeroes 0x2C bytes  (D5)
-    };
+    using T4::engine::msg_s;
 
     // ---- send-side absolutes (NOT relocated) -------------------------------
     #define CS_HUNK_OFF   (*(unsigned int*)0x046E5054)                  // dword_46E5054 (temp Hunk offset)
@@ -448,7 +429,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_674C70  MSG_Init. esi=msg, stack=(data,maxsize). retn (callee cleans its 2 internal? no: caller add esp,8). Caller cleans.
-    __declspec(naked) void __cdecl gs_msgInit(cs_msg_t* /*msg*/, char* /*data*/, int /*maxsize*/) {
+    __declspec(naked) void __cdecl gs_msgInit(msg_s* /*msg*/, char* /*data*/, int /*maxsize*/) {
         __asm {
             push esi
             mov  esi, [esp+8]            // msg
@@ -462,7 +443,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_638520  SV_WritePendingReliable. eax=msg, esi=client. retn.
-    __declspec(naked) void __cdecl gs_writeReliable(cs_msg_t* /*msg*/, void* /*client*/) {
+    __declspec(naked) void __cdecl gs_writeReliable(msg_s* /*msg*/, void* /*client*/) {
         __asm {
             push esi
             mov  eax, [esp+8]            // msg
@@ -486,7 +467,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_674D00  MSG_WriteBits. edx=msg, stack=(value,bits). Caller add esp,8.
-    __declspec(naked) void __cdecl gs_writeBits(cs_msg_t* /*msg*/, int /*value*/, int /*bits*/) {
+    __declspec(naked) void __cdecl gs_writeBits(msg_s* /*msg*/, int /*value*/, int /*bits*/) {
         __asm {
             mov  edx, [esp+4]            // msg
             push dword ptr [esp+0Ch]     // bits  (pushed first in vanilla: push 0Ch then push esi)
@@ -498,7 +479,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_674E00  MSG_WriteBit0 ("next index" marker). eax=msg. retn.
-    __declspec(naked) void __cdecl gs_writeBit0(cs_msg_t* /*msg*/) {
+    __declspec(naked) void __cdecl gs_writeBit0(msg_s* /*msg*/) {
         __asm {
             mov  eax, [esp+4]
             mov  ecx, 0x00674E00
@@ -507,7 +488,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_675430  MSG_WriteString. edx=str, edi=msg. retn. NOTE: derefs [str] (NULL would crash).
-    __declspec(naked) void __cdecl gs_writeString(cs_msg_t* /*msg*/, const char* /*str*/) {
+    __declspec(naked) void __cdecl gs_writeString(msg_s* /*msg*/, const char* /*str*/) {
         __asm {
             push edi
             mov  edi, [esp+8]            // msg
@@ -520,7 +501,7 @@ namespace T4_Reconstructed
     }
     // sub_67AB80  MSG_WriteDeltaStruct. eax=from, ecx=to, stack=(msg, arg4, arg8). Caller add esp,0Ch. (D4)
     __declspec(naked) void __cdecl gs_writeDelta(void* /*from*/, void* /*to*/,
-                                                 cs_msg_t* /*msg*/, int /*arg4*/, int /*arg8*/) {
+                                                 msg_s* /*msg*/, int /*arg4*/, int /*arg8*/) {
         __asm {
             mov  eax, [esp+4]            // from (= zeroed varBaseline)
             mov  ecx, [esp+8]            // to   (= node / baseline)
@@ -534,7 +515,7 @@ namespace T4_Reconstructed
         }
     }
     // sub_496050 / sub_5720F0 / sub_6AF000  block serializers. esi=msg. retn.
-    __declspec(naked) void __cdecl gs_writeBlock_496050(cs_msg_t* /*msg*/) {
+    __declspec(naked) void __cdecl gs_writeBlock_496050(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
                 mov  eax, 0x00496050
@@ -542,7 +523,7 @@ namespace T4_Reconstructed
                 pop  esi
                 retn }
     }
-    __declspec(naked) void __cdecl gs_writeBlock_5720F0(cs_msg_t* /*msg*/) {
+    __declspec(naked) void __cdecl gs_writeBlock_5720F0(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
                 mov  eax, 0x005720F0
@@ -550,7 +531,7 @@ namespace T4_Reconstructed
                 pop  esi
                 retn }
     }
-    __declspec(naked) void __cdecl gs_writeBlock_6AF000(cs_msg_t* /*msg*/) {
+    __declspec(naked) void __cdecl gs_writeBlock_6AF000(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
                 mov  eax, 0x006AF000
@@ -559,7 +540,7 @@ namespace T4_Reconstructed
                 retn }
     }
     // sub_6393F0  SV_Netchan_Transmit. esi=client, stack=(msg, 0). Caller add esp,8 (within the 0x18 caller cleanup).
-    __declspec(naked) void __cdecl gs_transmit(void* /*client*/, cs_msg_t* /*msg*/) {
+    __declspec(naked) void __cdecl gs_transmit(void* /*client*/, msg_s* /*msg*/) {
         __asm {
             push esi
             mov  esi, [esp+8]            // client
@@ -578,20 +559,20 @@ namespace T4_Reconstructed
     static inline int gs_clientNum(void* client) {
         return (int)(((unsigned char*)client - (unsigned char*)0x02547090) / CS_CLIENT_STRIDE);
     }
-    static inline void gs_rawByte(cs_msg_t* m, unsigned char v) {
+    static inline void gs_rawByte(msg_s* m, unsigned char v) {
         if (m->cursize < m->maxsize) { m->data[m->cursize] = (char)v; m->cursize += 1; }
         else                          m->overflowed = 1;
     }
-    static inline void gs_rawLong(cs_msg_t* m, int v) {
+    static inline void gs_rawLong(msg_s* m, int v) {
         if (m->cursize + 4 <= m->maxsize) { *(int*)(m->data + m->cursize) = v; m->cursize += 4; }
         else                                m->overflowed = 1;
     }
-    static inline void gs_rawShort(cs_msg_t* m, unsigned short v) {
+    static inline void gs_rawShort(msg_s* m, unsigned short v) {
         if (m->cursize + 2 <= m->maxsize) { *(unsigned short*)(m->data + m->cursize) = v; m->cursize += 2; }
         else                                m->overflowed = 1;
     }
     // 12-bit index emit: byte-align pad (loc_62F867/904) then WriteBits(idx, 12).
-    static inline void gs_emitIndex(cs_msg_t* m, int idx) {
+    static inline void gs_emitIndex(msg_s* m, int idx) {
         if ((m->bit & 7) == 0) {
             if (m->cursize >= m->maxsize) m->overflowed = 1;
             else { m->data[m->cursize] = 0; m->cursize += 1; m->bit = (m->cursize - 1) * 8; }
@@ -664,8 +645,11 @@ namespace T4_Reconstructed
         *(int*)(cl + 0x323F0) = 0;
         *(int*)(cl + 0x11100) = *(int*)(cl + 0x14);
 
-        cs_msg_t msg;
+        msg_s msg;
         gs_msgInit(&msg, (char*)msgData, 0x20000);           // sub_674C70
+        msg.lastEntityRef = -1;                              // vanilla @0x62F148: lastEntityRef=-1 after MSG_Init
+                                                             // (baseline entity numbers are delta-compressed
+                                                             // against +0x24; MUST seed -1 or cmd3 numbers desync) (D6)
 
         // --- header ---------------------------------------------------------
         gs_rawLong(&msg, *(int*)(cl + 0x11140));             // reliableAcknowledge
@@ -709,7 +693,9 @@ namespace T4_Reconstructed
                 const char* def  = *(const char**)(st2);     // [ebx] (post-increment)
                 int diff = (i >= 0x585) ? (gs_stricmpn(0x7FFFFFFF, def, live) != 0)
                                         : gs_strcmp2(def, live);
-                if (!diff) continue;                         // loc_62F836 jz loc_62F947 -> skip total (D3)
+                if (!diff) {                                 // loc_62F836 jz loc_62F947 -> skip total (D3)
+                    continue;
+                }
                 if (bHandle == *g_csSentinel) {              // diff && handle==sentinel: 12-bit + ""
                     gs_emitIndex(&msg, i);
                     prevWritten = i;
@@ -731,7 +717,6 @@ namespace T4_Reconstructed
             prevWritten = i;
             // @faithful: vanilla passes raw edx (ebx == text, possibly NULL when handle==0;
             // sub_675430 would deref [0]). The sentinel-skip above protects this in practice.
-            // Safe alternative (commented): gs_writeString(&msg, text ? text : cs_empty);
             gs_writeString(&msg, text);
         }
 
@@ -749,6 +734,9 @@ namespace T4_Reconstructed
         // ====================================================================
         // cmd 4 — entity baselines (delta vs zeroed baseline) — loc_62FA36
         // ====================================================================
+        msg.lastEntityRef = -1;                              // vanilla @0x62F9E9->0x62FA36: reset before cmd4 loop
+                                                             // (cmd4 baseline numbers delta-compress fresh from -1,
+                                                             //  matching the PARSE's `lastRefEntity=-1` on cmd4) (D6)
         if (*cs_entBaselineCount > 0) {
             unsigned char* base = cs_entBaselines;
             for (int n = 0; n < *cs_entBaselineCount; ++n) {
@@ -789,20 +777,10 @@ namespace T4_Reconstructed
     // ========================================================================
     //  CL_ParseGamestate (sub_64CAE0) support: opaque msg + tables + helpers.
     // ========================================================================
-    struct rec_msg_t {
-        int   overflowed;   // +0
-        int   pad04;        // +4
-        char* data;         // +8   (read when readcount < splitThresh)
-        char* splitData;    // +0xC (read when readcount >= splitThresh)
-        int   maxsize;      // +0x10  REQUIRED filler: without it splitThresh..lastRefEntity
-                            //         land 4 bytes low and the inline ReadByte desyncs from
-                            //         the CL_PG_* thunks (which use the real [+0x1C] readcount).
-        int   splitThresh;  // +0x14
-        int   cursize;      // +0x18
-        int   readcount;    // +0x1C
-        int   bit;          // +0x20
-        int   lastRefEntity;// +0x24
-    };
+    // PARSE uses the same msg_s (0x2C) defined above. For a READ msg the official fields map:
+    //   cursize (+0x14)   = split boundary (readcount < cursize -> read from `data`)
+    //   splitSize (+0x18) = size of the post-split `splitData` region
+    //   readcount (+0x1C) = current read cursor ; lastEntityRef (+0x24) = entity-number delta base.
     struct rec_csAuto_t { int index; const char* name; int unk; int pad; }; // stride 0x10
     static rec_csAuto_t* const g_csAuto = (rec_csAuto_t*)0x008D55F8;         // dword_8D55F8
 
@@ -888,7 +866,7 @@ namespace T4_Reconstructed
     // ========================================================================
     extern "C" void __cdecl CL_ParseGamestate(void* msgArg)
     {
-        rec_msg_t* msg = (rec_msg_t*)msgArg;
+        msg_s* msg = (msg_s*)msgArg;
         char readBuf[0x118];                                 // var_118
 
         pg_memset(readBuf, 0, 0x118);
@@ -904,7 +882,7 @@ namespace T4_Reconstructed
 
         pg_59E970();
 
-        msg->lastRefEntity = -1;                             // [ebx+24h] = -1
+        msg->lastEntityRef = -1;                             // [ebx+24h] = -1
         *(long long*)G_48AE508 = 0;                          // movq qword_48AE508, 0
         *(int*)G_48AE510 = 0;
         G_302012C = CL_PG_ReadLong(msg);                     // sub_675560
@@ -912,8 +890,8 @@ namespace T4_Reconstructed
 
         for (;;) {                                           // loc_64CB85
             int prevCmd     = cmd;                           // edx = var_124 loaded BEFORE read (D2)
-            int splitThresh = msg->splitThresh;              // [ebx+14h]
-            int total       = msg->cursize + splitThresh;    // [ebx+18h]+[ebx+14h]
+            int splitThresh = msg->cursize;                  // [ebx+14h] (read-msg split boundary)
+            int total       = msg->splitSize + splitThresh;  // [ebx+18h]+[ebx+14h]
             int rc          = msg->readcount;                // [ebx+1Ch]
 
             if (rc >= total) {                               // jge loc_64CEAA
@@ -1005,7 +983,7 @@ namespace T4_Reconstructed
             }
             else if (cmd == 4) {                             // baseline client
                 if (prevCmd != 4)                            // cmp edx,ecx; jz skip
-                    msg->lastRefEntity = -1;                 // [ebx+24h] = -1
+                    msg->lastEntityRef = -1;                 // [ebx+24h] = -1
                 int idx = CL_PG_ReadEntityIdx(0xA, msg);
                 if (idx < 0 || idx > 0x15E)                  // jle -> bound is <= 0x15E
                     cs_error(1, STR_BAD_CLI, idx);
@@ -1016,9 +994,9 @@ namespace T4_Reconstructed
             else {
             bad_command:                                     // loc_64CEB8
                 pg_59A380(1, STR_BAD_CMD, cmd);              // Com_Error(1, fmt, cmd)
-                msg->overflowed  = 1;                        // [ebx]=1
-                msg->splitThresh = msg->readcount;           // [ebx+14h]=[ebx+1Ch]
-                msg->cursize     = 0;                        // [ebx+18h]=0
+                msg->overflowed = 1;                         // [ebx]=1
+                msg->cursize    = msg->readcount;            // [ebx+14h]=[ebx+1Ch]
+                msg->splitSize  = 0;                         // [ebx+18h]=0
                 return;
             }
         }
@@ -1280,7 +1258,11 @@ static const DWORD CSF_MMAP_BASE = 0x034651D8;   // = dword_34651D8 (model-map b
 // NB: the render path (model-map dword_3466810, mmap) is already 0x1000 from 2a; the destructibles
 // pool unk_47E87F0 is a SEPARATE limit and is intentionally NOT relocated here.
 static const CsfReloc kCsfModelTbl[] = { { 0x0190E0A8, 9 }, { 0x018FABD0, 3 } };  // XModel* + remap bases
-static const DWORD CSF_MODELPTR_END = 0x0190E8A8;  // dword_190E0A8 END (=base+512*4, 1 ref @sub_54F1E0)
+// NB: 0x0190E8A8 (= base+512*4) is NOT the table END — it is a SEPARATE dummy "overflow" entity
+// struct (fields at 190E9C8/CC...) that sub_54F1E0 returns when out of entity slots (coop path).
+// It must STAY at its vanilla address (the relocated XModel* table no longer overlaps it). An
+// earlier flip wrongly re-based it into modelPtrBuf -> sub_54F1E0 returned an OOB pointer ->
+// crash on entity-field write [esi+0xE0] (coop-only; solo never hits the dummy path).
 // Model count caps (verify old → write new). VAs exe-verified (patch-doc 2a §C) except 0x662A3E
 // (sub_6621B0 server-models loop) byte-verified by the Phase-1 old-value check.
 static const CsfImm kCsfModel1024Imm[] = {
@@ -1364,10 +1346,6 @@ static void SetupCsFlip()
                     (unsigned)r.sym, CsfCountDword(r.sym), r.count);
             return;
         }
-    if (CsfCountDword(CSF_MODELPTR_END) != 1) {
-        sprintf(g_csFlipStatus, "flip ABORT: modelptr-end count %d != 1", CsfCountDword(CSF_MODELPTR_END));
-        return;
-    }
     for (const CsfImm& s : kCsfModel1024Imm)
         if (!CsfTextOk(s.immVA) || *(DWORD*)s.immVA != s.oldv) {
             sprintf(g_csFlipStatus, "flip ABORT: modelcap %08X has %08X != %08X", (unsigned)s.immVA,
@@ -1428,7 +1406,7 @@ static void SetupCsFlip()
     CsfReplaceDword(0x0307D5FC, (DWORD)side + 0x24000);                // side-table cursor
 #if CSF_MODEL_1024
     CsfReplaceDword(0x0190E0A8, (DWORD)modelPtrBuf);                   // model XModel* table base (9)
-    CsfReplaceDword(CSF_MODELPTR_END, (DWORD)modelPtrBuf + 0x400 * 4); // its END pointer unk_190E8A8 (1)
+    // 0x0190E8A8 is the dummy overflow entity (see kCsfModelTbl note) — intentionally NOT relocated.
     CsfReplaceDword(0x018FABD0, (DWORD)remapBuf);                      // model remap table base (3)
     for (const CsfImm& s : kCsfModel1024Imm)
         *(DWORD*)s.immVA = s.neu;                                       // model count caps 512->1024
@@ -1462,24 +1440,45 @@ static void SetupCsFlip()
 
 
 // ---------------------------------------------------------------------------
-// Install. Détours gated (validation incrémentale). NO Com_Printf (init-time).
+// Debug: dump the LIVE config-string table (index, handle, len, text). Optional
+// [start,end) range (default = all). Model-block entries are flagged '*'. Backs the
+// "listconfigstrings" console command. Runtime only (reads g_csTable / string pool live).
+// ---------------------------------------------------------------------------
+extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end)
+{
+    if (start < 0)                start = 0;
+    if (end < 0 || end > g_maxCS) end   = g_maxCS;
+    unsigned char* pool = *(unsigned char**)0x03702390;   // dword_3702390 (interned string pool)
+    int count = 0, totalLen = 0, models = 0;
+    for (int i = start; i < end; ++i) {
+        unsigned short handle = g_csTable[i];
+        if (handle == 0 || handle == *g_csSentinel) continue;        // empty slot
+        const char* text = (const char*)(pool + (unsigned)handle * 0xC + 4);
+        int len = (int)strlen(text);
+        bool isModel = (i >= g_modelCsBase && i < g_modelCsBase + g_maxModels);
+        if (isModel) ++models;
+        T4::engine::Com_Printf(0, "CS[%04X]%c h=%04X len=%-3d : %s\n",
+                               i, isModel ? '*' : ' ', handle, len, text);
+        ++count; totalLen += len + 1;
+    }
+    T4::engine::Com_Printf(0, "[T4M] %d strings (%d model), %d text bytes | g_maxCS=%X model@%X cap=%d\n",
+                           count, models, totalLen, (unsigned)g_maxCS, (unsigned)g_modelCsBase, g_maxModels);
+}
+
+// ---------------------------------------------------------------------------
+// Install. Gated by the master CS_ENABLE switch. NO Com_Printf (init-time).
 // ---------------------------------------------------------------------------
 void PatchT4MAM_ConfigStrings()
 {
-#if CS_DETOUR_GETCONFIGSTRING
+#if CS_DETOURS
+    // All 5 CS reconstructions. SEND + PARSE are coop-verified faithful (the trType:13 / wrong-position
+    // desync was our SV_SendClientGameState omitting the two `lastEntityRef = -1` resets — after MSG_Init
+    // and before the cmd4 loop — that the baseline entity-number delta-compression needs; the PARSE resets
+    // it on cmd4, so the SEND must match). GET/SET/CLEAR re-enabled (full subsystem for the flip).
     Detours::X86::DetourFunction((uintptr_t)0x006315C0, (uintptr_t)&T4_Reconstructed::SV_GetConfigstring_Naked, Detours::X86Option::USE_JUMP);
-#endif
-#if CS_DETOUR_CLEARCONFIGSTRING
     Detours::X86::DetourFunction((uintptr_t)0x00631DA0, (uintptr_t)&T4_Reconstructed::SV_ClearConfigstrings, Detours::X86Option::USE_JUMP);
-#endif
-#if CS_DETOUR_SETCONFIGSTRING
     Detours::X86::DetourFunction((uintptr_t)0x006311E0, (uintptr_t)&T4_Reconstructed::SV_SetConfigstrings, Detours::X86Option::USE_JUMP);
-#endif
-
-#if CS_DETOUR_SENDGAMESTATE
     Detours::X86::DetourFunction((uintptr_t)0x0062F500, (uintptr_t)&T4_Reconstructed::SV_SendClientGameState, Detours::X86Option::USE_JUMP);
-#endif
-#if CS_DETOUR_PARSEGAMESTATE
     Detours::X86::DetourFunction((uintptr_t)0x0064CAE0, (uintptr_t)&T4_Reconstructed::CL_ParseGamestate, Detours::X86Option::USE_JUMP);
 #endif
 

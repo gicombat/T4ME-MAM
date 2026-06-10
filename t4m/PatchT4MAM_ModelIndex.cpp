@@ -35,7 +35,6 @@ namespace ModelIndexEngine
     typedef unsigned int (__cdecl* SL_FindLowercaseString_t)(const char* str, int inst);     // sub_68DD50
     typedef char*        (__cdecl* Com_FormatMsg_t)         (const char* fmt, ...);          // sub_5F6D80
     typedef void         (__cdecl* Strncpyz_t)              (char* dst, const char* src, int size); // sub_7AA9C0
-    typedef void         (__cdecl* Scr_ErrorInternal_t)     (void);                          // sub_693CF0
     typedef void         (__cdecl* Com_Error_t)             (int code, const char* fmt, ...);// sub_59AC50
     typedef void*        (__cdecl* XModelFinder_t)          (const char* name, void* cb1, void* cb2); // sub_618EB0/618E20
     typedef void         (__cdecl* SV_SetConfigstring_t)    (const void* pairs, int count);  // sub_6311E0
@@ -43,7 +42,6 @@ namespace ModelIndexEngine
     static const SL_FindLowercaseString_t SL_FindLowercaseString = (SL_FindLowercaseString_t)0x0068DD50;
     static const Com_FormatMsg_t          Com_FormatMsg          = (Com_FormatMsg_t)         0x005F6D80;
     static const Strncpyz_t               Strncpyz               = (Strncpyz_t)              0x007AA9C0;
-    static const Scr_ErrorInternal_t      Scr_ErrorInternal      = (Scr_ErrorInternal_t)     0x00693CF0;
     static const Com_Error_t              Com_Error              = (Com_Error_t)             0x0059AC50;
     static const XModelFinder_t           XModelFinder_Sync      = (XModelFinder_t)          0x00618EB0;
     static const XModelFinder_t           XModelFinder_Deferred  = (XModelFinder_t)          0x00618E20;
@@ -68,6 +66,22 @@ extern "C" void**          g_modelPtrTbl  = (void**)         0x0190E0A8; // dwor
 extern "C" int             g_maxModels    = VANILLA_MAX_MODELS;
 
 extern "C" int __cdecl T4M_G_ModelIndex_recon(const char* name);
+
+// Scr_ErrorInternal (sub_693CF0) is __usercall(eax = scriptId). Vanilla's not-precached path
+// does `xor eax,eax` before the call (script instance 0). Calling it via a plain function
+// pointer left eax = the function address -> edx = eax*0x18048 -> OOB byte_3882B78[edx] ->
+// access violation @0x693CF9 (observed: EAX=0x693CF0). This thunk passes eax=0 like vanilla;
+// with eax=0 it returns cleanly (no script error) and the model is lazily registered below.
+static __declspec(naked) void Scr_ErrorInternal_scriptId0()
+{
+    __asm
+    {
+        xor  eax, eax
+        mov  ecx, 0x00693CF0
+        call ecx
+        retn
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Reconstruction of sub_54A480. __cdecl(name)->eax. Uniform across vanilla and
@@ -108,7 +122,7 @@ extern "C" int __cdecl T4M_G_ModelIndex_recon(const char* name)
             *g_errBufInited = (int)g_errBuf;
         }
         *g_byte3BD4716 = 0;
-        Scr_ErrorInternal();       // longjmp — never returns
+        Scr_ErrorInternal_scriptId0();   // sub_693CF0 with eax=0 (returns cleanly; warns, no longjmp)
     }
 
     if (esi == g_maxModels)
