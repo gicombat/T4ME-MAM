@@ -110,6 +110,7 @@ void PatchT4_PreLoad()
 		GUID xaudio = { 0x4c5e637a, 0x16c7, 0x4de3, 0x9c, 0x46, 0x5e, 0xd2, 0x21, 0x81, 0x96, 0x2d }; // XAudio 2.3
 		Memory::VP::Patch(0x0089DA98, xaudio); //xaudio
 	}
+
 	// Increase hunk total
 	Memory::VP::Patch<uint32_t>((0x005E3CD1 + 6), 15728640); //hunk total
 
@@ -162,10 +163,6 @@ void PatchT4_Menus()
 		if (T4M::isZombieMode())
 			ctx.eip = 0x006680D4;
 	});
-
-	//static auto MapRestart1 = safetyhook::create_mid(0x0062B7C0, [](SafetyHookContext& ctx) {
-	//	cdecl_call<int>(0x435D80);
-	//	});
 
 	Memory::VP::Nop(0x00438875, 10);
 

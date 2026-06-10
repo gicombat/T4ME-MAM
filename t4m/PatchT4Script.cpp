@@ -67,6 +67,10 @@ namespace T4M
 		return BG_GetWeaponDef(weapIndex)->overheatWeapon != 0;
 	}
 
+	// Not faithful reconstruction of the original BG_GetWeaponIndexForName
+	// Has dead code via ; on the if
+	// Return should be a pointer not a int
+	// But use some original function
 	int BG_GetWeaponIndexForName(const char* name)
 	{
 		if (*(bool*)0x018F6DB8);

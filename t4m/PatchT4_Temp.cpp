@@ -87,7 +87,6 @@ namespace Engine
 	typedef void(__cdecl* Com_SetQueueIndex_t) (int v);                              // sub_596D10
 	typedef void(__cdecl* Session_Init_t)      (void);                               // sub_5ACB10
 	typedef void(__cdecl* DedicatedInit_t)     (void);                               // sub_644F40
-	typedef void(__cdecl* Net_Init_t)          (void);                               // sub_5E3CA0
 	typedef void(__cdecl* NetChan_Init_t)      (void);                               // sub_5E4650
 	typedef void(__cdecl* HandleCfg_t)         (void);                               // sub_5FB560
 	typedef void(__cdecl* DB_RegisterDvars_t)  (void);                               // sub_5FEDE0
@@ -156,7 +155,6 @@ namespace Engine
 	static const Com_SetQueueIndex_t           Com_SetQueueIndex = (Com_SetQueueIndex_t)0x00596D10;
 	static const Session_Init_t                Session_Init = (Session_Init_t)0x005ACB10;
 	static const DedicatedInit_t               DedicatedInit = (DedicatedInit_t)0x00644F40;
-	static const Net_Init_t                    Net_Init = (Net_Init_t)0x005E3CA0;
 	static const NetChan_Init_t                NetChan_Init = (NetChan_Init_t)0x005E4650;
 	static const HandleCfg_t                   HandleCfg = (HandleCfg_t)0x005FB560;
 	static const DB_RegisterDvars_t            DB_RegisterDvars = (DB_RegisterDvars_t)0x005FEDE0;
@@ -617,8 +615,8 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	if ((*T4::engine::dedicated)->current.boolean)
 		Engine::DedicatedInit();                          // sub_644F40
 
-	// ---- Net/NetChan ------------------------------------------------------
-	Engine::Net_Init();                                   // sub_5E3CA0
+	// ---- Sys_AllocHunk (main memory reservation) + NetChan ----------------
+	T4::engine::Sys_AllocHunk();                          // sub_5E3CA0 (was mislabeled Net_Init)
 	Engine::NetChan_Init();                               // sub_5E4650
 	*G::g_1F5529C = *(float*)0x00826A4C;                 // ds:dword_826A4C constant
 	*G::g_flagsX21ACF30 &= ~1u;

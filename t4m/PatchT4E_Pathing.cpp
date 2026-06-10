@@ -299,7 +299,8 @@ void __declspec(naked) Path_NearestNodeNotCrossPlanes_stub()
 	}
 }
 
-void PatchT4E_Pathing() {
+void PatchT4E_Pathing() 
+{
 	g_t5_pathing = T4::dvar::Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
 	static auto testingthehack = safetyhook::create_mid(0x55C210, [](SafetyHookContext& ctx) {
 		if (g_t5_pathing->isEnabled()) {

@@ -513,8 +513,4 @@ void PatchT4_Load()
 	//if ((*dedicated)->current.integer > 0)
 	//nop(0x00644C5D, 5);
 	// 
-	// TESTING SHIT
-	//Detours::X86::DetourFunction((uintptr_t)0x0059E0EA, (uintptr_t)&LoadMapPatchZoneHook, Detours::X86Option::USE_CALL);
-	//Detours::X86::DetourFunction((uintptr_t)0x0048FB90, (uintptr_t)&LoadLocalizedMapZoneHook, Detours::X86Option::USE_CALL);
-
 }

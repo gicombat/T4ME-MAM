@@ -2,6 +2,9 @@
 
 #ifdef __cplusplus
 #include "xasset.hpp"
+#include "render.hpp"
+#include "sys.hpp"
+#include "dvars.hpp"
 #endif
 
 namespace T4
