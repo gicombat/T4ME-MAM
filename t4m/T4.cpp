@@ -221,7 +221,7 @@ namespace Dvars
 // @wrapper — asm usercall to sub_5EEE20
 dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description)
 {
-	DWORD func = 0x5EEE20;
+	DWORD func = T4M::GetAddress("Dvar_RegisterBool");
 	dvar_t* ret;
 	__asm
 	{
@@ -242,7 +242,8 @@ dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char *dvarName, int flags,
 // @wrapper — asm usercall to sub_5EEF10
 dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description)
 {
-	DWORD func = 0x5EEF10;
+	
+	DWORD func = T4M::GetAddress("Dvar_RegisterFloat");
 	dvar_t* ret;
 
 	__asm
@@ -267,7 +268,7 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 // @wrapper — asm usercall to sub_5EF150
 dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
 {
-	DWORD func = 0x5EF150;
+	DWORD func = T4M::GetAddress("Dvar_RegisterEnum");
 	dvar_t* ret;
 
 	__asm
@@ -319,16 +320,17 @@ int __cdecl UI_TextWidth(const char* text, int maxChars, T4::engine::Font_s* fon
 }
 
 // void* returns are always in eax
-uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
 
 void __declspec(naked) T4M::DoReturn()
 {
 	__asm retn
 }
-
+/*
+uintptr_t Dvar_RegisterInt_addr = 0x5EEEA0;
 uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* name, int min, int max, int flags, const char* description) {
 	
-	__asm {
+	__asm 
+	{
 		push ebp
 		mov ebp, esp
 		sub esp, __LOCAL_SIZE
@@ -355,7 +357,7 @@ uintptr_t __declspec(naked) Dvar_RegisterInt_asm(int default_value, const char* 
 		pop ebp
 		ret
 	}
-}
+}*/
 
 // @wrapper — asm usercall vers sub_5EEEA0
 dvar_t* T4::dvar::Dvar_RegisterInt(int default_value, const char* name, int mina, int max, int flags, const char* description)
@@ -363,7 +365,7 @@ dvar_t* T4::dvar::Dvar_RegisterInt(int default_value, const char* name, int mina
 	//return (dvar_t*)Dvar_RegisterInt_asm(default_value, name, min, max, flags, description);
 	__asm pushad
 
-	DWORD func = 0x5EEEA0;
+	DWORD func = T4M::GetAddress("Dvar_RegisterInt");
 	dvar_t* rete;
 	__asm
 	{

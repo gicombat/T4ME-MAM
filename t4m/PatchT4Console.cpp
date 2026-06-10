@@ -14,10 +14,10 @@
 
 vec4_t whiteColor = { 8.0f, 8.0f, 8.0f, 1.0f };
 
-typedef void(__cdecl * ConDrawInput_Text_t)(const char* text, vec4_t* color);
+typedef void(__cdecl* ConDrawInput_Text_t)(const char* text, vec4_t* color);
 ConDrawInput_Text_t ConDrawInput_Text = (ConDrawInput_Text_t)0x471BC0;
 
-typedef void(__cdecl * ConDrawInput_TextLimitChars_t)(const char* text, int numChars, vec4_t* color);
+typedef void(__cdecl* ConDrawInput_TextLimitChars_t)(const char* text, int numChars, vec4_t* color);
 ConDrawInput_TextLimitChars_t ConDrawInput_TextLimitChars = (ConDrawInput_TextLimitChars_t)0x471CB0;
 
 // Dvar_RegisterInt(int default, const char* name, int min, int max, int flags, const char* description); 0x5EEEA0
@@ -36,14 +36,14 @@ static void ForceLogfileEnabled()
 	// 0=off, 1=sync, 2=async file write (preferred — flushes more often)
 	(*logfile)->current.integer = 2;
 	(*logfile)->latched.integer = 2;
-	(*logfile)->modified        = true;
+	(*logfile)->modified = true;
 }
 
 void DrawDvarFlags(dvar_t* dvar)
 {
 	__int16 flags = dvar->flags;
 
-	const char* flagsString = va("Flags: %s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
+	const char* flagsString = va("Flags: %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
 		(flags & T4::dvar::DVAR_FLAG_ARCHIVE ? "Archive, " : ""),
 		(flags & T4::dvar::DVAR_FLAG_USERINFO ? "UserInfo, " : ""),
 		(flags & T4::dvar::DVAR_FLAG_SERVERINFO ? "ServerInfo, " : ""),
@@ -70,9 +70,9 @@ void __declspec(naked) drawDetailedDvarMatchStub()
 {
 	__asm
 	{
-		push [esp + 12]
-		push [esp + 12]
-		push [esp + 12]
+		push[esp + 12]
+		push[esp + 12]
+		push[esp + 12]
 		call ConDrawInput_TextLimitChars
 
 		push edi
@@ -146,8 +146,8 @@ void testCmd_f()
 
 void __cdecl DB_ListAssetPool_f()
 {
-	char *v0; // eax@4
-	char *v1; // eax@6
+	char* v0; // eax@4
+	char* v1; // eax@6
 	XAssetType type; // ST24_4@6
 	signed int i; // [sp+10h] [bp-Ch]@2
 
@@ -267,7 +267,7 @@ const char* Draw_G_Ents()
 
 	s = va("%i/2047", entityCount + 1); // current / max (expanded from 1023 to 2047 by T4M entity pool patch)
 
-	return s;	
+	return s;
 }
 
 void PatchT4_GetGEnts()
@@ -277,7 +277,7 @@ void PatchT4_GetGEnts()
 	// detour the va call
 	Detours::X86::DetourFunction((uintptr_t)0x00439C2D, (uintptr_t)&Draw_G_Ents, Detours::X86Option::USE_CALL);
 	// remove verbose from cg_drawfps array, ends due to null terminator
-	*(DWORD *)0x8CFCE8 = 0;
+	*(DWORD*)0x8CFCE8 = 0;
 	// change jl to jmp, never executes cg_drawfps 3
 	PatchMemory(0x00439C89, (PBYTE)"\xE9\x12\x03\x00\x00", 5);
 }
@@ -292,12 +292,14 @@ void PatchT4_Console()
 	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 
-	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
+	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
+	if (!T4M::IsGermanVersion())
+	{
+		FilterConsoleSpam();
 
-	FilterConsoleSpam();
-
-	PatchT4_GetGEnts();
-	PatchT4_ConsoleCommands();
-	PatchT4_ConsoleBox();
-	PatchT4_ExternalConsole();
+		PatchT4_GetGEnts();
+		PatchT4_ConsoleCommands();
+		PatchT4_ConsoleBox();
+		PatchT4_ExternalConsole();
+	}
 }

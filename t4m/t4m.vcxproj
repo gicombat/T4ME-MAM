@@ -137,9 +137,11 @@ popd</Command>
     <ClInclude Include="include\cod\clientscript\cscr_variable.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_vm.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_yacc.hpp" />
+    <ClInclude Include="include\cod\dvars.hpp" />
     <ClInclude Include="include\cod\enums.hpp" />
     <ClInclude Include="include\cod\game.hpp" />
     <ClInclude Include="include\cod\structs.hpp" />
+    <ClInclude Include="include\cod\sys.hpp" />
     <ClInclude Include="include\cod\xasset.hpp" />
     <ClInclude Include="include\hexrays_defs.h" />
     <ClInclude Include="include\IniReader.h" />

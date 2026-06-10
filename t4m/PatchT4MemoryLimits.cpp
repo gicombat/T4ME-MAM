@@ -129,9 +129,9 @@ namespace T4M
 
 		// change the size of g_mem from 0x12C00000 to 0x19600000, UGX-Mod v1.1 is pretty fucking huge
 		// had to increase due to it crashing in Com_BeginParseSession
-		*(DWORD*)0x5F5492 = 0x40000000; //0x14800000
-		*(DWORD*)0x5F54D1 = 0x40000000; //0x14800000
-		*(DWORD*)0x5F54DB = 0x40000000; //0x14800000
+		*(DWORD*)T4M::GetAddress("g_mem_5F5492") = 0x40000000; //0x14800000
+		*(DWORD*)T4M::GetAddress("g_mem_5F54D1") = 0x40000000; //0x14800000
+		*(DWORD*)T4M::GetAddress("g_mem_5F54DB") = 0x40000000; //0x14800000
 
 		//*(DWORD*)0x5F5492 = 0x26100000; //0x14800000
 		//*(DWORD*)0x5F54D1 = 0x26100000; //0x14800000
@@ -175,7 +175,7 @@ namespace T4M
 
 		// Unprotect .text section pages covering all patch addresses (0x48D340 – 0x48FA30)
 		DWORD oldProtect;
-		VirtualProtect((LPVOID)0x48D340, 0x48FA30 - 0x48D340, PAGE_EXECUTE_READWRITE, &oldProtect);
+		VirtualProtect((LPVOID)T4M::GetAddress("DB_InitAssetEntryPool"), T4M::GetAddress("assetPool_patch_rangeEnd") - T4M::GetAddress("DB_InitAssetEntryPool"), PAGE_EXECUTE_READWRITE, &oldProtect);
 
 		// All addresses below verified by scanning the binary for byte patterns
 		// 0x00A51C50 (LE: 50 1C A5 00) and 0x00A51C60 (LE: 60 1C A5 00).
@@ -192,79 +192,79 @@ namespace T4M
 
 		// ---- sub_48D340 (DB_InitAssetEntryPool) ----
 		// C7 05 84 78 95 00 [60 1C A5 00] → mov dword_957884, offset unk_A51C60
-		*(DWORD*)0x48D371 = newPoolAddr10;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D371") = newPoolAddr10;
 		// 8D 88 [60 1C A5 00] → lea ecx, [eax + unk_A51C60]
-		*(DWORD*)0x48D382 = newPoolAddr10;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D382") = newPoolAddr10;
 		// 89 88 [50 1C A5 00] → mov [eax + dword_A51C50], ecx
-		*(DWORD*)0x48D388 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D388") = newPoolAddr;
 		// 3D [F0 FF 07 00] → cmp eax, 7FFF0h  →  change limit to 0xFFFF0
-		*(DWORD*)0x48D390 = NEW_ASSET_ENTRY_POOL_SIZE * 0x10; // 65535 * 0x10 = 0xFFFF0
+		*(DWORD*)T4M::GetAddress("assetPool_limit_48D390") = NEW_ASSET_ENTRY_POOL_SIZE * 0x10; // 65535 * 0x10 = 0xFFFF0
 
 		// ---- sub_48D560 (DB_EnumXAssets) ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48D5B8 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D5B8") = newPoolAddr;
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48D5E5 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D5E5") = newPoolAddr;
 
 		// ---- sub_48D760 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48D784 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D784") = newPoolAddr;
 
 		// ---- sub_48D7D0 ----
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48D7F5 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D7F5") = newPoolAddr;
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48D848 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D848") = newPoolAddr;
 
 		// ---- sub_48D860 (DB_AddXAsset / link entry) ----
 		// 81 EA [50 1C A5 00] → sub edx, offset dword_A51C50
-		*(DWORD*)0x48D90F = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D90F") = newPoolAddr;
 
 		// ---- sub_48DEA0 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48DEF4 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48DEF4") = newPoolAddr;
 
 		// ---- sub_48DFB0 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48DFB4 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48DFB4") = newPoolAddr;
 
 		// ---- sub_48DFF0 (DB_UnloadXAssets) ----
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48E059 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E059") = newPoolAddr;
 		// 81 EA [50 1C A5 00] → sub edx, offset dword_A51C50
-		*(DWORD*)0x48E115 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E115") = newPoolAddr;
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48E1C2 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E1C2") = newPoolAddr;
 		// 81 EF [50 1C A5 00] → sub edi, offset dword_A51C50
-		*(DWORD*)0x48E1E8 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E1E8") = newPoolAddr;
 		// 81 EA [50 1C A5 00] → sub edx, offset dword_A51C50
-		*(DWORD*)0x48E292 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E292") = newPoolAddr;
 
 		// ---- sub_48E370 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48E3A6 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48E3A6") = newPoolAddr;
 
 		// ---- sub_48F340 (DB_PostLoadXZone) ----
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48F378 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F378") = newPoolAddr;
 		// 81 C7 [50 1C A5 00] → add edi, offset dword_A51C50
-		*(DWORD*)0x48F4D4 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F4D4") = newPoolAddr;
 		// 81 C7 [50 1C A5 00] → add edi, offset dword_A51C50
-		*(DWORD*)0x48F558 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F558") = newPoolAddr;
 
 		// ---- sub_48F670 ----
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48F68C = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F68C") = newPoolAddr;
 
 		// ---- sub_48F6E0 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48F704 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F704") = newPoolAddr;
 
 		// ---- sub_48F9B0 ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
-		*(DWORD*)0x48F9D4 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F9D4") = newPoolAddr;
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
-		*(DWORD*)0x48FA28 = newPoolAddr;
+		*(DWORD*)T4M::GetAddress("assetPool_reloc_48FA28") = newPoolAddr;
 
 		// =====================================================================
 		// Fix renderer image sort array overflow
@@ -306,58 +306,58 @@ namespace T4M
 		// Unprotect renderer .text pages covering patch addresses
 		// Range: 0x6D69EB to 0x74200E+4
 		DWORD oldProtect2;
-		VirtualProtect((LPVOID)0x6D69E0, 0x742012 - 0x6D69E0, PAGE_EXECUTE_READWRITE, &oldProtect2);
+		VirtualProtect((LPVOID)T4M::GetAddress("imgBuf_patch_rangeStart"), T4M::GetAddress("imgBuf_patch_rangeEnd") - T4M::GetAddress("imgBuf_patch_rangeStart"), PAGE_EXECUTE_READWRITE, &oldProtect2);
 
 		// --- Patch 12 references to dword_3BF1880 (image sort array) ---
 		// Binary scan found pattern 80 18 BF 03 at the exact VA of the immediate.
 		// Patch address = VA directly (no offset needed).
 
 		// 68 [80 18 BF 03] → push offset dword_3BF1880
-		*(DWORD*)0x6D69EB = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6D69EB") = newImgBufAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)0x6DC964 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DC964") = newImgBufAddr;
 		// 8B 14 95 [80 18 BF 03] → mov edx, dword_3BF1880[edx*4]
-		*(DWORD*)0x6DCA8C = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DCA8C") = newImgBufAddr;
 		// 89 0C 85 [80 18 BF 03] → mov dword_3BF1880[eax*4], ecx
-		*(DWORD*)0x6E993D = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6E993D") = newImgBufAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (R_LoadWorld)
-		*(DWORD*)0x705784 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_705784") = newImgBufAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (R_LoadWorld sort call)
-		*(DWORD*)0x70579F = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_70579F") = newImgBufAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (sub_719F40)
-		*(DWORD*)0x719F52 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F52") = newImgBufAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (sub_719F40 sort call)
-		*(DWORD*)0x719F6D = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F6D") = newImgBufAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)0x741C11 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C11") = newImgBufAddr;
 		// 8B 1C 85 [80 18 BF 03] → mov ebx, dword_3BF1880[eax*4]
-		*(DWORD*)0x741C98 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C98") = newImgBufAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)0x741EB7 = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741EB7") = newImgBufAddr;
 		// 8B 2C 85 [80 18 BF 03] → mov ebp, dword_3BF1880[eax*4]
-		*(DWORD*)0x74200E = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_74200E") = newImgBufAddr;
 
 		// --- Patch 9 references to dword_3BF3884 (image count) ---
 		// Binary scan found pattern 84 38 BF 03 at the exact VA of the immediate.
 
 		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)0x6E990F = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E990F") = newImgCntAddr;
 		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)0x6E9936 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9936") = newImgCntAddr;
 		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)0x6E9942 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9942") = newImgCntAddr;
 		// A3 [84 38 BF 03] → mov dword_3BF3884, eax
-		*(DWORD*)0x6E995A = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E995A") = newImgCntAddr;
 		// C7 05 [84 38 BF 03] 00000000 → mov dword_3BF3884, 0
-		*(DWORD*)0x6E9D3C = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9D3C") = newImgCntAddr;
 		// A3 [84 38 BF 03] → mov dword_3BF3884, eax  (R_LoadWorld)
-		*(DWORD*)0x705793 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_705793") = newImgCntAddr;
 		// 8B 0D [84 38 BF 03] → mov ecx, dword_3BF3884
-		*(DWORD*)0x705799 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_705799") = newImgCntAddr;
 		// A3 [84 38 BF 03] → mov dword_3BF3884, eax  (sub_719F40)
-		*(DWORD*)0x719F61 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_719F61") = newImgCntAddr;
 		// 8B 0D [84 38 BF 03] → mov ecx, dword_3BF3884
-		*(DWORD*)0x719F67 = newImgCntAddr;
+		*(DWORD*)T4M::GetAddress("imgCnt_reloc_719F67") = newImgCntAddr;
 
 		// Also patch the max count passed to sub_48DF60 (0x800 → 0x2000)
 		// At 0x70577F: push 800h → change immediate to 8192

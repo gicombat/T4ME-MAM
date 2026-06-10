@@ -55,7 +55,6 @@ namespace T4M
 
     constexpr uint32_t VANILLA_COUNT    = 0x235;
     constexpr uint32_t NEW_COUNT        = VANILLA_COUNT + 12;
-    constexpr uint32_t VANILLA_TABLE_VA = 0x008DDF48;
 
     static const char k_lowReadyInTime[]   = "lowReadyInTime";
     static const char k_lowReadyLoopTime[] = "lowReadyLoopTime";
@@ -73,20 +72,20 @@ namespace T4M
     static void ApplyWeaponDefSizePatches()
     {
         // sub_47AF00 - per-type sizeof getter (table off_8DCC18[0x18])
-        Memory::VP::Patch<uint32_t>(0x0047AF01, 0x9DC);
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefSizeGetter_stride_site"), 0x9DC);
 
         // sub_490030 - pool init for asset type 0x18 (weapon)
-        Memory::VP::Patch<uint32_t>(0x00490055, 0x9DC);          // lea ecx, [eax+9ACh]    -> 9DCh
-        Memory::VP::Patch<uint32_t>(0x00490061, 0x9DC);          // imul esi, 9ACh         -> 9DCh
-        Memory::VP::Patch<int32_t>(0x00490068, -0x9D8);         // [esi+edi-9A8h]         -> -9D8h (= stride - 4)
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefPoolInit_lea_site"), 0x9DC);          // lea ecx, [eax+9ACh]    -> 9DCh
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefPoolInit_imul_site"), 0x9DC);          // imul esi, 9ACh         -> 9DCh
+        Memory::VP::Patch<int32_t>(T4M::GetAddress("WeaponDefPoolInit_negOfs_site"), -0x9D8);         // [esi+edi-9A8h]         -> -9D8h (= stride - 4)
 
         // sub_486780 - .ff weapon scratch setup (skip branch A which reads from .ff stream)
-        Memory::VP::Patch<uint32_t>(0x004867B3, 0x9DC);          // push 9ACh (memset)     -> 9DCh
-        Memory::VP::Patch<uint32_t>(0x004867D7, 0x9DC);          // mov [...]+0x4, 9ACh    -> 9DCh
-        Memory::VP::Patch<uint32_t>(0x004867E9, 0x9DC);          // add dword_B548BC, 9ACh -> 9DCh
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefFfScratch_memset_site"), 0x9DC);          // push 9ACh (memset)     -> 9DCh
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefFfScratch_field_site"), 0x9DC);          // mov [...]+0x4, 9ACh    -> 9DCh
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("WeaponDefFfScratch_accum_site"), 0x9DC);          // add dword_B548BC, 9ACh -> 9DCh
 
         // sub_424130 - BG_LoadWeaponDef (.iwd path, primary weapon loader)
-        Memory::VP::Patch<uint32_t>(0x00424154, 0x9DC);          // push 9ACh (sub_5E4350) -> 9DCh
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("BG_LoadWeaponDef_stride_site"), 0x9DC);          // push 9ACh (sub_5E4350) -> 9DCh
     }
 
     static void ApplyWeaponDefParserPatches()
@@ -94,8 +93,11 @@ namespace T4M
         static uint8_t* newTable = (uint8_t*)VirtualAlloc(
             NULL, 0x2000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-        if (!newTable) 
+        if (!newTable)
             return;
+
+        // resolved at runtime (GetAddress reads the embedded CSV) — not constexpr
+        const uint32_t VANILLA_TABLE_VA = (uint32_t)T4M::GetAddress("weaponDefParseFieldTable");
 
         memcpy(newTable, (const void*)VANILLA_TABLE_VA, VANILLA_COUNT * sizeof(FieldDef));
 
@@ -114,8 +116,8 @@ namespace T4M
         extra[11] = { k_lowReadyOutAnim,  offsetof(WeaponDef, slowReadyOutAnim),  TYPE_STRING };
 
         // Patch the two `push imm32` immediates in sub_424130.
-        Memory::VP::Patch<uint32_t>(0x00424328, NEW_COUNT);             // count: 565 -> 577
-        Memory::VP::Patch<uint32_t>(0x0042432D, (uint32_t)newTable);    // table base
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("BG_LoadWeaponDef_fieldCount_site"), NEW_COUNT);             // count: 565 -> 577
+        Memory::VP::Patch<uint32_t>(T4M::GetAddress("BG_LoadWeaponDef_fieldTable_site"), (uint32_t)newTable);    // table base
     }
 
 }

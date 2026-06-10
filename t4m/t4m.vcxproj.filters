@@ -222,6 +222,12 @@
     <ClInclude Include="AddrMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\cod\dvars.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cod\sys.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc">
