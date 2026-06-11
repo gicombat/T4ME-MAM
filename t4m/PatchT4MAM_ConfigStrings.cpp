@@ -878,7 +878,19 @@ namespace T4_Reconstructed
         CL_PG_ResetSnapshotSlot0();                          // sub_474620 (esi=0)
         G_3010014 = 0;
         if (G_307D6E0 == 0)
+        {
             pg_memset(G_3058528, 0, 0x301654);
+            // FLIP FIX (map-reload truncated names / wrong asset type): the vanilla memset above
+            // zeroes [0x3058528,0x3359B7C), which USED to contain the client side-table (offsets
+            // dword_305A63C, blob byte_305D5FC, cursor dword_307D5FC). The flip relocated those three
+            // into the owned `side` buffer, so this memset no longer reaches them. Without a re-zero,
+            // map 2 keeps map 1's stale per-CS offsets -> a slot the new gamestate never set still
+            // reads offset!=0 -> precache treats it as "set", reads mid-blob (truncated name) and
+            // routes it by its index range (e.g. vehicle block 0x88E..0x951 -> "Could not load
+            // vehicle file"). Mirror the vanilla coverage for the relocated tables (offsets+blob+cursor).
+            if ((void*)g_clientCsOffsets != (void*)0x0305A63C)
+                memset(g_clientCsOffsets, 0, 0x4000 + 0x20000 + 4);   // side buffer: offsets+blob+cursor
+        }
 
         pg_59E970();
 
