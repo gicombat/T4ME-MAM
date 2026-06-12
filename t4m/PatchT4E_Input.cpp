@@ -424,19 +424,17 @@ void AimAssist_ApplyLockOn(const Game::AimInput* input, Game::AimOutput* output)
 	}
 }
 
-
-
 void __cdecl AimAssist_ApplyAutoMelee_4_ApplyAutoAim(Game::AimInput* a1, Game::AimOutput* a2) 
 {
-
-	if (gpad_lastinput->current.integer != 1) {
+	if (gpad_lastinput->current.integer != 1) 
+	{
 		AimAssist_ApplyAutoAim(a1, a2);
 	}
-	else {
+	else 
+	{
 		AimAssist_ClearAutoAimTarget(a1);
 	}
-	cdecl_call<void>(0x4032C0, a1, a2);
-
+	cdecl_call<void>(T4M::GetAddress("AimAssist_ApplyAutoMelee"), a1, a2);
 }
 
 void PatchT4E_Input() 
@@ -452,16 +450,16 @@ void PatchT4E_Input()
 
 	aim_lockon_pitch_strength = Dvar::Dvar_RegisterFloat("aim_lockon_pitch_strength", 0.6f, 0.f, 1.f, 0);
 
-	UI_KeyEventT = safetyhook::create_inline(0x5D6A90, UI_KeyEvent);
-	Display_MouseMoveT = safetyhook::create_inline(0x5CAA30, Display_MouseMoveD);
+	UI_KeyEventT = safetyhook::create_inline(T4M::GetAddress("UI_KeyEvent"), UI_KeyEvent);
+	Display_MouseMoveT = safetyhook::create_inline(T4M::GetAddress("Display_MouseMove"), Display_MouseMoveD);
 
-	Memory::VP::InterceptCall(0x5FA48E, CL_GamepadButtonEvent, CL_GamepadButtonEvent_was);
+	Memory::VP::InterceptCall(T4M::GetAddress("CL_GamepadButtonEvent_callsite"), CL_GamepadButtonEvent, CL_GamepadButtonEvent_was);
 
-	Memory::VP::Nop(0x40372E, 5);
+	Memory::VP::Nop(T4M::GetAddress("applyAutoMelee_call_nop"), 5);
 
-	Memory::VP::InjectHook(0x403735, AimAssist_ApplyAutoMelee_4_ApplyAutoAim);
+	Memory::VP::InjectHook(T4M::GetAddress("applyAutoMelee_inject"), AimAssist_ApplyAutoMelee_4_ApplyAutoAim);
 
-	static auto CL_MouseEvent = safetyhook::create_mid(0x005FA74B, [](SafetyHookContext& ctx) 
+	static auto CL_MouseEvent = safetyhook::create_mid(T4M::GetAddress("CL_MouseEvent_hook"), [](SafetyHookContext& ctx) 
 	{
 		if (ctx.edi != 0 || ctx.esi != 0) {
 			gpad_lastinput->current.integer = 1;

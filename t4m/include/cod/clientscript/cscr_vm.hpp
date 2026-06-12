@@ -894,5 +894,9 @@ namespace T4
 		WEAK symbol<const char* (scriptInstance_t inst, const char** pos, unsigned int count)>Scr_ReadData{ "Scr_ReadData" };
 		// Warning Adress unknow for now
 		WEAK symbol<unsigned int(scriptInstance_t inst)>Scr_GetNumParam{ "Scr_GetNumParam" };
+
+		// moved from T4.cpp extern "C" (T4::engine — namespace sorting done later)
+		WEAK symbol<void*(const char**, int*)> CScr_GetFunction{ "CScr_GetFunction" };
+		WEAK symbol<void*(const char**, int*)> CScr_GetMethod{ "CScr_GetMethod" };
 	}
 } // namespace T4::engine

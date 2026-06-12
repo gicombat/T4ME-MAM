@@ -4,9 +4,9 @@ namespace T4
 {
 	namespace engine
 	{
-		WEAK symbol<unsigned int(const char* str, scriptInstance_t inst)>SL_FindLowercaseString{ "SL_FindLowercaseString" };
+		WEAK symbol<unsigned int(const char* strv, scriptInstance_t inst)>SL_FindLowercaseString{ "SL_FindLowercaseString" };
 		WEAK symbol<unsigned int(scriptInstance_t inst, const char* string, unsigned int user, unsigned int len)>SL_GetStringOfSize{ "SL_GetStringOfSize" };
-		WEAK symbol<unsigned int(scriptInstance_t inst, const char* str, unsigned int user, unsigned int len)>SL_GetLowercaseStringOfLen{ "SL_GetLowercaseStringOfLen" };
+		WEAK symbol<unsigned int(scriptInstance_t inst, const char* strv, unsigned int user, unsigned int len)>SL_GetLowercaseStringOfLen{ "SL_GetLowercaseStringOfLen" };
 		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int stringVal, unsigned int user)>SL_ConvertToLowercase{ "SL_ConvertToLowercase" };
 		WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue, RefString* refStr, unsigned int len)>SL_FreeString{ "SL_FreeString" };
 		WEAK symbol<void()>SL_TransferSystem{ "SL_TransferSystem" };
@@ -41,15 +41,15 @@ namespace T4
 			return result;
 		}
 
-		// WaW sub_68D9A0 — usercall(len@eax, str@edx) -> uint@eax ; no stack args
-		inline unsigned int GetHashCode(unsigned int len, const char* str)
+		// WaW sub_68D9A0 — usercall(len@eax, strv@edx) -> uint@eax ; no stack args
+		inline unsigned int GetHashCode(unsigned int len, const char* strv)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GetHashCode"));
 			unsigned int result;
 			__asm
 			{
 				mov   eax, len
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				mov   result, eax
 			}
@@ -67,15 +67,15 @@ namespace T4
 			}
 		}
 
-		// WaW sub_68DA90 — usercall(inst@eax, str@stack0, len@stack1) -> uint@eax ; caller-cleans
-		inline unsigned int SL_FindStringOfSize(scriptInstance_t inst, const char* str, unsigned int len)
+		// WaW sub_68DA90 — usercall(inst@eax, strv@stack0, len@stack1) -> uint@eax ; caller-cleans
+		inline unsigned int SL_FindStringOfSize(scriptInstance_t inst, const char* strv, unsigned int len)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_FindStringOfSize"));
 			unsigned int result;
 			__asm
 			{
 				push  len
-				push  str
+				push  strv
 				mov   eax, inst
 				call  fn
 				add   esp, 8
@@ -83,15 +83,15 @@ namespace T4
 			}
 			return result;
 		}
-		// WaW sub_68DD20 — usercall(str@edx, inst@stack0) -> uint@eax ; caller-cleans
-		inline unsigned int SL_FindString(const char* str, scriptInstance_t inst)
+		// WaW sub_68DD20 — usercall(strv@edx, inst@stack0) -> uint@eax ; caller-cleans
+		inline unsigned int SL_FindString(const char* strv, scriptInstance_t inst)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_FindString"));
 			unsigned int result;
 			__asm
 			{
 				push  inst
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				add   esp, 4
 				mov   result, eax
@@ -128,8 +128,8 @@ namespace T4
 			return result;
 		}
 
-		// WaW sub_68E330 — usercall(str@edx, inst@stack0, user@stack1) -> uint@eax ; caller-cleans
-		inline unsigned int SL_GetString_(const char* str, scriptInstance_t inst, unsigned int user)
+		// WaW sub_68E330 — usercall(strv@edx, inst@stack0, user@stack1) -> uint@eax ; caller-cleans
+		inline unsigned int SL_GetString_(const char* strv, scriptInstance_t inst, unsigned int user)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetString_"));
 			unsigned int result;
@@ -137,7 +137,7 @@ namespace T4
 			{
 				push  user
 				push  inst
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				add   esp, 8
 				mov   result, eax
@@ -145,8 +145,8 @@ namespace T4
 			return result;
 		}
 
-		// WaW sub_68E360 — usercall(str@edx, user@stack0, inst@stack1) -> uint@eax ; caller-cleans
-		inline unsigned int SL_GetString__0(const char* str, unsigned int user, scriptInstance_t inst)
+		// WaW sub_68E360 — usercall(strv@edx, user@stack0, inst@stack1) -> uint@eax ; caller-cleans
+		inline unsigned int SL_GetString__0(const char* strv, unsigned int user, scriptInstance_t inst)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetString__0"));
 			unsigned int result;
@@ -154,7 +154,7 @@ namespace T4
 			{
 				push  inst
 				push  user
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				add   esp, 8
 				mov   result, eax
@@ -162,14 +162,14 @@ namespace T4
 			return result;
 		}
 
-		// WaW sub_68E420 — usercall(str@edx) -> uint@eax ; no stack args (instance 0 only)
-		inline unsigned int SL_GetLowercaseString(const char* str)
+		// WaW sub_68E420 — usercall(strv@edx) -> uint@eax ; no stack args (instance 0 only)
+		inline unsigned int SL_GetLowercaseString(const char* strv)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetLowercaseString"));
 			unsigned int result;
 			__asm
 			{
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				mov   result, eax
 			}
@@ -229,15 +229,15 @@ namespace T4
 			}
 		}
 
-		// WaW sub_68E770 — usercall(str@edx, inst@stack0) -> uint@eax ; caller-cleans
-		inline unsigned int GScr_AllocString(const char* str, scriptInstance_t inst)
+		// WaW sub_68E770 — usercall(strv@edx, inst@stack0) -> uint@eax ; caller-cleans
+		inline unsigned int GScr_AllocString(const char* strv, scriptInstance_t inst)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GScr_AllocString"));
 			unsigned int result;
 			__asm
 			{
 				push  inst
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				add   esp, 4
 				mov   result, eax
@@ -325,9 +325,9 @@ namespace T4
 		WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue, unsigned int len)>SL_RemoveRefToStringOfSize{ "SL_RemoveRefToStringOfSize" };
 		WEAK symbol<int(RefString* refString)>SL_GetRefStringLen{ "SL_GetRefStringLen" };
 		WEAK symbol<void(unsigned int stringValue, unsigned int user, scriptInstance_t inst)>SL_AddUser{ "SL_AddUser" };
-		WEAK symbol<int(scriptInstance_t inst, const char* str)>SL_ConvertFromString{ "SL_ConvertFromString" };
+		WEAK symbol<int(scriptInstance_t inst, const char* strv)>SL_ConvertFromString{ "SL_ConvertFromString" };
 		WEAK symbol<int(scriptInstance_t inst, RefString* refString)>SL_ConvertFromRefString{ "SL_ConvertFromRefString" };
-		WEAK symbol<RefString* (scriptInstance_t inst, const char* str)>GetRefString_0{ "GetRefString_0" };
+		WEAK symbol<RefString* (scriptInstance_t inst, const char* strv)>GetRefString_0{ "GetRefString_0" };
 		WEAK symbol<const char* (unsigned int id, scriptInstance_t inst)>SL_ConvertToStringSafe{ "SL_ConvertToStringSafe" };
 	}
 } // namespace T4::engine

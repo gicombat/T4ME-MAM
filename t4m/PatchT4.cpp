@@ -66,34 +66,32 @@ void PatchT4()
 	PatchT4_MemoryLimits();
 	PatchT4_Branding();
 	PatchT4_Console();
-	if (!T4M::IsGermanVersion())
-	{
-		PatchT4_Dvars();
-		PatchT4_Menus();
-		PatchT4_NoBorder();
-		PatchT4_Script();
-		PatchT4_Load();
-		PatchT4MAM_Override();
-		PatchT4MAM_WeaponState();
-		PatchT4MAM_LowReady();
-		PatchT4E_Window();
-		PatchT4E_Shaders();
-		PatchT4E_Render();
 
-		PatchT4E_UI();
+	PatchT4_Dvars();
+	PatchT4_Menus();
+	PatchT4_NoBorder();
+	PatchT4_Script();
+	PatchT4_Load();
+	PatchT4MAM_Override();
+	PatchT4MAM_WeaponState();
+	PatchT4MAM_LowReady();
+	PatchT4E_Window();
+	PatchT4E_Shaders();
+	PatchT4E_Render();
 
-		//	PatchT4E_Weapons(); No need for MAM
-		PatchT4E_Pathing();
+	PatchT4E_UI();
 
-		PatchT4E_Input();
-	}
+	//	PatchT4E_Weapons(); No need for MAM
+	PatchT4E_Pathing();
+
+	PatchT4E_Input();
 
 	// check if game got started using steam
 	if (!GetModuleHandle("gameoverlayrenderer.dll"))
 		loadGameOverlay();
 }
 
-void* T4M::Sys_MemCpyFix(void *a1, void **a2, int len)
+void* T4M::Sys_MemCpyFix(void* a1, void** a2, int len)
 {
 	return memcpy(a1, a2, len);
 }
@@ -150,11 +148,11 @@ void PatchT4_Menus()
 
 	if (enable_scoreboard->current.value)
 	{
-		nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
-		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check (jmp_onlinegame_dvar_check)
+		nop(T4M::GetAddress("CG_CheckHudObjectiveDisplay"), 5); // disable CG_CheckHudObjectiveDisplay call
+		nop(T4M::GetAddress("jmp_onlinegame_dvar_check"), 2); // disable jmp for onlinegame dvar check (jmp_onlinegame_dvar_check)
 	}
 
-	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(0x004379D0, [](SafetyHookContext& ctx) 
+	static auto CG_CheckHudObjectiveDisplay_hook = safetyhook::create_mid(T4M::GetAddress("CG_CheckHudObjectiveDisplay_ZombieCheck"), [](SafetyHookContext& ctx)
 	{
 		if (T4M::isZombieMode())
 			ctx.eip = retptr;
@@ -162,21 +160,21 @@ void PatchT4_Menus()
 
 	//nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
 	//nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
-	static auto onlinegame_dvar_check = safetyhook::create_mid(0x006680CE, [](SafetyHookContext& ctx) 
+	static auto onlinegame_dvar_check = safetyhook::create_mid(T4M::GetAddress("onlinegame_dvar_check_hook"), [](SafetyHookContext& ctx)
 	{
 		if (T4M::isZombieMode())
-			ctx.eip = 0x006680D4;
+			ctx.eip = T4M::GetAddress("draw_scoreboard_new1_hook");
 	});
 
-	Memory::VP::Nop(0x00438875, 10);
+	Memory::VP::Nop(T4M::GetAddress("set_352B4D8_flag"), 10);
 
-	static auto draw_scoreboard_new1 = safetyhook::create_mid(0x006680D4, [](SafetyHookContext& ctx) 
+	static auto draw_scoreboard_new1 = safetyhook::create_mid(T4M::GetAddress("draw_scoreboard_new1_hook"), [](SafetyHookContext& ctx)
 	{
-		T4::engine::cg_s* cgArray = (T4::engine::cg_s*)0x034732B8;
+		T4::engine::cg_s* cgArray = (T4::engine::cg_s*)T4M::GetAddress("cgArray");
 
-		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == T4::engine::pmtype_t::PM_INTERMISSION) 
+		if (cgArray->nextSnap && cgArray->nextSnap->ps.pm_type == T4::engine::pmtype_t::PM_INTERMISSION)
 		{
-			ctx.eip = 0x006680DD;
+			ctx.eip = T4M::GetAddress("scoreboard_intermission_resume");
 			return;
 		}
 

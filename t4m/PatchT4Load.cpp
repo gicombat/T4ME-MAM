@@ -178,7 +178,7 @@ namespace T4M
 						// Clear client model weapon slots (renderer scene @ dword_3BF392C)
 						T4::engine::R_ClearScene();                          // sub_6B1440
 						T4::engine::CL_ClearState();                         // sub_59EA90
-						T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+						T4::engine::Hunk_ClearTempMemory(*(int*)T4M::GetAddress("hunk_tempMemoryMark"));  // sub_4B2F80
 					}
 
 					DB_WriterAcquire(); // pure C++ reconstruction — replaces the broken register-based call
@@ -242,7 +242,7 @@ namespace T4M
 			// Clear client model weapon slots (same code as Phase 1)
 			T4::engine::R_ClearScene();                          // sub_6B1440
 			T4::engine::CL_ClearState();                         // sub_59EA90
-			T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+			T4::engine::Hunk_ClearTempMemory(*(int*)T4M::GetAddress("hunk_tempMemoryMark"));  // sub_4B2F80
 		}
 
 		// ── PHASE 6: enqueue the new zones for loading ──────────────────────

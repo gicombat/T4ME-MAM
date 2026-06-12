@@ -19,7 +19,7 @@ static DWORD g_compiledPostfxSize = 0;
 // Hack shader replacement for postfx_color
 void CompileAndInjectHLSLShader(Material* material, const char* shaderName)
 {
-	IDirect3DDevice9* device = *(IDirect3DDevice9**)0x463E490;
+	IDirect3DDevice9* device = *(IDirect3DDevice9**)T4M::GetAddress("g_d3dDevice");
 
 
 	if (g_compiledPostfxBytecode == nullptr)
@@ -183,7 +183,7 @@ Material* __cdecl Material_Register_FastFile(const char* name)
 
 void SetPSConstF(UINT reg, const float* data, UINT count = 1)
 {
-	IDirect3DDevice9* pDevice = *reinterpret_cast<IDirect3DDevice9**>(reinterpret_cast<void*>(0x463E490));
+	IDirect3DDevice9* pDevice = *reinterpret_cast<IDirect3DDevice9**>(reinterpret_cast<void*>(T4M::GetAddress("g_d3dDevice")));
 	if (pDevice)
 		pDevice->SetPixelShaderConstantF(reg, data, count);
 }
@@ -203,8 +203,8 @@ void __cdecl EndFrame() {
 		whatever[0] = r_gamma_x360->current.boolean ? 100.f : 0.f;
 	}
 
-	dvar_t* r_fullscreen = *(dvar_t**)0x042B6F88;
-	dvar_t* r_gamma = *(dvar_t**)0x042B6FB4;
+	dvar_t* r_fullscreen = *(dvar_t**)T4M::GetAddress("r_fullscreen");
+	dvar_t* r_gamma = *(dvar_t**)T4M::GetAddress("r_gamma");
 	if (r_gamma && r_fullscreen && r_gamma_windowed && ((!r_fullscreen->current.boolean && r_gamma_windowed->current.integer) || r_gamma_windowed->current.integer >= 2)) {
 		whatever[1] = r_gamma->current.value;
 	}
@@ -240,11 +240,11 @@ void __cdecl SCR_UpdateFrame() {
 }
 
 void PatchT4E_Shaders() {
-	EndFrame_hook = safetyhook::create_inline(0x6FBF30, EndFrame);
+	EndFrame_hook = safetyhook::create_inline(T4M::GetAddress("EndFrame"), EndFrame);
 	
-	Memory::VP::InterceptCall(0x4793E0, SCR_UpdateFrame_addr,SCR_UpdateFrame);
+	Memory::VP::InterceptCall(T4M::GetAddress("SCR_UpdateFrame_callsite"), SCR_UpdateFrame_addr,SCR_UpdateFrame);
 
-	static auto CalcGammaRamp_ignore = safetyhook::create_mid(0x6D550B, [](SafetyHookContext& ctx) {
+	static auto CalcGammaRamp_ignore = safetyhook::create_mid(T4M::GetAddress("CalcGammaRamp_ignore_hook"), [](SafetyHookContext& ctx) {
 
 		if (r_gamma_windowed && r_gamma_windowed->current.integer >= 2) {
 			ctx.xmm1.f32[0] = 1.f;
@@ -255,7 +255,7 @@ void PatchT4E_Shaders() {
 	r_gamma_x360 = T4::dvar::Dvar_RegisterBool(false, "r_gamma_x360", DVAR_FLAG_ARCHIVE, "Xbox 360 Gamma Correction");
 	r_gamma_windowed = T4::dvar::Dvar_RegisterInt(0, "r_gamma_alt",0,2, DVAR_FLAG_ARCHIVE,"Applies r_gamma in post-fx, 1 is for Windowed mode only, 2 is for both Windowed and Fullscreen and ignores old DX9 Gamma");
 
-	Material_Register_FastFileD = safetyhook::create_inline(0x6E9C00, &Material_Register_FastFile);
+	Material_Register_FastFileD = safetyhook::create_inline(T4M::GetAddress("Material_RegisterHandle"), &Material_Register_FastFile);
 
 
 }

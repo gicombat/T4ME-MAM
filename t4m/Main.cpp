@@ -133,6 +133,7 @@ bool __stdcall DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 			// Detect & cache the exe variant (default/GER) BEFORE PatchT4_SteamDRM decrypts .text.
 			T4M::SetExeVariant(sig);
 			T4M::AddrMap_Load(true);
+			T4M::InitASMRef();
 			Main_SetSafeInit();
 		}
 		else

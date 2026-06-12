@@ -5,11 +5,12 @@
 #include <safetyhook.hpp>
 #include <MemoryMgr.h>
 
-static uintptr_t Path_NodesInCylinder_addr = 0x0055A1E0;
 
 
 int Path_NodesInCylinder_ASM(const float* origin, pathsort_t* nodes, float maxDist, float maxHeight, int maxNodes, int typeFlags)
 {
+	static uintptr_t Path_NodesInCylinder_addr = T4M::GetAddress("Path_NodesInCylinder");
+
 	int result;
 	__asm
 	{
@@ -42,11 +43,11 @@ int __cdecl Path_NodesInRadius(float* origin, float maxDist, pathsort_t* nodes, 
 	return Path_NodesInCylinder(origin, maxDist, 1000000000.0, nodes, maxNodes, typeFlags);
 }
 
-static uintptr_t SV_SightTraceCapsule_addr = 0x005AC430;
-
 // this has a return in BO1
 void SV_SightTraceCapsule_ASM(const float* start, float* end, int* hitNum, const float* mins, const float* maxs, int numHits, contents_e mask)
 {
+	static uintptr_t SV_SightTraceCapsule_addr = T4M::GetAddress("SV_SightTraceCapsule");
+
 	__asm
 	{
 		push mask;
@@ -67,7 +68,8 @@ inline BOOL SV_SightTraceCapsule(
 	const float* mins,
 	const float* maxs,
 	float* end,
-	contents_e mask) {
+	contents_e mask) 
+{
 
 	SV_SightTraceCapsule_ASM(start, end, hitNum, mins, maxs, 1023, (contents_e)mask);
 
@@ -80,7 +82,8 @@ inline BOOL SV_SightTraceCapsule(
 	const float* mins,
 	const float* maxs,
 	float* end,
-	int mask) {
+	int mask) 
+{
 	SV_SightTraceCapsule_ASM(start, end, hitNum, mins, maxs, 1023, (contents_e)mask);
 
 	return false;
@@ -258,7 +261,8 @@ pathnode_t* __cdecl Path_NearestNodeNotCrossPlanes_waw(
 
 	int typeFlags, maxNodes;
 
-	__asm {
+	__asm 
+	{
 		mov typeFlags, edx
 		mov maxNodes, ecx
 	}
@@ -302,7 +306,7 @@ void __declspec(naked) Path_NearestNodeNotCrossPlanes_stub()
 void PatchT4E_Pathing() 
 {
 	g_t5_pathing = T4::dvar::Dvar_RegisterBool(false, "g_t5_pathing", DVAR_FLAG_ARCHIVE);
-	static auto testingthehack = safetyhook::create_mid(0x55C210, [](SafetyHookContext& ctx) {
+	static auto testingthehack = safetyhook::create_mid(T4M::GetAddress("Path_NearestNodeNotCrossPlanes_hook"), [](SafetyHookContext& ctx) {
 		if (g_t5_pathing->isEnabled()) {
 			ctx.eax = (uintptr_t)Path_NearestNodeNotCrossPlanes_lol(
 				ctx.edx,                                          // typeFlags
@@ -316,7 +320,7 @@ void PatchT4E_Pathing()
 				*(int**)(ctx.esp + 0x1C),                        // returnCount
 				*(nearestNodeHeightCheck*)(ctx.esp + 0x20)       // heightCheck
 			);
-			ctx.eip = 0x0055C4C0;
+			ctx.eip = T4M::GetAddress("Path_NearestNodeNotCrossPlanes_resume");
 		}
 		});
 

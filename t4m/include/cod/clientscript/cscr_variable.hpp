@@ -1198,15 +1198,15 @@ namespace T4
 				add   esp, 4
 			}
 		}
-		// WaW sub_693A70 — usercall(parentId@eax, str@edx) -> bool@al ; no stack args
-		inline bool Scr_SLHasLowercaseString(unsigned int parentId, const char* str)
+		// WaW sub_693A70 — usercall(parentId@eax, strv@edx) -> bool@al ; no stack args
+		inline bool Scr_SLHasLowercaseString(unsigned int parentId, const char* strv)
 		{
 			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_SLHasLowercaseString"));
 			bool result;
 			__asm
 			{
 				mov   eax, parentId
-				mov   edx, str
+				mov   edx, strv
 				call  fn
 				mov   result, al
 			}

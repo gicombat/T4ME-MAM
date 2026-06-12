@@ -70,7 +70,7 @@ namespace T4M
 	{
 		if (!g_variantResolved)
 		{
-			MessageBoxA(NULL, "ERROR WHEN RETRIEVENING EXE VARIANT, IT WAS NOT INITIALIZED", "ERROR", 0);
+			//MessageBoxA(NULL, "ERROR WHEN RETRIEVENING EXE VARIANT, IT WAS NOT INITIALIZED", "ERROR", 0);
 			return Unknown;
 		}
 		return g_variant;
@@ -247,6 +247,16 @@ namespace T4M
 
 	uintptr_t GetAddress(const char* name)
 	{
+		if (CurrentExeVariant() == Unknown)
+		{
+			char msg[512];
+			_snprintf_s(msg, sizeof(msg), _TRUNCATE,
+				"Attempt to retrieve an address before setting EXE VARIANT for name  = %s",
+				name ? name : "(null)");
+			MessageBoxA(NULL, msg, "ERROR", MB_OK | MB_ICONWARNING);
+			return NULL;
+		}
+
 		if (!g_loaded)
 			AddrMap_Load();
 

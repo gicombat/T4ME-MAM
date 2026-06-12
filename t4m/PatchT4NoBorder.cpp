@@ -14,7 +14,6 @@
 #include "StdInc.h"
 
 StompHook windowedWindowStyleHook;
-DWORD windowedWindowStyleHookLoc = 0x6D6543;
 
 dvar_t* r_noborder;
 
@@ -35,7 +34,9 @@ void __declspec(naked) WindowedWindowStyleHookStub()
 void PatchT4_NoBorder()
 {
 	r_noborder = T4::dvar::Dvar_RegisterBool(0, "r_noborder", DVAR_FLAG_ARCHIVE, "Remove the border when running in windowed mode (set vid_xpos and vid_ypos to 0).");
-
+	
+	DWORD windowedWindowStyleHookLoc = T4M::GetAddress("windowedWindowStyle_hook_site");
+	
 	windowedWindowStyleHook.initialize(windowedWindowStyleHookLoc, WindowedWindowStyleHookStub, 5, false);
 	windowedWindowStyleHook.installHook();
 }

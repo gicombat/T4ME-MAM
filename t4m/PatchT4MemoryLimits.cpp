@@ -16,9 +16,9 @@
 #define NEW_IMAGE_SORT_BUFFER_SIZE 8192
 #define NEW_MAX_GENTITIES   2048
 #define ENTITY_SIZE         0x378        // 888 bytes per gentity_s
-#define OLD_ENTITY_BASE     0x0176C6F0U
-#define GSPAWN_CMP_IMM      0x54EAC3U   // immediate of "cmp ecx, 3FEh" in G_Spawn
-#define ENTITY_BASE_DWORD   0x18F5D8CU  // dword_18F5D8C: runtime entity-base ptr
+#define OLD_ENTITY_BASE     T4M::GetAddress("g_entities")
+#define GSPAWN_CMP_IMM      T4M::GetAddress("GSpawn_cmp_patch")   // immediate of "cmp ecx, 3FEh" in G_Spawn
+#define ENTITY_BASE_DWORD   T4M::GetAddress("g_entityBasePtr")  // dword_18F5D8C: runtime entity-base ptr
 #define NEW_MAX_LOCALIZED   4096
 
 // =====================================================================
@@ -84,7 +84,7 @@ namespace T4M
 			DWORD v = *(DWORD*)bp;
 			if (v == OLD_ENTITY_BASE) {
 				*(DWORD*)bp = newBase;  ++patched;
-			} else if (v == 0x0184A6F0U || v == 0x0184A780U) {
+			} else if (v == T4M::GetAddress("entityArray_end") || v == T4M::GetAddress("entityInit_loopBound")) {
 				*(DWORD*)bp = newEnd;   ++patched;
 			}
 		}
@@ -102,7 +102,7 @@ namespace T4M
 	{
 		// Hook at 0x62B969: first instruction after "call sub_5AA5F0; add esp, 0Ch"
 		// in sub_62B7C0 (sub_62B7C0+1A1 calls sub_5AA5F0, +1A6 is add esp; +1A9 is here).
-		GEntityPool_hook = safetyhook::create_mid(0x62B969, [](SafetyHookContext&) {
+		GEntityPool_hook = safetyhook::create_mid(T4M::GetAddress("GEntityPool_hook"), [](SafetyHookContext&) {
 			if (!g_newEntityPool) {
 				SetupEntityPool(); // allocate + patch .text (one-shot)
 			}
@@ -393,12 +393,12 @@ namespace T4M
 		// is freed those functions compare against 0x3FF and perform a no-op reset — harmless.
 		// These do not need updating for the spawn-limit increase alone.
 		/*
-		static auto GSpawn_limit_hook = safetyhook::create_mid(0x54EAC1, [](SafetyHookContext& ctx) {
+		static auto GSpawn_limit_hook = safetyhook::create_mid(T4M::GetAddress("GSpawn_limit_hook"), [](SafetyHookContext& ctx) {
 			// ctx.ecx = numGEntities. Redirect eip to skip or enter the error path.
 			if (ctx.ecx < (DWORD)(NEW_MAX_GENTITIES - 2)) {
-				ctx.eip = 0x54EAF2; // allocation path (loc_54EAF2)
+				ctx.eip = T4M::GetAddress("GSpawn_alloc_eip"); // allocation path (loc_54EAF2)
 			} else {
-				ctx.eip = 0x54EAC9; // error path ("G_Spawn: no free entities")
+				ctx.eip = T4M::GetAddress("GSpawn_error_eip"); // error path ("G_Spawn: no free entities")
 			}
 		});
 		Com_Printf(0, "[T4M] G_Spawn limit patched to %d (mid-hook)\n", NEW_MAX_GENTITIES - 2);
@@ -426,15 +426,15 @@ namespace T4M
 
 			// Patch "lea ecx, ds:2350428h[ecx*2]" → redirect to new table
 			// Encoding: 8D 0C 4D [imm32] at 0x54A209; address immediate at 0x54A20C
-			*(DWORD*)0x54A20C = newStrBase;
+			*(DWORD*)T4M::GetAddress("strTable_base_54A20C") = newStrBase;
 
 			// Patch first "push 3FFh" (limit arg to sub_54A1A0)
 			// Encoding: 68 [imm32]; immediate at 0x54A2F3
-			*(DWORD*)0x54A2F3 = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
+			*(DWORD*)T4M::GetAddress("strTable_bound_54A2F3") = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
 
 			// Patch second "push 3FFh" (limit arg to sub_54A1A0)
 			// Encoding: 68 [imm32]; immediate at 0x54A330
-			*(DWORD*)0x54A330 = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
+			*(DWORD*)T4M::GetAddress("strTable_bound_54A330") = (DWORD)(NEW_MAX_LOCALIZED - 1); // 4095 = 0xFFF
 
 			Com_Printf(0, "[T4M] Localized string table expanded: new limit=%d\n",
 					   NEW_MAX_LOCALIZED - 1);

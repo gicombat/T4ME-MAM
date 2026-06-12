@@ -121,13 +121,13 @@ float* ScrPlace_CalcSafeAreaOffsets(float* realViewableMin, float* realViewableM
 float* ScrPlace_SetupViewport(ScreenPlacement *scrPlace, float viewportX, float viewportY, float viewportWidth, float viewportHeight)
 {
 
-	float vidConfig_aspectRatioScenePixel = *(float*)0x04DA90D4;
+	float vidConfig_aspectRatioScenePixel = *(float*)T4M::GetAddress("vidConfig_aspectRatioScenePixel");
 
 	viewportX = 0.0f;
 	viewportY = 0.0f;
 
-	viewportWidth = (float)*(int*)0x03BED830;
-	viewportHeight = (float)*(int*)0x03BED834;
+	viewportWidth = (float)*(int*)T4M::GetAddress("g_3BED830_mapW");
+	viewportHeight = (float)*(int*)T4M::GetAddress("g_3BED834_mapH");
 
 	vidConfig_aspectRatioScenePixel = 1.f;
 	scrPlace->realViewportSize[0] = viewportWidth;
@@ -188,16 +188,20 @@ __declspec(naked) void ScrPlace_SetupFloatViewportDetour() {
 	}
 }
 
-void CL_ResetViewport() {
+void CL_ResetViewport() 
+{
 
-	ScrPlace_SetupViewport((ScreenPlacement*)0x009573A8, 0, 0, 0, 0);
-	ScrPlace_SetupViewport((ScreenPlacement*)0x00957360, 0, 0, 0, 0);
-	ScrPlace_SetupViewport((ScreenPlacement*)0x00957318, 0, 0, 0, 0);
+	ScrPlace_SetupViewport((ScreenPlacement*)T4M::GetAddress("g_9573A8_viewport1"), 0, 0, 0, 0);
+	ScrPlace_SetupViewport((ScreenPlacement*)T4M::GetAddress("g_957360_viewport3"), 0, 0, 0, 0);
+	ScrPlace_SetupViewport((ScreenPlacement*)T4M::GetAddress("g_957318_viewport2"), 0, 0, 0, 0);
 }
+
 dvar_t* safeArea_updateLive;
-void UpdateSafeAreaLive() {
-	dvar_t* cl_paused = *(dvar_t**)0x01F552C4;
-	dvar_t* sv_running = *(dvar_t**)0x01F552DC;
+
+void UpdateSafeAreaLive() 
+{
+	dvar_t* cl_paused = *(dvar_t**)T4M::GetAddress("cl_paused");
+	dvar_t* sv_running = *(dvar_t**)T4M::GetAddress("sv_running");
 
 	if (safeArea_updateLive->current.integer == 1) {
 		if ((cl_paused->modified || sv_running->modified || safeArea_updateLive->modified) || (safeArea_horizontal->modified || safeArea_vertical->modified)) {
@@ -252,13 +256,14 @@ void UpdateSafeAreaLive() {
 
 
 
-void PatchT4E_Window() {
+void PatchT4E_Window() 
+{
 
-	static auto AspectRatioFix = safetyhook::create_mid(0x006D4FA0, [](SafetyHookContext& ctx) {
+	static auto AspectRatioFix = safetyhook::create_mid(T4M::GetAddress("AspectRatioFix_hook"), [](SafetyHookContext& ctx) {
 		// lazy af for proper hook so this will just work for now
 
 
-		*(float*)0x008AFAC0 = (float)ctx.edx / (float)ctx.ecx;
+		*(float*)T4M::GetAddress("aspectRatio_8AFAC0") = (float)ctx.edx / (float)ctx.ecx;
 
 		});
 
@@ -301,9 +306,9 @@ void PatchT4E_Window() {
 	//	}
 	//	});
 
-	Detours::X86::DetourFunction((uintptr_t)0x00644CCB, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x00644CEE, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x00644D11, (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("ScrPlace_SetupFloatViewport_call_644CCB"), (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("ScrPlace_SetupFloatViewport_call_644CEE"), (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("ScrPlace_SetupFloatViewport_call_644D11"), (uintptr_t)&ScrPlace_SetupFloatViewportDetour, Detours::X86Option::USE_CALL);
 
 }
 

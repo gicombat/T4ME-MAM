@@ -18,11 +18,6 @@
 
 #include "MemoryMgr.h"
 
-// Scr_GetNumParam forward decl already provided by T4.h (T4M::Scr_GetNumParam).
-
-dvar_t** developer_script = (dvar_t**)0x01F9646C;
-dvar_t** logfile = (dvar_t**)0x01F552BC;
-
 dvar_t* developer_funcdump;
 
 // COD5R HUD stuff
@@ -73,10 +68,10 @@ namespace T4M
 	// But use some original function
 	int BG_GetWeaponIndexForName(const char* name)
 	{
-		if (*(bool*)0x018F6DB8);
-		return ((int(__cdecl*)(const char*, void*))0x41D4C0)(name, (void*)0x4FE980);
+		if (*(bool*)T4M::GetAddress("dword_18F6DB8"));
+		return ((int(__cdecl*)(const char*, void*))T4M::GetAddress("BG_FindWeaponIndex_Internal"))(name, (void*)T4M::GetAddress("BG_LoadWeaponByIndex"));
 
-		return ((int(__cdecl*)(const char*))0x41D470)(name);
+		return ((int(__cdecl*)(const char*))T4M::GetAddress("BG_FindWeaponIndex"))(name);
 	}
 
 #pragma region setupFunctions
@@ -135,7 +130,7 @@ namespace T4M
 #pragma region engineFunctions
 	int __cdecl Scr_GetNumParam(scriptInstance_t inst)
 	{
-		DWORD* value = (DWORD*)0x03BD471C; // getNumParamArray location
+		DWORD* value = (DWORD*)T4M::GetAddress("value"); // getNumParamArray location
 		return value[4298 * inst];
 	}
 
@@ -159,7 +154,7 @@ namespace T4M
 
 	void Scr_ClearOutParams(scriptInstance_t v1)
 	{
-		static DWORD dwCall = 0x00693DA0;
+		static DWORD dwCall = T4M::GetAddress("Scr_ClearOutParams");
 
 		__asm
 		{
@@ -175,15 +170,15 @@ namespace T4M
 		// TO-DO: define sys_error
 		//if (dword_A05AC98[4298 * inst] == dword_A05AC8C[4298 * inst])
 		//	Sys_Error("Internal script stack overflow");
-		((DWORD*)0xA05AC98)[4296 * inst] += 8;
-		++((DWORD*)0xA05ACA0)[4296 * inst];
+		((DWORD*)T4M::GetAddress("g_scrOutParamStackPtr"))[4296 * inst] += 8;
+		++((DWORD*)T4M::GetAddress("g_scrOutParamCount"))[4296 * inst];
 	}
 
 	void __cdecl Scr_AddInt(int value, scriptInstance_t inst)
 	{
 		T4M::IncInParam(inst);
-		*(DWORD*)((((DWORD*)0x03BD4710)[4296 * value]) + 4) = 6;
-		*(DWORD*)(((DWORD*)0x03BD4710)[4296 * value]) = value;
+		*(DWORD*)((((DWORD*)T4M::GetAddress("g_scrVarStack"))[4296 * value]) + 4) = 6;
+		*(DWORD*)(((DWORD*)T4M::GetAddress("g_scrVarStack"))[4296 * value]) = value;
 	}
 #pragma endregion engineFunctions
 
@@ -195,7 +190,7 @@ namespace T4M
 		void(__cdecl * function)();
 		// check if the function passed is part of our custom funcs
 		if (!(scriptFunctions.find(std::string(*pName)) != scriptFunctions.end()))
-			function = (void(__cdecl*)())T4::game::Scr_GetFunction(pName, type);
+			function = (void(__cdecl*)())T4::engine::Scr_GetFunction(pName, type);
 		else
 			function = (void(__cdecl*)())Scr_GetCustomFunction(pName, type);
 
@@ -276,7 +271,7 @@ namespace T4M
 		}
 	}
 
-	static uintptr_t Scr_GetString_addr = 0x69A0D0;
+	static uintptr_t Scr_GetString_addr = NULL;
 	uintptr_t __declspec(naked) Scr_GetString_asm(uint32_t index, scriptInstance_t instance)
 	{
 		__asm
@@ -305,7 +300,7 @@ namespace T4M
 
 	const char* Scr_GetString(uint32_t index, scriptInstance_t instance)
 	{
-		return (const char*)Scr_GetString_asm(index, instance);
+		return T4::engine::Scr_GetString(index, instance);
 	}
 
 	void(__cdecl* __cdecl CScr_GetFunction_Hook(const char** pName, int* type))()
@@ -314,7 +309,7 @@ namespace T4M
 		// also if running debugger and a customf func is executed the debugger will instadie
 		void(__cdecl * function)();
 
-		function = (void(__cdecl*)())T4::game::CScr_GetFunction(pName, type);
+		function = (void(__cdecl*)())T4::engine::CScr_GetFunction(pName, type);
 
 		if (developer_funcdump->current.boolean && function != 0)
 			T4::engine::Com_Printf(0, "[CSC] Function: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
@@ -327,7 +322,7 @@ namespace T4M
 		// aids #3 woo!
 		void(__cdecl * function)();
 
-		function = (void(__cdecl*)())T4::game::CScr_GetMethod(pName, type);
+		function = (void(__cdecl*)())T4::engine::CScr_GetMethod(pName, type);
 
 		if (developer_funcdump->current.boolean && function != 0)
 			T4::engine::Com_Printf(0, "[CSC] Method: %s\nType: %i\nAddress: 0x%X\n\n", *pName, *type, function);
@@ -338,7 +333,7 @@ namespace T4M
 
 	int __cdecl Scr_GetInt(scriptInstance_t inst, unsigned int index)
 	{
-		static DWORD func = 0x00699C50;
+		static DWORD func = T4M::GetAddress("Scr_GetInt");
 		int result;
 		__asm
 		{
@@ -410,32 +405,32 @@ void PatchT4_Script()
 
 	g_fix_tesla_bug = T4::dvar::Dvar_RegisterBool(0, "g_fix_tesla_bug", DVAR_FLAG_CHEAT, "Applies same wunderwaffe's 'fix' as seen in Black Ops 1");
 
-	Memory::VP::InjectHook(0x4DDA72, T4M::DisablePushPlayer);
+	Memory::VP::InjectHook(T4M::GetAddress("DisablePushPlayer_hook"), T4M::DisablePushPlayer);
 
-	static auto fix_tesla_bug = safetyhook::create_mid(0x4F5EE2, [](SafetyHookContext& ctx) {
+	static auto fix_tesla_bug = safetyhook::create_mid(T4M::GetAddress("fix_tesla_bug_hook"), [](SafetyHookContext& ctx) {
 		if (g_fix_tesla_bug->current.boolean)
-			ctx.eip = 0x4F5F44;
+			ctx.eip = T4M::GetAddress("tesla_bug_resume");
 	});
 
 
 
 	g_fix_health_sets_max = T4::dvar::Dvar_RegisterBool(0, "g_fix_health_sets_max", DVAR_FLAG_CHEAT, "Stops health also changing maxhealth");
 
-	static auto fix_health_sets_max = safetyhook::create_mid(0x005309C0, [](SafetyHookContext& ctx) {
+	static auto fix_health_sets_max = safetyhook::create_mid(T4M::GetAddress("fix_health_sets_max_hook"), [](SafetyHookContext& ctx) {
 		if (g_fix_health_sets_max->current.boolean)
-			ctx.eip = 0x5309C6;
+			ctx.eip = T4M::GetAddress("health_sets_max_resume");
 	});
 
 	static dvar_t* gsc_OverheatMaxAmmo = T4::dvar::Dvar_RegisterBool(false, "gsc_OverheatMaxAmmo", 0, "Resets cooldown for 'overheat' weapon types when GiveMaxAmmo is called");
 
 	// [GSC]
-	Detours::X86::DetourFunction((uintptr_t)0x00682DAF, (uintptr_t)&T4M::Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x00683043, (uintptr_t)&T4M::Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("Scr_GetFunction_callsite"), (uintptr_t)&T4M::Scr_GetFunction_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("Scr_GetMethod_callsite"), (uintptr_t)&T4M::Scr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 	T4M::Scr_DeclareFunction("printlnconsole", T4M::GScr_PrintLnConsole);
 	T4M::Scr_DeclareMethod("setlowready", T4M::GScr_SetLowReady);
 
 	// i hate asm and safetyhook midhook ftw -clippy95
-	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(0x4EE157, [](SafetyHookContext& ctx)
+	static auto PlayerCmd_GiveMaxAmmo_midhook = safetyhook::create_mid(T4M::GetAddress("PlayerCmd_GiveMaxAmmo_hook"), [](SafetyHookContext& ctx)
 	{
 		if (gsc_OverheatMaxAmmo && gsc_OverheatMaxAmmo->current.boolean) 
 		{
@@ -444,10 +439,10 @@ void PatchT4_Script()
 	});
 
 	// [CSC]
-	Detours::X86::DetourFunction((uintptr_t)0x00682DC0, (uintptr_t)&T4M::CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x0068305C, (uintptr_t)&T4M::CScr_GetMethod_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("CScr_GetFunction_callsite"), (uintptr_t)&T4M::CScr_GetFunction_Hook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("CScr_GetMethod_callsite"), (uintptr_t)&T4M::CScr_GetMethod_Hook, Detours::X86Option::USE_CALL);
 
-	nop(0x00465441, 2); // disable jnz on I_strnicmp for tesla notetrack
+	nop(T4M::GetAddress("tesla_notetrack_strnicmp_nop"), 2); // disable jnz on I_strnicmp for tesla notetrack
 
 	// DON'T USE
 	//nop(0x00668EDC, 5);

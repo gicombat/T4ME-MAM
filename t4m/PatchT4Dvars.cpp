@@ -19,28 +19,28 @@ void PatchT4_Dvars()
 {
 	//DVAR: cg_fov
 	//MODS: Clear cheat flag, set archive flag, set maximum to 90
-	*(WORD*)0x65EE46 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
-	*(float**)0x65EE31 = &cgFov90;
+	*(WORD*)T4M::GetAddress("cg_fov_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(float**)T4M::GetAddress("cg_fov_valuePtr_site") = &cgFov90;
 
 	//DVAR: cg_fovMin
 	//MODS: Clear cheat flag, set archive flag
-	*(WORD*)0x65EEB6 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(WORD*)T4M::GetAddress("cg_fovMin_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: cg_fovScale
 	//MODS: Clear cheat flag, set archive flag
-	*(WORD*)0x65EE7C ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(WORD*)T4M::GetAddress("cg_fovScale_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: r_lodBiasRigid
 	//MODS: Clear cheat flag, set archive flag
-	*(WORD*)0x707D0D ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(WORD*)T4M::GetAddress("r_lodBiasRigid_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: r_lodBiasSkinned
 	//MODS: Clear cheat flag, set archive flag
-	*(WORD*)0x707D74 ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(WORD*)T4M::GetAddress("r_lodBiasSkinned_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: ui_hud_hardcore
 	//MODS: Clear cheat flag, set archive flag
-	*(WORD*)0x5D0C2C ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
+	*(WORD*)T4M::GetAddress("ui_hud_hardcore_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
 
 	//DVAR: fs_basegame
 	//MODS: Clear cheat flag, set archive flag

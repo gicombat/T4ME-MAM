@@ -1797,7 +1797,7 @@ namespace T4
 		unsigned int Scr_GetBuiltin(scriptInstance_t inst, sval_u func_name);
 		int Scr_GetUncacheType(int type);
 		int Scr_GetCacheType(int type);
-		BuiltinFunction Scr_GetFunction(const char** pName, int* type);
+		WEAK symbol<BuiltinFunction(const char**, int*)> Scr_GetFunction{ "Scr_GetFunction" };  // resolved via AddrMap (was vestigial decl)
 		BuiltinFunction GetFunction(scriptInstance_t inst, const char** pName, int* type);
 		BuiltinMethod GetMethod(scriptInstance_t inst, const char** pName, int* type);
 		unsigned int GetVariableName(scriptInstance_t inst, unsigned int id);
