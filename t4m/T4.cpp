@@ -52,7 +52,7 @@ namespace Dvars
 dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = T4M::GetAddress("Dvar_RegisterBool");
-	dvar_t* ret;
+	dvar_t* retv;
 	__asm
 	{
 		push description
@@ -61,9 +61,9 @@ dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char* dvarName, int flags,
 		mov edi, dvarName
 		call func
 		add esp, 8
-		mov ret, eax
+		mov retv, eax
 	}
-	return ret;
+	return retv;
 }
 
 //typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
@@ -74,7 +74,7 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 {
 
 	DWORD func = T4M::GetAddress("Dvar_RegisterFloat");
-	dvar_t* ret;
+	dvar_t* retv;
 
 	__asm
 	{
@@ -89,17 +89,17 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 		mov edi, dvarName
 		call func
 		add esp, 0x10
-		mov ret, eax
+		mov retv, eax
 	}
 
-	return ret;
+	return retv;
 }
 
 // @wrapper — asm usercall to sub_5EF150
 dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = T4M::GetAddress("Dvar_RegisterEnum");
-	dvar_t* ret;
+	dvar_t* retv;
 
 	__asm
 	{
@@ -110,10 +110,10 @@ dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, co
 		mov ecx, valueList;
 		call func;
 		add esp, 0xC;
-		mov ret, eax;
+		mov retv, eax;
 	}
 
-	return ret;
+	return retv;
 }
 
 // @wrapper — asm usercall to sub_6E8DA0
@@ -913,15 +913,14 @@ static T4::engine::symbol<DWORD()> Sys_GetTimeDelta{ "Sys_GetTimeDelta" };
 // "<type>,<name>\n" via va (off_8DCA68[ecx*4] is the type name, edx is the asset name) before
 // writing missingasset.csv. The previous thunk set ONLY ecx -> edx held garbage (e.g. 0x72) ->
 // va did strlen(0x72) -> access violation. Only hit when the missingasset dvar (developer) is on.
-__declspec(naked) static void Call_DB_RecordMissingAsset(int /*type*/, const char* /*name*/)
+static void Call_DB_RecordMissingAsset(int typ, const char* name)
 {
 	static void* fn = (void*)T4M::GetAddress("DB_RecordMissingAsset");  // sub_48D460, variant-aware
 	__asm
 	{
-		mov     ecx, [esp + 4]        ; ecx = type (cdecl arg_0)
-		mov     edx, [esp + 8]        ; edx = name (cdecl arg_1)
-		mov     eax, 0x0048D460
-		jmp     eax                    ; tail-jump; callee returns to our caller
+		mov     ecx, typ;   ecx = type (__usercall) -- 'type' is a MASM keyword, use 'typ'
+		mov     edx, name;  edx = name (__usercall) -- BOTH regs required (edx garbage -> va AV)
+		call    fn;         vanilla
 	}
 }
 

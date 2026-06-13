@@ -14,15 +14,14 @@
 //dvar_t* r_addcmd_t1;
 dvar_t* r_hud_scale_fix;
 
-inline bool is_hud_scale_fix() {
+inline bool is_hud_scale_fix() 
+{
     return r_hud_scale_fix->current.boolean;
 }
 
-float hud_x_fix(float original) {
-
-
-
-    auto Height = (float)*(int*)0x03BED834;
+float hud_x_fix(float original) 
+{
+    auto Height = (float)*(int*)T4M::GetAddress("g_3BED834_mapH");
 
     if (Height <= 720.f || !is_hud_scale_fix())
         return 0.f;
@@ -33,8 +32,9 @@ float hud_x_fix(float original) {
 
 }
 
-float hud_scale_fix(float original) {
-    auto Height = (float)*(int*)0x03BED834;
+float hud_scale_fix(float original) 
+{
+    auto Height = (float)*(int*)T4M::GetAddress("g_3BED834_mapH");
     if (Height <= 720.f || !is_hud_scale_fix())
         return original;
 
@@ -42,7 +42,6 @@ float hud_scale_fix(float original) {
     float scale = Height / 720.0f;
 
     return original * scale;
-
 }
 
 float drawclipammo_scale[2] = { 4.f,4.f };
@@ -63,38 +62,30 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix(
     float s1,
     float t1,
     float* color,
-    void* material) {
+    void* material) 
+{
 
-    auto Width = (float)*(int*)0x03BED830;
-    auto Height = (float)*(int*)0x03BED834;
+    auto Width = (float)*(int*)T4M::GetAddress("g_3BED830_mapW");
+    auto Height = (float)*(int*)T4M::GetAddress("g_3BED834_mapH");
     float scale = 1.f;
-    if (is_hud_scale_fix()) {
+    if (is_hud_scale_fix()) 
+    {
         scale = Height / 720.0f;
 
         width *= scale;
         height *= scale;
 
     }
-
-
-        float* TEST_bullet_wh_3 = (float*)0x008E4580;
-        float* AmmoRocketsPos = (float*)0x8E4570;
+        float* TEST_bullet_wh_3 = (float*)T4M::GetAddress("TEST_bullet_wh_3");
+        float* AmmoRocketsPos = (float*)T4M::GetAddress("AmmoRocketsPos");
         drawclipammo_scale[0] = 4.f * scale;
         ClipAmmoShortMagazine_scale[0] = 40.f * scale;
         ClipAmmoShotgunShells_scale[0] = 20.f * scale;
         DrawClipAmmoRockets_scale[0] = 64.f * scale;
         AmmoRocketsPos[0] = 72.f * scale;
 
-
-
         TEST_bullet_wh_3[0] = 8.f * scale;
-        TEST_bullet_wh_3[1] = (-2.f) * scale;
-
-
-        
-
-    
-
+        TEST_bullet_wh_3[1] = (-2.f) * scale;    
 
     //x += r_addcmd_x->current.value;
     //y += r_addcmd_y->current.value;
@@ -114,7 +105,7 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix(
         float s1,
         float t1,
         float* color,
-        void* material))0x006F58E0)(x, y, width, height, s0, t0, s1, t1, color, material);
+        void* material))T4M::GetAddress("R_AddCmdDrawStretchPic"))(x, y, width, height, s0, t0, s1, t1, color, material);
 }
 
 
@@ -129,7 +120,8 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShortMagazine(
     float s1,
     float t1,
     float* color,
-    void* material) {
+    void* material) 
+{
 
 
     x = x - hud_x_fix(32.f);
@@ -147,9 +139,8 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoMagazine(
     float s1,
     float t1,
     float* color,
-    void* material) {
-
-
+    void* material) 
+{
     x = x - hud_x_fix(4.f);
 
     R_AddCmdDrawStretchPic_HUD_fix(x, y, width, height, s0, t0, s1, t1, color, material);
@@ -165,9 +156,8 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShotgunShells(
     float s1,
     float t1,
     float* color,
-    void* material) {
-
-
+    void* material) 
+{
     x = x - hud_x_fix(16.f);
 
     R_AddCmdDrawStretchPic_HUD_fix(x, y, width, height, s0, t0, s1, t1, color, material);
@@ -184,9 +174,8 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoBeltfed(
     float s1,
     float t1,
     float* color,
-    void* material) {
-
-
+    void* material) 
+{
     x = x - hud_x_fix(1.f);
 
     y = y - hud_x_fix(-2.f);
@@ -204,9 +193,8 @@ void __cdecl R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoRockets(
     float s1,
     float t1,
     float* color,
-    void* material) {
-
-
+    void* material) 
+{
     x = x - hud_x_fix(64.f);
 
     R_AddCmdDrawStretchPic_HUD_fix(x, y, width, height, s0, t0, s1, t1, color, material);
@@ -221,13 +209,15 @@ dvar_t* cg_scoreboardTextOffset_player_2;
 
 dvar_t* cg_scoreboardTextOffset_player_3;
 
-inline float cg_scoreboardTextOffset_og_multiplier() {
-    dvar_t* scoreboard = *(dvar_t**)(0x0368FC14);
+inline float cg_scoreboardTextOffset_og_multiplier() 
+{
+    dvar_t* scoreboard = *(dvar_t**)(T4M::GetAddress("dvar_cg_scoreboardTextOffset"));
 
     return scoreboard->current.value / scoreboard->defaulta.value;
 }
 
-float get_cg_scoreboardTextOffset_per_player(int client) {
+float get_cg_scoreboardTextOffset_per_player(int client) 
+{
     dvar_t* which = cg_scoreboardTextOffset_player_0;
     switch (client) {
     case 0:
@@ -244,7 +234,6 @@ float get_cg_scoreboardTextOffset_per_player(int client) {
         break;
     }
     return which->current.value * cg_scoreboardTextOffset_og_multiplier();
-
 }
 
 int __cdecl UI_TextWidth(const char* text, int maxChars, T4::engine::Font_s* font, float scale);
@@ -259,7 +248,8 @@ dvar_t* cg_drawAmmoMod;
 
 const char* cg_drawAmmoModStrings[] = { "off","offset only","better anchor & offsets",NULL };
 
-void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) {
+void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) 
+{
     float* x = (float*)ctx.esp;
     float* scale = (float*)(ctx.esp + 0x8);
     T4::engine::Font_s* current_font = (T4::engine::Font_s*)ctx.ebp;
@@ -283,34 +273,36 @@ void CG_DrawPlayerAmmoValueClip(SafetyHookContext& ctx, bool lowclip) {
     }
 }
 
-void CG_DrawPlayerAmmoValueClip_lowclip(SafetyHookContext& ctx) {
+void CG_DrawPlayerAmmoValueClip_lowclip(SafetyHookContext& ctx) 
+{
 
     CG_DrawPlayerAmmoValueClip(ctx, true);
 
 }
 
-void CG_DrawPlayerAmmoValueClip_normal(SafetyHookContext& ctx) {
+void CG_DrawPlayerAmmoValueClip_normal(SafetyHookContext& ctx) 
+{
 
     CG_DrawPlayerAmmoValueClip(ctx, false);
 
 }
 
-void PatchT4E_UI() {
-
+void PatchT4E_UI() 
+{
     cg_scoreboardTextOffset_player_0 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_0", 0.64f, 0, FLT_MAX, 0);
     cg_scoreboardTextOffset_player_1 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_1", 0.64f, 0, FLT_MAX, 0);
     cg_scoreboardTextOffset_player_2 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_2", 0.64f, 0, FLT_MAX, 0);
     cg_scoreboardTextOffset_player_3 = T4::dvar::Dvar_RegisterFloat("cg_scoreboardTextOffset_player_3", 0.64f, 0, FLT_MAX, 0);
 
-    Memory::VP::InjectHook(0x0042B814, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoMagazine);
-    Memory::VP::InjectHook(0x0042B954, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShortMagazine);
-    Memory::VP::InjectHook(0x0042BACA, R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShotgunShells);
-    Memory::VP::InjectHook(0x0042BC10, R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoRockets);
-    Memory::VP::InjectHook(0x0042BE13, R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoBeltfed);
+    Memory::VP::InjectHook(T4M::GetAddress("hudDrawClipAmmoMagazine_site"), R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoMagazine);
+    Memory::VP::InjectHook(T4M::GetAddress("hudDrawClipAmmoShortMagazine_site"), R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShortMagazine);
+    Memory::VP::InjectHook(T4M::GetAddress("hudDrawClipAmmoShotgunShells_site"), R_AddCmdDrawStretchPic_HUD_fix_DrawClipAmmoShotgunShells);
+    Memory::VP::InjectHook(T4M::GetAddress("hudDrawClipAmmoRockets_site"), R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoRockets);
+    Memory::VP::InjectHook(T4M::GetAddress("hudDrawClipAmmoBeltfed_site"), R_AddCmdDrawStretchPic_HUD_fix_ClipAmmoBeltfed);
 
     r_hud_scale_fix = T4::dvar::Dvar_RegisterBool(true, "r_hud_scale_fix", DVAR_FLAG_ARCHIVE);
 
-    static auto CG_DrawOverheadNames_scale_fix = safetyhook::create_mid(0x43C0C9, [](SafetyHookContext& ctx) {
+    static auto CG_DrawOverheadNames_scale_fix = safetyhook::create_mid(T4M::GetAddress("CG_DrawOverheadNames_scale_site"), [](SafetyHookContext& ctx) {
 
         ctx.xmm0.f32[0] = hud_scale_fix(ctx.xmm0.f32[0]);
 
@@ -321,11 +313,11 @@ void PatchT4E_UI() {
     //static auto r_ClipAmmoShortMagazine_x = Dvar_RegisterFloat("r_ClipAmmoShortMagazine_x", 40.f, FLT_MIN, FLT_MAX, 0);
     //static auto r_ClipAmmoShotgunShells_x = Dvar_RegisterFloat("r_ClipAmmoShotgunShells_x", 20.f, FLT_MIN, FLT_MAX, 0);
     //static auto r_drawclipammo_y = Dvar_RegisterFloat("r_drawclipammo_y", 4.f, FLT_MIN, FLT_MAX, 0);
-    Memory::VP::Patch<void*>((0x0042B81F + 4), drawclipammo_scale);
+    Memory::VP::Patch<void*>((T4M::GetAddress("hudClipAmmo_scalePtr_site") + 4), drawclipammo_scale);
 
-    Memory::VP::Patch<void*>((0x0042B95F + 4), ClipAmmoShortMagazine_scale);
+    Memory::VP::Patch<void*>((T4M::GetAddress("hudShortMagazine_scalePtr_site") + 4), ClipAmmoShortMagazine_scale);
 
-    Memory::VP::Patch<void*>((0x0042BAD5 + 4), ClipAmmoShotgunShells_scale);
+    Memory::VP::Patch<void*>((T4M::GetAddress("hudShotgunShells_scalePtr_site") + 4), ClipAmmoShotgunShells_scale);
 
     //Memory::VP::Patch<void*>((0x0042BB3A + 4), DrawClipAmmoRockets_scale);
 
@@ -372,7 +364,7 @@ void PatchT4E_UI() {
 
     static auto playerSpectatingHide = T4::dvar::Dvar_RegisterBool(false, "playerSpectatingHide", 0);
 
-    static auto ForJB = safetyhook::create_mid(0x00668A87, [](SafetyHookContext& ctx) {
+    static auto ForJB = safetyhook::create_mid(T4M::GetAddress("CG_ScoreboardSize_site"), [](SafetyHookContext& ctx) {
 
         if (!T4M::isZombieMode())
             return;
@@ -397,7 +389,7 @@ void PatchT4E_UI() {
         });
 
 
-    static auto forJB_textScale = safetyhook::create_mid(0x668800, [](SafetyHookContext& ctx) {
+    static auto forJB_textScale = safetyhook::create_mid(T4M::GetAddress("CG_ScoreboardTextScale_site"), [](SafetyHookContext& ctx) {
         if (!T4M::isZombieMode())
             return;
         float& text_scale = *(float*)(ctx.esp + 0x18);
@@ -413,25 +405,25 @@ void PatchT4E_UI() {
 
         });
     static int current_zombie_client_text = 0;
-    static auto saveClientNumber = safetyhook::create_mid(0x668CC0, [](SafetyHookContext& ctx) {
+    static auto saveClientNumber = safetyhook::create_mid(T4M::GetAddress("CG_ScoreboardClientNumber_site"), [](SafetyHookContext& ctx) {
         current_zombie_client_text = ctx.ecx;
         });
 
-    Memory::VP::Nop(0x6689F8, 5);
+    Memory::VP::Nop(T4M::GetAddress("CG_ScoreboardTextOffset_site"), 5);
 
-    static auto per_player_text_offset = safetyhook::create_mid(0x6689F8, [](SafetyHookContext& ctx) {
+    static auto per_player_text_offset = safetyhook::create_mid(T4M::GetAddress("CG_ScoreboardTextOffset_site"), [](SafetyHookContext& ctx) {
         ctx.xmm0.f32[0] *= get_cg_scoreboardTextOffset_per_player(current_zombie_client_text);
         });
 
-    static auto hide_spectate_text = safetyhook::create_mid(0x438706, [](SafetyHookContext& ctx) {
+    static auto hide_spectate_text = safetyhook::create_mid(T4M::GetAddress("CG_HideSpectateText_site"), [](SafetyHookContext& ctx) {
         if (playerSpectatingHide->current.boolean)
-            ctx.eip = 0x43873C;
+            ctx.eip = T4M::GetAddress("CG_HideSpectateText_skipTarget");
         });
 
     cg_drawAmmoDivider = T4::dvar::Dvar_RegisterInt('|', "cg_drawAmmoDivider", 0, CHAR_MAX, 0);
 
-    Memory::VP::Patch<void*>(0x0044F3CC + 1, &cg_drawAmmoDivider->current.integer);
-    Memory::VP::Patch<void*>(0x44F418 + 1, &cg_drawAmmoDivider->current.integer);
+    Memory::VP::Patch<void*>(T4M::GetAddress("cg_drawAmmoDivider_ptr1_site") + 1, &cg_drawAmmoDivider->current.integer);
+    Memory::VP::Patch<void*>(T4M::GetAddress("cg_drawAmmoDivider_ptr2_site") + 1, &cg_drawAmmoDivider->current.integer);
 
     cg_drawAmmoClipOffset = T4::dvar::Dvar_RegisterFloat("cg_drawAmmoClipOffset", 0.f, -FLT_MAX, FLT_MAX, DVAR_FLAG_ARCHIVE);
 
@@ -439,13 +431,13 @@ void PatchT4E_UI() {
 
     cg_drawAmmoMod = T4::dvar::Dvar_RegisterEnum(cg_drawAmmoModStrings, 2, "cg_drawAmmoMod", DVAR_FLAG_ARCHIVE," ");
 
-    static auto cg_draw_ammo_clip = safetyhook::create_mid(0x0044F2FA, CG_DrawPlayerAmmoValueClip_normal);
+    static auto cg_draw_ammo_clip = safetyhook::create_mid(T4M::GetAddress("CG_DrawAmmoClipNormal_site"), CG_DrawPlayerAmmoValueClip_normal);
 
 
-    static auto cg_draw_ammo_clip1 = safetyhook::create_mid(0x44F33E, CG_DrawPlayerAmmoValueClip_lowclip);
+    static auto cg_draw_ammo_clip1 = safetyhook::create_mid(T4M::GetAddress("CG_DrawAmmoClipLowclip_site"), CG_DrawPlayerAmmoValueClip_lowclip);
 
 
-    static auto cg_draw_ammo_reserve = safetyhook::create_mid(0x0044F3AA, [](SafetyHookContext& ctx) {
+    static auto cg_draw_ammo_reserve = safetyhook::create_mid(T4M::GetAddress("CG_DrawAmmoReserve_site"), [](SafetyHookContext& ctx) {
         float* x = (float*)ctx.esp;
         float* scale = (float*)(ctx.esp + 0x8);
         T4::engine::Font_s* current_font = (T4::engine::Font_s*)ctx.ebp;
@@ -469,5 +461,4 @@ void PatchT4E_UI() {
             *x += cg_drawAmmoReserveOffset->current.value;
         }
         });
-
 }

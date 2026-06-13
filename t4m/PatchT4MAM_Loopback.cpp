@@ -57,9 +57,10 @@ namespace LoopbackEngine
     static char* g_loopbackBase = nullptr;
 
     // Huffman warm-up (timing) on first send — faithful to vanilla sub_678FF0 head.
+    // Resolved at runtime in PatchT4MAM_Loopback() (variant-aware; avoids static-init before AddrMap).
     typedef void (__cdecl* HuffWarm_t)(void);
-    static const HuffWarm_t HuffWarmup  = (HuffWarm_t)0x00677BC0;
-    static int* const       g_huffInited = (int*)     0x0368FCFC; // dword_368FCFC
+    static HuffWarm_t HuffWarmup   = nullptr;   // 0x677BC0 MSG_InitHuffman
+    static int*       g_huffInited = nullptr;   // 0x368FCFC msg_huffmanInited
 }
 
 extern "C" int  __cdecl T4M_NET_GetLoopPacket_recon (int sock, char* msg, char* from);
@@ -200,22 +201,27 @@ void PatchT4MAM_Loopback()
     // (last index >=31) NEVER completes reassembly. Vanilla never hit it (<512 models => <32
     // fragments); our model expansion produces 33-fragment gamestates. setnle(0F 9F) -> setnz(0F 95)
     // makes it a correct `!= 0` test. Byte-pattern guarded (abort if the exe differs).
-    if (*(unsigned char*)0x00678B58 == 0x0F &&
-        *(unsigned char*)0x00678B59 == 0x9F &&
-        *(unsigned char*)0x00678B5A == 0xC2)
+    DWORD fragSite = T4M::GetAddress("Netchan_Process_fragComplete_site");  // 0x678B58 (guard) / +1 patched
+    if (*(unsigned char*)fragSite       == 0x0F &&
+        *(unsigned char*)(fragSite + 1) == 0x9F &&
+        *(unsigned char*)(fragSite + 2) == 0xC2)
     {
-        Memory::VP::Patch<uint8_t>(0x00678B59, 0x95);   // setnle dl -> setnz dl
+        Memory::VP::Patch<uint8_t>(fragSite + 1, 0x95);   // setnle dl -> setnz dl
     }
+
+    // Resolve loopback recon dependencies (variant-aware; used only at runtime by the recons).
+    HuffWarmup   = (HuffWarm_t)T4M::GetAddress("MSG_InitHuffman");
+    g_huffInited = (int*)      T4M::GetAddress("msg_huffmanInited");
 
     g_loopbackBase = (char*)VirtualAlloc(NULL, (SIZE_T)LOOP_STRIDE * 2,
                                          MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (!g_loopbackBase)
         return;   // keep vanilla 16-slot queue, no detour, no flush hook
 
-    Detours::X86::DetourFunction((uintptr_t)0x00678F30,
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("NET_GetLoopPacket"),
                                  (uintptr_t)&T4M_NET_GetLoopPacket_usercall,
                                  Detours::X86Option::USE_JUMP);
-    Detours::X86::DetourFunction((uintptr_t)0x00678FF0,
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("NET_SendLoopPacket"),
                                  (uintptr_t)&T4M_NET_SendLoopPacket_usercall,
                                  Detours::X86Option::USE_JUMP);
 }
