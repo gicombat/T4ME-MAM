@@ -66,6 +66,15 @@
     <ClCompile Include="PatchT4MAM_Override.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_ModelIndex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_ConfigStrings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_Loopback.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LAAPatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

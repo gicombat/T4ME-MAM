@@ -1112,12 +1112,16 @@ static const Sys_DequeueLoadEvent_t   Sys_DequeueLoadEvent   = (Sys_DequeueLoadE
 static const fn_void_void_t           DB_WaitForWorkerEvent  = (fn_void_void_t)           0x005A32B0;
 static const Sys_GetTimeDelta_t       Sys_GetTimeDelta        = (Sys_GetTimeDelta_t)       0x00603D40;
 
-// DB_RecordMissingAsset (sub_48D460) is __usercall(ecx = type). Naked thunk to translate from cdecl.
-__declspec(naked) static void Call_DB_RecordMissingAsset(int /*type*/)
+// DB_RecordMissingAsset (sub_48D460) is __usercall(ecx = type, edx = name): it formats
+// "<type>,<name>\n" via va (off_8DCA68[ecx*4] is the type name, edx is the asset name) before
+// writing missingasset.csv. The previous thunk set ONLY ecx -> edx held garbage (e.g. 0x72) ->
+// va did strlen(0x72) -> access violation. Only hit when the missingasset dvar (developer) is on.
+__declspec(naked) static void Call_DB_RecordMissingAsset(int /*type*/, const char* /*name*/)
 {
 	__asm
 	{
 		mov     ecx, [esp + 4]        ; ecx = type (cdecl arg_0)
+		mov     edx, [esp + 8]        ; edx = name (cdecl arg_1)
 		mov     eax, 0x0048D460
 		jmp     eax                    ; tail-jump; callee returns to our caller
 	}
@@ -1413,7 +1417,7 @@ loc_48DDB0:
 			const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*T4::g_dbAltDefaultDvarPtr);
 			useAlt = dvar && dvar[0x10] != 0;
 		}
-		if (useAlt) Call_DB_RecordMissingAsset(type);
+		if (useAlt) Call_DB_RecordMissingAsset(type, name);
 	}
 
 	if (waitStartDelta != 0 && useDefault)
@@ -1827,8 +1831,8 @@ T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(T4::e
 	// ----- C.1 — NOUVEAU PERD : insertion dans nextOverride -----
 	if (pNew < pOld)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
-			name, pOld, T4::g_zoneFileNames[existing->zoneIndex].name, pNew, T4::g_zoneFileNames[newEntry->zoneIndex].name);
+	//	T4::engine::Com_PrintfChannel(0, "[T4M] - Override uncessful for asset %s. Old priority one %d from zone %s => new priority one %d, from zone %s\n", 
+		//	name, pOld, T4::g_zoneFileNames[existing->zoneIndex].name, pNew, T4::g_zoneFileNames[newEntry->zoneIndex].name);
 
 		// Cherche la position d'insertion : on descend tant que la zone
 		// du nœud courant est plus prioritaire que pNew.

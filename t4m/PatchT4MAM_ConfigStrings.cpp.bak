@@ -1,0 +1,332 @@
+// ==========================================================
+// T4M project
+//
+// Component: clientdll
+// Purpose:   Reconstruction du sous-système CONFIG-STRING (étape vers 1024+ modèles).
+//
+//   Stratégie : reconstruire chaque fonction CS de façon FIDÈLE (détour
+//   T4_Reconstructed::), en remplaçant les accès durs (word_2350426 / 0xBF0 /
+//   word_2350424) par des GLOBAUX PARTAGÉS retargetables, qui valent les valeurs
+//   VANILLA par défaut. Tant qu'on n'a pas basculé ces globaux, les détours sont
+//   à comportement IDENTIQUE au vanilla → testables sans régression. Une fois TOUT
+//   le sous-système reconstruit, on bascule les globaux vers une table agrandie/
+//   relogée en un seul changement atomique. Voir plans/plan_configstring_reconstruction.md.
+//
+//   Reconstruites + vérifiées (adversarial ligne-par-ligne vs asm) :
+//     - SV_GetConfigstring   (sub_6315C0, __usercall esi=idx/edi=dstSize/dst@stack)
+//     - SV_ClearConfigstrings(sub_631DA0, __cdecl void)
+//     - SV_SetConfigstrings  (sub_6311E0, __cdecl(pairs[],count) — writer batch)
+//   À VENIR : réseau (sub_62F500/64CAE0), init (sub_510830/990/5104F0), parsers,
+//   allocator, puis bascule + relocation arbre bounds/baselines.
+//
+//   ⚠️ Détours GATED OFF par défaut (code possédé+compilé mais inerte). Activer un
+//   flag pour valider la fidélité au runtime (le jeu doit se comporter à l'identique),
+//   puis bascule des globaux.
+// ==========================================================
+
+#include "StdInc.h"
+#include "T4.h"
+#include <cstring>   // strlen / strcmp
+
+// --- Gates de détour (validation incrémentale ; 0 = inerte) -----------------
+#define CS_DETOUR_GETCONFIGSTRING   1
+#define CS_DETOUR_CLEARCONFIGSTRING 1
+#define CS_DETOUR_SETCONFIGSTRING   1
+
+// ============================================================================
+// Globaux PARTAGÉS config-string (retargetables ; défaut = valeurs vanilla).
+// La bascule finale ne touchera QUE ces 3 variables + l'allocation des nouvelles
+// tables ; toutes les reconstructions ci-dessous les utilisent.
+// ============================================================================
+extern "C" unsigned short* g_csTable    = (unsigned short*)0x02350426; // word_2350426
+extern "C" unsigned short* g_csSentinel = (unsigned short*)0x02350424; // word_2350424
+extern "C" int             g_maxCS      = 0xBF0;                        // MAX_CONFIGSTRINGS
+
+namespace T4_Reconstructed
+{
+    // dword_3702390 : POINTEUR runtime vers la base du pool de strings internées
+    // (stride 0xC ; texte d'un CS = (*ptr) + handle*0xC + 4). On lit la VALEUR.
+    static unsigned char** const cs_stringPoolPtr = (unsigned char**)0x03702390;
+
+    static const char* const cs_assertToken = (const char*)0x00887664; // unk_887664 (length-prefixed)
+    static const char  cs_empty[1] = { 0 };                            // chaîne vide locale
+
+    // --- helpers vanilla (par VA) -------------------------------------------
+    typedef void (__cdecl* CsErr_t)(int level, const void* msg, ...);  // sub_59AC50
+    static const CsErr_t   cs_error    = (CsErr_t)0x0059AC50;
+    typedef void (__cdecl* StrncpyZ_t)(char* dst, const char* src, int count); // sub_7AA9C0
+    static const StrncpyZ_t cs_strncpyz = (StrncpyZ_t)0x007AA9C0;
+    typedef void (__cdecl* ComMemset_t)(void* dst, int fill, int dwordCount);  // sub_5E5100
+    static const ComMemset_t cs_memsetDwords = (ComMemset_t)0x005E5100;
+    typedef int  (__cdecl* SL_Intern_t)(int a, const char* str, int c, int len);
+    static const SL_Intern_t SL_Intern_Low  = (SL_Intern_t)0x0068DE50; // idx < 0x585
+    static const SL_Intern_t SL_Intern_High = (SL_Intern_t)0x0068E390; // idx >= 0x585
+    typedef int  (__cdecl* ComSprintf_t)(char* dst, const char* fmt, ...);     // sub_7AA926
+    static const ComSprintf_t cs_sprintf = (ComSprintf_t)0x007AA926;
+    typedef char* (__cdecl* Va_t)(const char* fmt, ...);                       // sub_5F6D80
+    static const Va_t cs_va = (Va_t)0x005F6D80;
+
+    static int* const p_sv_state    = (int*)0x00234FC08;  // ==2 => SV actif
+    static int* const p_sv_running  = (int*)0x00234FC14;
+    static unsigned char* const g_clientsBase = (unsigned char*)0x02547090; // dword_2547090
+    static const int CLIENT_STRIDE  = 0x58D30;
+    static const void* const ERR_BAD_INDEX  = (const void*)0x008875C8;  // "SV_SetConfigstring: bad index %i"
+    static const void* const ERR_BIG_BUNDLE = (const void*)0x008875F0;  // "…big config string…"
+    #define CS_STRPOOL (*(unsigned char**)0x03702390)
+    #define CS_SVS_PTR (*(unsigned char**)0x023D5C30)
+
+    // ========================================================================
+    // @faithful  SV_GetConfigstring (sub_6315C0). __usercall esi=idx/edi=dstSize/dst@stack.
+    // ========================================================================
+    extern "C" void __cdecl SV_GetConfigstring(int idx, char* dst, int dstSize)
+    {
+        if (idx < 0 || idx >= g_maxCS)
+            cs_error(1, cs_assertToken, idx);            // puis fall-through (fidèle)
+
+        unsigned int handle = (unsigned int)g_csTable[idx];
+        if ((handle & 0xFFFF) == 0) { cs_strncpyz(dst, cs_empty, dstSize - 1); dst[dstSize - 1] = 0; return; }
+        if (handle == 0)            { cs_strncpyz(dst, (const char*)0, dstSize - 1); dst[dstSize - 1] = 0; return; }
+
+        const char* src = (const char*)(*cs_stringPoolPtr + handle * 0xC + 4);
+        cs_strncpyz(dst, src, dstSize - 1);
+        dst[dstSize - 1] = 0;
+    }
+    __declspec(naked) void SV_GetConfigstring_Naked()
+    {
+        __asm {
+            mov     eax, [esp+4]        // dst (arg_0)
+            push    edi                 // dstSize
+            push    eax                 // dst
+            push    esi                 // idx
+            call    SV_GetConfigstring
+            add     esp, 0Ch
+            retn
+        }
+    }
+
+    // ========================================================================
+    // thunk SL_RemoveRefToString (sub_68E680). __usercall(edx=handle, esi=poolSel).
+    // PRÉSERVE esi (non-volatile cdecl). Réutilisé par reset + setter (pre-free).
+    // ========================================================================
+    __declspec(naked) void __cdecl SL_RemoveRefToString_thunk(unsigned short /*handle*/, int /*poolSel*/)
+    {
+        __asm {
+            push    esi
+            movzx   edx, word ptr [esp+8]     // handle (+4 pour push esi)
+            mov     esi, [esp+0Ch]            // poolSel
+            mov     eax, 0x0068E680
+            call    eax
+            pop     esi
+            retn
+        }
+    }
+
+    // ========================================================================
+    // @faithful  SV_ClearConfigstrings (sub_631DA0). __cdecl void.
+    // ========================================================================
+    extern "C" void __cdecl SV_ClearConfigstrings(void)
+    {
+        for (int i = 0; i < g_maxCS; ++i)
+        {
+            unsigned short handle = g_csTable[i];
+            if (handle != 0) SL_RemoveRefToString_thunk(handle, 0);
+        }
+        unsigned short sentinel = *g_csSentinel;
+        if (sentinel != 0) SL_RemoveRefToString_thunk(sentinel, 0);
+
+        cs_memsetDwords((void*)0x00234FC08, 0, 0x21806); // 0x86018 octets (gameState)
+        *(int*)0x02FCDA04 = 0;
+    }
+
+    // ========================================================================
+    // Thunks pour SV_SendServerCommand (sub_633FA0). Convention vanilla :
+    //   eax = flag (0 = broadcast tous ; sinon = client ciblé)
+    //   stack = (arg_0 = 1, arg_4 = fmt, arg_8.. = varargs)
+    // Le push [esp+N] auto-décalé reconstruit la pile vanilla. ecx est scratch
+    // (sub_633FA0 l'écrase dès l'entrée) → on l'utilise pour l'adresse d'appel,
+    // ce qui laisse eax libre pour le flag.
+    // ========================================================================
+    __declspec(naked) void __cdecl SV_CS_Send_cxxs(int /*one*/, const char* /*fmt*/, int /*c*/, int /*idx*/, int /*len*/, const char* /*str*/)
+    {
+        __asm {
+            push    [esp+18h]   // str
+            push    [esp+18h]   // len
+            push    [esp+18h]   // idx
+            push    [esp+18h]   // c
+            push    [esp+18h]   // fmt
+            push    [esp+18h]   // one
+            xor     eax, eax              // flag = 0 (broadcast)
+            mov     ecx, 0x00633FA0
+            call    ecx
+            add     esp, 18h
+            retn
+        }
+    }
+    __declspec(naked) void __cdecl SV_CS_Send_cs(int /*one*/, const char* /*fmt*/, int /*c*/, const char* /*str*/)
+    {
+        __asm {
+            push    [esp+10h]   // str
+            push    [esp+10h]   // c
+            push    [esp+10h]   // fmt
+            push    [esp+10h]   // one
+            xor     eax, eax              // flag = 0 (broadcast)
+            mov     ecx, 0x00633FA0
+            call    ecx
+            add     esp, 10h
+            retn
+        }
+    }
+    __declspec(naked) void __cdecl SV_CS_Send_cs_target(void* /*target*/, int /*one*/, const char* /*fmt*/, int /*c*/, const char* /*str*/)
+    {
+        __asm {
+            push    [esp+14h]   // str
+            push    [esp+14h]   // c
+            push    [esp+14h]   // fmt
+            push    [esp+14h]   // one
+            mov     eax, [esp+14h]        // flag = target (envoi ciblé)
+            mov     ecx, 0x00633FA0
+            call    ecx
+            add     esp, 10h
+            retn
+        }
+    }
+    // Info_ValueForKey (sub_5F6DF0). __thiscall(ecx=info, stack key) -> char*.
+    __declspec(naked) char* __cdecl SV_Info_ValueForKey(const char* /*info*/, const char* /*key*/)
+    {
+        __asm {
+            mov     ecx, [esp+4]          // info -> this
+            push    [esp+8]               // key
+            mov     edx, 0x005F6DF0
+            call    edx
+            add     esp, 4
+            retn
+        }
+    }
+
+    // ========================================================================
+    // SV_SetConfigstrings (sub_6311E0). __cdecl(pairs[], count). Writer batch.
+    // Reconstruction BEHAVIORALLY-faithful (flux propre, pas la structure goto
+    // littérale — comportement vérifié contre l'asm). Détour direct __cdecl.
+    // ========================================================================
+    struct SV_CSPair { int index; const char* str; };
+
+    extern "C" void __cdecl SV_SetConfigstrings(const SV_CSPair* pairs, int count)
+    {
+        char bigbuf[0x200];   // var_404 : accumulateur "%x %x %s"
+        char fragbuf[0x200];  // var_604 : fragment de string longue
+        char infobuf[0x204];  // var_204 : info per-client
+        int  acc_len   = 0;   // var_614
+        int  lastIndex = 0;   // var_618 (survit pour la phase flush)
+
+        for (int n = 0; n < count; ++n)
+        {
+            int         idx = pairs[n].index;
+            const char* str = pairs[n].str;
+            lastIndex = idx;
+
+            if (idx < 0 || idx >= g_maxCS)
+                cs_error(1, ERR_BAD_INDEX, idx);
+
+            unsigned int oldHandle = g_csTable[idx];
+            if (oldHandle == 0) continue;                 // slot jamais alloué → skip
+
+            if (str == 0) str = cs_empty;
+
+            // skip si le nouveau texte == l'ancien
+            const char* oldText = (const char*)(CS_STRPOOL + oldHandle * 0xC + 4);
+            if (strcmp(str, oldText) == 0) continue;
+
+            // pré-libère l'ancien handle, internalise le nouveau, écrit la table
+            SL_RemoveRefToString_thunk((unsigned short)oldHandle, 0);
+            int lenPlus1 = (int)strlen(str) + 1;
+            int newHandle = (idx < 0x585) ? SL_Intern_Low(0, str, 0, lenPlus1)
+                                          : SL_Intern_High(0, str, 0, lenPlus1);
+            g_csTable[idx] = (unsigned short)newHandle;
+
+            // si serveur inactif → pas de broadcast
+            if (*p_sv_state != 2 && *p_sv_running == 0) continue;
+
+            int len = (int)strlen(str);
+            if (len <= 0x1EF)
+            {
+                if (acc_len + len + 0x11 >= 0x200)
+                {
+                    SV_CS_Send_cs(1, "%c %s", 'd', bigbuf);
+                    acc_len = 0;
+                }
+                acc_len += cs_sprintf(bigbuf + acc_len, "%x %x %s", idx, len, str); // FIX: idx,len,str
+            }
+            else
+            {
+                int remaining = len, offset = 0;
+                while (remaining > 0)
+                {
+                    int chunk = 0x1EF;
+                    if (str[offset + 0x1EF] == ' ')       // couper sur une frontière d'espace
+                    {
+                        const char* pb = str + offset;
+                        do {
+                            --chunk;
+                            if (chunk == 0) cs_error(1, ERR_BIG_BUNDLE, 0x1EF);
+                        } while (pb[chunk] == ' ');
+                    }
+                    cs_strncpyz(fragbuf, str + offset, chunk);
+                    fragbuf[chunk] = 0;
+
+                    if (offset == 0)
+                        SV_CS_Send_cxxs(1, "%c %x %x %s", 'x', idx, len, fragbuf);
+                    else if (remaining > 0x1EF)
+                        SV_CS_Send_cs(1, "%c %s", 'y', fragbuf);
+                    else
+                        SV_CS_Send_cs(1, "%c %s", 'z', fragbuf);
+
+                    remaining -= chunk;
+                    offset    += chunk;
+                }
+            }
+        }
+
+        // ---- flush final --------------------------------------------------
+        if (acc_len == 0) return;
+
+        if (lastIndex != 9 && lastIndex != 0x588 && lastIndex != 0xBB5)
+        {
+            SV_CS_Send_cs(1, "%c %s", 'd', bigbuf);       // broadcast à tous
+            return;
+        }
+
+        // index spéciaux : envoi per-client avec clientNum injecté
+        unsigned char* svs = CS_SVS_PTR;
+        int numClients = *(int*)(svs + 0x10);
+        if (numClients <= 0) return;
+
+        const char* lastStr = (count > 0) ? pairs[count - 1].str : cs_empty;
+        for (int i = 0; i < numClients; ++i)
+        {
+            unsigned char* client = g_clientsBase + (size_t)i * CLIENT_STRIDE;
+            if (*(int*)client < 3) continue;
+
+            { char* d = infobuf; const char* s = lastStr; while ((*d++ = *s++) != 0) {} }
+            char* value = SV_Info_ValueForKey(infobuf, cs_va("%i", i));
+            int vlen = (int)strlen(value);
+            cs_sprintf(bigbuf, "%x %x \\%d\\%s", lastIndex, vlen + 3, i, value); // FIX: lastIndex,vlen+3,i,value
+            SV_CS_Send_cs_target(client, 1, "%c %s", 'd', bigbuf);
+        }
+    }
+} // namespace T4_Reconstructed
+
+// ---------------------------------------------------------------------------
+// Install. Détours gated (validation incrémentale). NO Com_Printf (init-time).
+// ---------------------------------------------------------------------------
+void PatchT4MAM_ConfigStrings()
+{
+#if CS_DETOUR_GETCONFIGSTRING
+    Detours::X86::DetourFunction((uintptr_t)0x006315C0, (uintptr_t)&T4_Reconstructed::SV_GetConfigstring_Naked, Detours::X86Option::USE_JUMP);
+#endif
+#if CS_DETOUR_CLEARCONFIGSTRING
+    Detours::X86::DetourFunction((uintptr_t)0x00631DA0, (uintptr_t)&T4_Reconstructed::SV_ClearConfigstrings, Detours::X86Option::USE_JUMP);
+#endif
+#if CS_DETOUR_SETCONFIGSTRING
+    Detours::X86::DetourFunction((uintptr_t)0x006311E0, (uintptr_t)&T4_Reconstructed::SV_SetConfigstrings, Detours::X86Option::USE_JUMP);
+#endif
+}

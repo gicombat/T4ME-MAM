@@ -180,6 +180,17 @@ void DB_ListAssetCounts_f()
 	}
 }
 
+extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end); // PatchT4MAM_ConfigStrings.cpp
+
+// listconfigstrings [start] [end] — dump the live config-string table (hex args ok, e.g. 0xBF0 0xFF0).
+void ListConfigStrings_f()
+{
+	int start = -1, end = -1;
+	if (T4::engine::Cmd_Argc() >= 2) start = (int)strtol(T4::engine::Cmd_Argv(1), 0, 0);
+	if (T4::engine::Cmd_Argc() >= 3) end   = (int)strtol(T4::engine::Cmd_Argv(2), 0, 0);
+	T4M_DumpConfigStrings(start, end);
+}
+
 void NullFunction()
 {
 }
@@ -225,6 +236,7 @@ void Cmd_Init_T4()
 	//Cmd_AddCommand("testcmd", testCmd_f);
 	T4M::Cmd_AddCommand("listassetpool", DB_ListAssetPool_f);
 	T4M::Cmd_AddCommand("listassetcounts", DB_ListAssetCounts_f);
+	T4M::Cmd_AddCommand("listconfigstrings", ListConfigStrings_f);
 	// UINT disableIntro = GetPrivateProfileInt("Options", "DisableIntro", 0, CONFIG_FILE_LOCATION);
 	// if (disableIntro == 1)
 	// {
