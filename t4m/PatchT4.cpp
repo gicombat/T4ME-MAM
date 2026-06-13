@@ -118,8 +118,9 @@ void PatchT4_PreLoad()
 	// Increase hunk total
 	Memory::VP::Patch<uint32_t>((0x005E3CD1 + 6), 15728640);
 
+	// Don't know why but break loading save for now, so let's keep it commented ...
 	// Remove duplicate calls in serverthread
-	Memory::VP::Nop(0x00636686, 0x2D);
+	// Memory::VP::Nop(0x00636686, 0x2D);
 
 }
 
