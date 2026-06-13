@@ -21,7 +21,7 @@ namespace T4M
 	__declspec(noinline)
 	void DB_FreeXZoneMemory(int poolIndex, const char* zoneName)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
+		T4::engine::Com_Printf(0, "[T4M] - PMem_Free( %s, %d )\n", zoneName, poolIndex);
 		PMem_Pool* pool = &T4::engine::g_pmem_pools[poolIndex];
 		int count = pool->count;
 		int found = -1;
@@ -67,7 +67,7 @@ namespace T4M
 		memset(entry->runtimeData, 0, sizeof(entry->runtimeData));
 
 		const char* zoneName = T4::engine::g_zoneFileNames[entry->zoneFileIndex].name;
-		T4::engine::Com_PrintfChannel(0x10, "Unloaded fastfile %s\n", zoneName);
+		T4::engine::Com_Printf(0x10, "Unloaded fastfile %s\n", zoneName);
 
 		DB_FreeXZoneMemory(entry->memHandle, zoneName);
 
@@ -135,10 +135,10 @@ namespace T4M
 	// @modified — replaces sub_48E7B0 with T4M Phase 3 for zones 0x1000
 	void DB_LoadXAssets(XZoneInfo* zoneInfo, int zoneCount, int sync)
 	{
-		T4::engine::Com_PrintfChannel(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
+		T4::engine::Com_Printf(0, "[T4M] - DB_LoadXAssets Start for %d zone\n", zoneCount);
 		for (size_t i = 0; i < zoneCount; i++)
 		{
-			T4::engine::Com_PrintfChannel(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
+			T4::engine::Com_Printf(0, "[T4M] - Zone name : %s \n", zoneInfo[i].name);
 		}
 
 		bool anyUnloaded = false;
@@ -178,7 +178,7 @@ namespace T4M
 						// Clear client model weapon slots (renderer scene @ dword_3BF392C)
 						T4::engine::R_ClearScene();                          // sub_6B1440
 						T4::engine::CL_ClearState();                         // sub_59EA90
-						T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+						T4::engine::Hunk_ClearTempMemory(*(int*)T4M::GetAddress("hunk_tempMemoryMark"));  // sub_4B2F80
 					}
 
 					DB_WriterAcquire(); // pure C++ reconstruction — replaces the broken register-based call
@@ -242,7 +242,7 @@ namespace T4M
 			// Clear client model weapon slots (same code as Phase 1)
 			T4::engine::R_ClearScene();                          // sub_6B1440
 			T4::engine::CL_ClearState();                         // sub_59EA90
-			T4::engine::Hunk_ClearTempMemory(*(int*)0x16D7AD0);  // sub_4B2F80
+			T4::engine::Hunk_ClearTempMemory(*(int*)T4M::GetAddress("hunk_tempMemoryMark"));  // sub_4B2F80
 		}
 
 		// ── PHASE 6: enqueue the new zones for loading ──────────────────────
@@ -381,7 +381,7 @@ namespace T4M
 	// @modified — replaces sub_59E050 (FS_AddUserMapDir + PATCH_EX zones)
 	void __cdecl DB_LoadMapZones(const char* mapName)
 	{
-		T4::engine::Com_PrintfChannel(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
+		T4::engine::Com_Printf(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
 		// Reset the fastfile streaming progress counters
 		T4::engine::db_streamReadBlocksTotal = 0;  // 0x957400
 		T4::engine::db_streamReadBlocksDone = 0;  // 0x957408
@@ -494,27 +494,23 @@ namespace T4M
 void PatchT4_Load()
 {
 	// Working DO NOT TOUCH
-	Detours::X86::DetourFunction((uintptr_t)0x006D5728, (uintptr_t)&T4M::CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
-	Detours::X86::DetourFunction((uintptr_t)0x006D5672, (uintptr_t)&T4M::ModFFLoadHook, Detours::X86Option::USE_CALL);
-
+	Detours::X86::DetourFunction(T4M::GetAddress("Load_CodePostGFX"), (uintptr_t)&T4M::CodePostGFXFFLoadHook, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction(T4M::GetAddress("Load_Mod"), (uintptr_t)&T4M::ModFFLoadHook, Detours::X86Option::USE_CALL);
+	
 	// Original address of T4M::DB_LoadMapZones
-	Detours::X86::DetourFunction((uintptr_t)0x0059E050,(uintptr_t)&T4M::DB_LoadMapZones,Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_LoadMapZones"), (uintptr_t)&T4M::DB_LoadMapZones,Detours::X86Option::USE_JUMP);
 
 	// Fully replace sub_48F720 (DB_UnloadAllZones) with our reconstruction
-	Detours::X86::DetourFunction((uintptr_t)0x0048F720,(uintptr_t)&T4M::DB_UnloadAllZones,Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_UnloadAllZones"), (uintptr_t)&T4M::DB_UnloadAllZones,Detours::X86Option::USE_JUMP);
 
-	Detours::X86::DetourFunction((uintptr_t)0x0048E7B0, (uintptr_t)&T4M::DB_LoadXAssets, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_LoadXAssets"), (uintptr_t)&T4M::DB_LoadXAssets, Detours::X86Option::USE_JUMP);
 
 	// DB worker queue dispatch — modified C++ reconstruction of sub_48F260.
 	// Disabled the "_patch → default.ff" fallback
-	Detours::X86::DetourFunction((uintptr_t)0x0048F260, (uintptr_t)&T4M::DB_ProcessZoneQueue, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("DB_ProcessZoneQueue"), (uintptr_t)&T4M::DB_ProcessZoneQueue, Detours::X86Option::USE_JUMP);
 
 	//00644C5D, r_init
 	//if ((*dedicated)->current.integer > 0)
 	//nop(0x00644C5D, 5);
 	// 
-	// TESTING SHIT
-	//Detours::X86::DetourFunction((uintptr_t)0x0059E0EA, (uintptr_t)&LoadMapPatchZoneHook, Detours::X86Option::USE_CALL);
-	//Detours::X86::DetourFunction((uintptr_t)0x0048FB90, (uintptr_t)&LoadLocalizedMapZoneHook, Detours::X86Option::USE_CALL);
-
 }

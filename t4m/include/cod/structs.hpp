@@ -13626,4 +13626,13 @@ namespace T4
 } // namespace T4::engine
 #endif
 
+#include "render.hpp"
+#include "sys.hpp"
+#include "dvars.hpp"
+#include "console.hpp"
+#include "animation.hpp"
+#include "db.hpp"
+#include "com.hpp"
+#include "globals.hpp"
+
 #pragma pack(pop)

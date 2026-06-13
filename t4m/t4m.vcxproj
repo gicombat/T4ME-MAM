@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -124,6 +124,7 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
+    <ClInclude Include="include\cod\animation.hpp" />
     <ClInclude Include="include\cod\clientscript\clientscript_public.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_animtree.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_compiler.hpp" />
@@ -137,9 +138,16 @@ popd</Command>
     <ClInclude Include="include\cod\clientscript\cscr_variable.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_vm.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_yacc.hpp" />
+    <ClInclude Include="include\cod\com.hpp" />
+    <ClInclude Include="include\cod\console.hpp" />
+    <ClInclude Include="include\cod\db.hpp" />
+    <ClInclude Include="include\cod\dvars.hpp" />
     <ClInclude Include="include\cod\enums.hpp" />
     <ClInclude Include="include\cod\game.hpp" />
+    <ClInclude Include="include\cod\animation.hpp" />
+    <ClInclude Include="include\cod\render.hpp" />
     <ClInclude Include="include\cod\structs.hpp" />
+    <ClInclude Include="include\cod\sys.hpp" />
     <ClInclude Include="include\cod\xasset.hpp" />
     <ClInclude Include="include\hexrays_defs.h" />
     <ClInclude Include="include\IniReader.h" />
@@ -158,6 +166,7 @@ popd</Command>
     <ClInclude Include="T4.h" />
     <ClInclude Include="t4_headers.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="AddrMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\cod\game.cpp" />
@@ -202,12 +211,15 @@ popd</Command>
     <ClCompile Include="T4E_items.ixx" />
     <ClCompile Include="T4E_UI.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="AddrMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="t4m.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\.text" />
+    <None Include="Resource\.text_ger" />
+    <None Include="Resource\addr_mapping.csv" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="Resource\detours.lib" />

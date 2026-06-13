@@ -39,19 +39,12 @@ namespace T4M
 
 namespace T4M
 {
-    typedef void* (__cdecl* pfn_RegisterAnimByName)(const char* name, void* alloc_cb);
-    typedef void  (__cdecl* pfn_AddTreeSlot)       (void* tree, int slot_idx);
-
-    static const pfn_RegisterAnimByName Anim_RegisterByName = (pfn_RegisterAnimByName)0x0060C7F0;
-    static const pfn_AddTreeSlot        Anim_AddTreeSlot    = (pfn_AddTreeSlot)       0x0060C8E0;
-    static void* const                  AnimAllocCb         = (void*)                 0x00610D20;
-
     // Mirror sub_464A50's empty-string fallback: empty -> sidleAnim.
     static void RegisterTreeSlot(void* tree, const char* name, const char* fallback, int slot_idx)
     {
         const char* eff = (name && *name) ? name : fallback;
-        Anim_RegisterByName(eff, AnimAllocCb);
-        Anim_AddTreeSlot(tree, slot_idx);
+        T4::engine::Anim_RegisterByName(eff, T4::engine::AnimAllocCb);
+        T4::engine::Anim_AddTreeSlot(tree, slot_idx);
     }
 }
 
@@ -69,7 +62,10 @@ extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
             : *(int*)((char*)ps + 0x104);      // main
 
         // Tree handle stored by sub_464BF0 at dword_3463C40 + weapon_idx*0x48 + 0x30.
-        void* tree = *(void**)((char*)0x03463C40 + weapon_idx * 0x48 + 0x30);
+        void* tree = *(void**)((char*)T4M::GetAddress("viewmodelAnimTreeHandles") + weapon_idx * 0x48 + 0x30);
+        
+        DWORD func = T4M::GetAddress("CG_ViewmodelAnim_SetSlotBlend");
+
         if (tree) 
         {
             int   slot  = 0x25 + (vm_state - 0x20);
@@ -81,7 +77,7 @@ extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
                 push    tree
                 mov     eax, slot
                 mov     ecx, weapon_idx
-                mov     edx, 0x00464080
+                mov     edx, func
                 call    edx
                 add     esp, 8
             }
@@ -90,7 +86,7 @@ extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
     }
 
     // Vanilla path: directly call sub_4643A0 (its entry is unpatched, no recursion).
-    ((void(__cdecl*)(playerState_s*, void*))0x004643A0)(ps, arg_4);
+    ((void(__cdecl*)(playerState_s*, void*))T4M::GetAddress("CG_ViewmodelAnim_Chooser"))(ps, arg_4);
 }
 
 // =============================================================================
@@ -102,7 +98,8 @@ extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
 void PatchT4MAM_LowReady()
 {
     // Phase 1 - post-load defaults hook on BG_RegisterWeapon entry.
-    static auto weapon_register_hook = safetyhook::create_mid(0x0041D360,
+    
+    static auto weapon_register_hook = safetyhook::create_mid(T4M::GetAddress("BG_RegisterWeapon_hook"),
         [](SafetyHookContext& ctx) 
     {
             T4M::ApplyLowReadyDefaults((WeaponDef*)ctx.eax);
@@ -111,7 +108,8 @@ void PatchT4MAM_LowReady()
     // Phase 3 - block RELOAD_START while lowReady intent is set (or already in any LOWREADY_* state).
     // sub_41EA30 entry: esi = ps (vanilla __usercall). Redirect to 0x0041EB9C (raw retn after the
     // function's own pop ebp) since push ebp hasn't executed yet at the hook point.
-    static auto reload_block_hook = safetyhook::create_mid(0x0041EA30, [](SafetyHookContext& ctx) 
+    
+    static auto reload_block_hook = safetyhook::create_mid(T4M::GetAddress("CG_ReloadStartCheck_hook"), [](SafetyHookContext& ctx)
     {
             auto* ps = (playerState_s*)ctx.esi;
             if ((ps->eFlags & 0x400) != 0
@@ -119,12 +117,12 @@ void PatchT4MAM_LowReady()
                 || ps->weaponstate == T4::engine::WEAPON_LOWREADY_LOOP
                 || ps->weaponstate == T4::engine::WEAPON_LOWREADY_END)
             {
-                ctx.eip = 0x0041EB9C;   // retn only (no pop ebp pairing needed)
+                ctx.eip = T4M::GetAddress("CG_ReloadStartCheck_ret");   // retn only (no pop ebp pairing needed)
             }
         });
 
     // Phase 4 - viewmodel anim tree extension.
-    Memory::VP::Patch<uint8_t>(0x00464A5A, 0x28);   // capacity 0x25 -> 0x28
+    Memory::VP::Patch<uint8_t>(T4M::GetAddress("viewmodelAnimSlotCapacity_imm_site"), 0x28);   // capacity 0x25 -> 0x28
 
     // Relocate dword_8DD5B0 (slot -> WeaponDef-field-offset table) to add 3
     // entries for our slots 0x25/0x26/0x27.
@@ -132,16 +130,17 @@ void PatchT4MAM_LowReady()
     
     if (newSlotOffsetTable) 
     {
-        memcpy(newSlotOffsetTable, (void*)0x008DD5B0, 0x25 * sizeof(DWORD));
+        memcpy(newSlotOffsetTable, (void*)T4M::GetAddress("viewmodelAnimSlotOffsetTable"), 0x25 * sizeof(DWORD));
         newSlotOffsetTable[0x25] = offsetof(WeaponDef, slowReadyInAnim);
         newSlotOffsetTable[0x26] = offsetof(WeaponDef, slowReadyLoopAnim);
         newSlotOffsetTable[0x27] = offsetof(WeaponDef, slowReadyOutAnim);
-        Memory::VP::Patch<DWORD>(0x0046409A, (DWORD)newSlotOffsetTable);
+        Memory::VP::Patch<DWORD>(T4M::GetAddress("viewmodelAnimSlotOffsetTable_ref_site"), (DWORD)newSlotOffsetTable);
     }
-
+    
     // Tree extend hook: at 0x00464AE0 we add slots 0x25/0x26/0x27 with
     // slowReadyInAnim/LoopAnim/OutAnim or sidleAnim fallback.
-    static auto tree_extend_hook = safetyhook::create_mid(0x00464AE0, [](SafetyHookContext& ctx) 
+    
+    static auto tree_extend_hook = safetyhook::create_mid(T4M::GetAddress("viewmodelAnim_treeExtend_site"), [](SafetyHookContext& ctx)
     {
             void* tree = (void*)ctx.ebx;
             const WeaponDef* w = *(const WeaponDef**)(ctx.esp + 0x14);
@@ -155,5 +154,6 @@ void PatchT4MAM_LowReady()
         });
 
     // Chooser detour: redirect the unique call site of sub_4643A0 at 0x00469B15.
-    Detours::X86::DetourFunction((uintptr_t)0x00469B15, (uintptr_t)&T4M_ChooserHook_LowReady, Detours::X86Option::USE_CALL);
+    
+    Detours::X86::DetourFunction(T4M::GetAddress("viewmodelAnimChooser_callsite"), (uintptr_t)&T4M_ChooserHook_LowReady, Detours::X86Option::USE_CALL);
 }

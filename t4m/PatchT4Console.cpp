@@ -14,36 +14,26 @@
 
 vec4_t whiteColor = { 8.0f, 8.0f, 8.0f, 1.0f };
 
-typedef void(__cdecl * ConDrawInput_Text_t)(const char* text, vec4_t* color);
-ConDrawInput_Text_t ConDrawInput_Text = (ConDrawInput_Text_t)0x471BC0;
-
-typedef void(__cdecl * ConDrawInput_TextLimitChars_t)(const char* text, int numChars, vec4_t* color);
-ConDrawInput_TextLimitChars_t ConDrawInput_TextLimitChars = (ConDrawInput_TextLimitChars_t)0x471CB0;
-
-// Dvar_RegisterInt(int default, const char* name, int min, int max, int flags, const char* description); 0x5EEEA0
-
-ConDrawInputGlob* conDraw = (ConDrawInputGlob*)0x92C370;
-
-
-extern dvar_t** logfile;  // defined in PatchT4Script.cpp, vanilla 0x01F552BC
+using T4::engine::logfile;  // symbol<dvar_t*> (dvars.hpp), vanilla 0x01F552BC — variant-aware
 
 // Force `logfile` dvar to async-write mode. Engine registers it with default 0
 // (no archive flag), so console.log is never written unless we flip it. Called
 // from Cmd_Init_T4 — runs after Cvar_Init so *logfile is valid.
 static void ForceLogfileEnabled()
 {
-	if (!logfile || !*logfile) return;
+	if (!logfile || !*logfile) 
+		return;
 	// 0=off, 1=sync, 2=async file write (preferred — flushes more often)
 	(*logfile)->current.integer = 2;
 	(*logfile)->latched.integer = 2;
-	(*logfile)->modified        = true;
+	(*logfile)->modified = true;
 }
 
 void DrawDvarFlags(dvar_t* dvar)
 {
 	__int16 flags = dvar->flags;
 
-	const char* flagsString = va("Flags: %s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
+	const char* flagsString = va("Flags: %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
 		(flags & T4::dvar::DVAR_FLAG_ARCHIVE ? "Archive, " : ""),
 		(flags & T4::dvar::DVAR_FLAG_USERINFO ? "UserInfo, " : ""),
 		(flags & T4::dvar::DVAR_FLAG_SERVERINFO ? "ServerInfo, " : ""),
@@ -60,20 +50,21 @@ void DrawDvarFlags(dvar_t* dvar)
 		(flags & T4::dvar::DVAR_FLAG_AUTOEXEC ? "AutoExec" : ""));
 
 	// increase by one line and reset to left side
-	conDraw->y += conDraw->fontHeight;
-	conDraw->x = conDraw->leftX;
+	T4::engine::conDraw->y += T4::engine::conDraw->fontHeight;
+	T4::engine::conDraw->x = T4::engine::conDraw->leftX;
 
-	ConDrawInput_TextLimitChars(flagsString, 40, &whiteColor);
+	T4::engine::ConDrawInput_TextLimitChars(flagsString, 40, &whiteColor);
 }
+
 
 void __declspec(naked) drawDetailedDvarMatchStub()
 {
 	__asm
 	{
-		push [esp + 12]
-		push [esp + 12]
-		push [esp + 12]
-		call ConDrawInput_TextLimitChars
+		push[esp + 12]
+		push[esp + 12]
+		push[esp + 12]
+		call T4::engine::ConDrawInput_TextLimitChars_asm
 
 		push edi
 		call DrawDvarFlags
@@ -85,20 +76,20 @@ void __declspec(naked) drawDetailedDvarMatchStub()
 
 void ShowExternalConsole()
 {
-	DWORD Sys_ShowConsole_f = 0x006057F0;
-	DWORD sub_5E3CA0 = 0x005E3CA0;
+	DWORD Sys_ShowConsole_f = T4M::GetAddress("Sys_ShowConsole");
+	DWORD Sys_AllocHunk = T4M::GetAddress("Sys_AllocHunk");
 
-	__asm call sub_5E3CA0
+	__asm call Sys_AllocHunk
 
 	if (enable_scoreboard->current.value)
 	{
-		nop(0x437ACC, 5); // disable CG_CheckHudObjectiveDisplay call
-		nop(0x6680D2, 2); // disable jmp for onlinegame dvar check
+		nop(T4M::GetAddress("CG_CheckHudObjectiveDisplay"), 5); // disable CG_CheckHudObjectiveDisplay call
+		nop(T4M::GetAddress("jmp_onlinegame_dvar_check"), 2); // disable jmp for onlinegame dvar check
 	}
 
 	if (disable_intro->current.value)
 	{
-		nop(0x59D68B, 5);	// don't play intro video
+		nop(T4M::GetAddress("intro_video_call"), 5);	// don't play intro video
 	}
 
 	if (con_external->current.value)
@@ -107,36 +98,36 @@ void ShowExternalConsole()
 
 void FilterConsoleSpam()
 {
-	nop(0x57C40F, 5); // disable Com_Printf call for "."
-	nop(0x57C51B, 5); // ^^
-	nop(0x57C82B, 5); // ^^
-	nop(0x57CB94, 5); // ^^
+	nop(T4M::GetAddress("Com_Printf_call_."), 5); // disable Com_Printf call for "."
+	nop(T4M::GetAddress("Com_Printf_call_1"), 5); // ^^
+	nop(T4M::GetAddress("Com_Printf_call_2"), 5); // ^^
+	nop(T4M::GetAddress("Com_Printf_call_3"), 5); // ^^
 	// --- had to split this apart since the "." was used for other parts of code, i.e. was causing the "." to show in mods list
-	nop(0x5F9DF2, 5); // disable DebugReportProfileDVars call
-	nop(0x5F9E2F, 5); // ^^
-	nop(0x5A3C44, 5); // disable Com_Printf call for "ragdoll allocation failed"
-	nop(0x57B15B, 5); // disable Com_Printf call for "g_numFriends is now %i" (internal)
-	nop(0x57FE59, 5); // disable Com_Printf call for "nulling invite info for friend %s"
-	nop(0x57FE15, 5); // disable Com_Printf call for "updating profile info for friend %s"
-	nop(0x5FC93D, 5); // disable Com_Printf call for "Failed to log on."
-	nop(0x5FC9CD, 5); // ^^
-	nop(0x59CF04, 5); // disable Com_Printf call for build version in Com_Init_Try_Block_Function
-	nop(0x005FC35B, 5); // disable Com_Printf call for "Upload Bandwidth:~"
-	nop(0x005FC382, 5); // disable Com_Printf call for "Download Bandwidth:~"
-	nop(0x005EDA8C, 5); // disable Com_sprintf call for "dvar set"
-	nop(0x005EDA9B, 5); // disable Com_PrintMessage call for "dvar set"
+	nop(T4M::GetAddress("Com_Printf_call_DebugReportProfileDVars"), 5); // disable DebugReportProfileDVars call
+	nop(T4M::GetAddress("Com_Printf_call_4"), 5); // ^^
+	nop(T4M::GetAddress("Com_Printf_call_ragdoll"), 5); // disable Com_Printf call for "ragdoll allocation failed"
+	nop(T4M::GetAddress("Com_Printf_call_g_numFriends"), 5); // disable Com_Printf call for "g_numFriends is now %i" (internal)
+	nop(T4M::GetAddress("Com_Printf_call_nulling_friend"), 5); // disable Com_Printf call for "nulling invite info for friend %s"
+	nop(T4M::GetAddress("Com_Printf_call_updating_profile_friend"), 5); // disable Com_Printf call for "updating profile info for friend %s"
+	nop(T4M::GetAddress("Com_Printf_call_failed_log"), 5); // disable Com_Printf call for "Failed to log on."
+	nop(T4M::GetAddress("Com_Printf_call_5"), 5); // ^^
+	nop(T4M::GetAddress("Com_Printf_call_build_version_in_Com_Init_Try_Block_Function"), 5); // disable Com_Printf call for build version in Com_Init_Try_Block_Function
+	nop(T4M::GetAddress("Com_Printf_call_upload_bandwidth"), 5); // disable Com_Printf call for "Upload Bandwidth:~"
+	nop(T4M::GetAddress("Com_Printf_call_download_bandwidth"), 5); // disable Com_Printf call for "Download Bandwidth:~"
+	nop(T4M::GetAddress("Com_sprintf_call_dvar_set"), 5); // disable Com_sprintf call for "dvar set"
+	nop(T4M::GetAddress("Com_PrintMessage_call_dvar_set"), 5); // disable Com_PrintMessage call for "dvar set"
 }
 
 void PatchT4_ExternalConsole()
 {
-	Detours::X86::DetourFunction((uintptr_t)0x0059D0F3, (uintptr_t)&ShowExternalConsole, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("ShowExternalConsole_callsite"), (uintptr_t)&ShowExternalConsole, Detours::X86Option::USE_CALL);
 }
 
 void PatchT4_ConsoleBox()
-{
+{	
 	// call our functionality to draw another line
-	callp(0x47294C, drawDetailedDvarMatchStub, PATCH_CALL);
-	*(BYTE*)0x4727DD = 3; // increase line number for box
+	callp(T4M::GetAddress("drawDetailedDvarMatch_callsite"), drawDetailedDvarMatchStub, PATCH_CALL);
+	*(BYTE*)T4M::GetAddress("con_box_lineCount") = 3; // increase line number for box
 }
 
 void testCmd_f()
@@ -146,12 +137,12 @@ void testCmd_f()
 
 void __cdecl DB_ListAssetPool_f()
 {
-	char *v0; // eax@4
-	char *v1; // eax@6
+	char* v0; // eax@4
+	char* v1; // eax@6
 	XAssetType type; // ST24_4@6
 	signed int i; // [sp+10h] [bp-Ch]@2
 
-	unsigned int* g_poolSize = (unsigned int*)0x8DC5D0;
+	unsigned int* g_poolSize = (unsigned int*)T4M::GetAddress("g_poolSize");
 
 	if (T4::engine::Cmd_Argc() >= 2)
 	{
@@ -227,7 +218,7 @@ void CL_ResetViewport();
 
 void Cmd_Init_T4()
 {
-	DWORD Cmd_Init_T4 = 0x00595200;
+	DWORD Cmd_Init_T4 = T4M::GetAddress("Com_StartupVariables");
 
 	__asm call Cmd_Init_T4
 
@@ -261,14 +252,14 @@ void ShitTest()
 
 void PatchT4_ConsoleCommands()
 {
-	Detours::X86::DetourFunction((uintptr_t)0x0059CF48, (uintptr_t)&Cmd_Init_T4, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("Cmd_Init_callsite"), (uintptr_t)&Cmd_Init_T4, Detours::X86Option::USE_CALL);
 	//Detours::X86::DetourFunction((PBYTE)0x00608D16, (PBYTE)&ShitTest, Detours::X86Option::USE_CALL);
 }
 
 const char* Draw_G_Ents()
 {
-	int entityCount = *(WORD*)0x018F5D94; // or known as numGEntities or max_ents, it's the highest amount of entities loaded
-	gentity_s* freeEntity = *(gentity_s**)0x18f5d98; // or known as the 'e' from t6r
+	int entityCount = *(WORD*)T4M::GetAddress("numGEntities"); // or known as numGEntities or max_ents, it's the highest amount of entities loaded
+	gentity_s* freeEntity = *(gentity_s**)T4M::GetAddress("e"); // or known as the 'e' from t6r
 	const char* s;
 
 	while (freeEntity)
@@ -279,19 +270,19 @@ const char* Draw_G_Ents()
 
 	s = va("%i/2047", entityCount + 1); // current / max (expanded from 1023 to 2047 by T4M entity pool patch)
 
-	return s;	
+	return s;
 }
 
 void PatchT4_GetGEnts()
 {
 	// override the lvl free msg
-	PatchMemory(0x0084D5A0, (PBYTE)" total ents", 11);
+	PatchMemory(T4M::GetAddress("lvl_free_msg"), (PBYTE)" total ents", 11);
 	// detour the va call
-	Detours::X86::DetourFunction((uintptr_t)0x00439C2D, (uintptr_t)&Draw_G_Ents, Detours::X86Option::USE_CALL);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("Draw_G_Ents_callsite"), (uintptr_t)&Draw_G_Ents, Detours::X86Option::USE_CALL);
 	// remove verbose from cg_drawfps array, ends due to null terminator
-	*(DWORD *)0x8CFCE8 = 0;
+	*(DWORD*)T4M::GetAddress("cg_drawfps_array_verbose") = 0;
 	// change jl to jmp, never executes cg_drawfps 3
-	PatchMemory(0x00439C89, (PBYTE)"\xE9\x12\x03\x00\x00", 5);
+	PatchMemory(T4M::GetAddress("stop_cg_drawfps_3"), (PBYTE)"\xE9\x12\x03\x00\x00", 5);
 }
 
 void PatchT4_Console()
@@ -304,8 +295,7 @@ void PatchT4_Console()
 	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 
-	*(BYTE*)0x4781FE = 0xEB; // force enable ingame console
-
+	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	FilterConsoleSpam();
 
 	PatchT4_GetGEnts();

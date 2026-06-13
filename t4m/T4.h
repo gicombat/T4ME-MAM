@@ -1,7 +1,5 @@
 #pragma once
 
-#define cmd_functions_ADDR 0x01F416F4
-
 typedef void(__cdecl * xcommand_t)(void);
 
 enum bitsShit
@@ -19,6 +17,9 @@ struct __declspec(align(4)) RefString
 };
 
 #include "include/hexrays_defs.h"
+// game.hpp defines symbol<>/WEAK then pulls in enums + structs, so it must come first;
+// the two includes below then become no-ops. (Lets engine fn symbols live in cod/*.hpp.)
+#include "include/cod/game.hpp"
 #include "include/cod/enums.hpp"
 #include "include/cod/structs.hpp"
 
@@ -32,7 +33,6 @@ using T4::engine::ASSET_TYPE_MAX;
 using XZoneInfo            = ::T4::engine::XZoneInfo;
 using XZoneLoadedEntry     = ::T4::engine::XZoneLoadedEntry;
 using XZoneQueueEntry      = ::T4::engine::XZoneQueueEntry;
-using XZoneName            = ::T4::engine::XZoneName;
 using ZoneFileEntry        = ::T4::engine::ZoneFileEntry;
 using PMem_Pool            = ::T4::engine::PMem_Pool;
 using cmd_function_s       = ::T4::engine::cmd_function_s;
@@ -107,12 +107,6 @@ namespace T4
 	// can reference them without sub-namespace qualification.
 
 	// engine
-	typedef void(__cdecl * Com_Error_t)(int type, const char* message, ...);
-	typedef void(*Com_Printf_t)(int channel, const char* format, ...);
-	typedef void(__cdecl * Com_PrintMessage_t)(int channel, const char *fmt, int error);
-	typedef void(__cdecl* Com_PrintfChannel_t)(int channel, const char* fmt, ...);
-	typedef void(__cdecl* Com_PrintError_t)(int channel, const char* fmt, ...);
-	typedef int (__cdecl* Com_sscanf_t)(const char* src, const char* fmt, ...);
 	typedef const char *(__cdecl * DB_EnumXAssets_t)(XAssetType type, void(__cdecl *func)(XAssetHeader, void *), void *inData, bool includeOverride);
 	typedef void(__cdecl * DB_EnumXAssets_FastFile_t)(XAssetType type, void(__cdecl *func)(XAssetHeader, void *), void *inData);
 	typedef void(*DB_LoadXAssets_t)(XZoneInfo* data, int count, int sync);
@@ -140,12 +134,12 @@ namespace T4
 	typedef void(*DB_AddZonesToQueue_t)(XZoneInfo* zones, int count);
 	typedef void(__cdecl * DB_InUseHandlerDispatch_t)();
 	typedef void(__cdecl * DB_PromoteHelper_t)();
-	typedef void(__cdecl * DB_XAssetUnloadHandler_t)(void* header);
 	typedef void(__cdecl * DB_XAssetOverridePromoter_t)(void* dstHeader, void* srcHeader, bool isPermZone);
 	typedef void(__cdecl * DB_XAssetSetNameHandler_t)(XAssetHeader* header, const char* stringTableEntry);
 	typedef void(__cdecl * DB_XAssetFreeHandler_t)(void* pool, void* header);
 	typedef void*(__cdecl * DB_XAssetAllocHandler_t)(void* pool);
-	typedef int(__cdecl * StringTable_Find_t)(int arg_0, const char* name, int arg_2, int len);
+	typedef void(__cdecl* Com_DvarDump_t)(int channel, int arg);                     // sub_59FE70
+	typedef void(__cdecl* NET_RegisterDvars_t)(DWORD arg);                           // sub_677E90
 	typedef int(__cdecl* DB_GetXAssetSizeHandler_t)();
 	typedef const char *(__cdecl *DB_XAssetGetNameHandler)(XAssetHeader *);
 	typedef int(__cdecl* DB_OpenZoneFile_t)(XZoneQueueEntry* entry, int allocFlags);
@@ -176,120 +170,32 @@ namespace T4
 		extern "C"
 		{
 			// ── Vanilla engine function pointers (non-detoured) ─────────────────────
-			extern Com_Error_t Com_Error;
-			extern Com_Printf_t Com_Printf;
-			extern Com_PrintMessage_t Com_PrintMessage;
-			extern Com_PrintfChannel_t Com_PrintfChannel;
-			extern Com_PrintError_t Com_PrintError;        // sub_59A440
-			extern Com_sscanf_t Com_sscanf;                // sub_7AB559 (static-CRT sscanf)
-			extern DB_EnumXAssets_t DB_EnumXAssets;
-			extern DB_EnumXAssets_FastFile_t DB_EnumXAssets_FastFile;
 			// DB_FindXAssetHeader (sub_48DA30) is DETOURED — see T4_Reconstructed::DB_FindXAssetHeader.
-			extern DB_LoadXAssets_t DB_LoadXAssets;
-			extern Sys_BinaryPath_t Sys_BinaryPath;
-			extern DB_InitAssetEntryPool_t DB_InitAssetEntryPool;
-			extern Sys_SyncDatabase_t Sys_SyncDatabase;
-			extern DB_PostLoadXZone_t DB_PostLoadXZone;
-			extern Sys_WakeDatabase_t Sys_WakeDatabase;
-			extern DB_WaitForPendingLoads_t DB_WaitForPendingLoads;
-			extern DB_CheckPendingComplete_t DB_CheckPendingComplete;
-			extern DB_PreUnloadResources_t DB_PreUnloadResources;
 			// DB_UnloadZoneAssets (sub_48F340) is DETOURED — see T4_Reconstructed::DB_UnloadZoneAssets.
-			extern DB_UnloadAllZones_t DB_UnloadAllZones;
-			extern DB_CleanupAssetRefs_t DB_CleanupAssetRefs;
-			extern DB_PostUnloadCleanup_t DB_PostUnloadCleanup;
-			extern DB_RemoveZoneEntry_t DB_RemoveZoneEntry;
-			extern DB_ZoneEntryCleanup_t DB_ZoneEntryCleanup;
-			extern DB_FreeXZoneMemory_t DB_FreeXZoneMemory;
-			extern R_BeginRegistration_t R_BeginRegistration;
-			extern CL_BeginRegistration_t CL_BeginRegistration;
-			extern Hunk_BeginRegistration_t Hunk_BeginRegistration;
-			extern DB_SyncAssets_t DB_SyncAssets;
-			extern R_ClearScene_t R_ClearScene;
-			extern CL_ClearState_t CL_ClearState;
-			extern Hunk_ClearTempMemory_t Hunk_ClearTempMemory;
-			extern DB_AddZonesToQueue_t DB_AddZonesToQueue;
-			extern DB_InUseHandlerDispatch_t DB_InUseHandlerDispatch;
-			extern DB_PromoteHelper_t DB_PromoteHelper;
 
-			// ── Per-type handler tables ─────────────────────────────────────────────
-			extern DB_XAssetUnloadHandler_t*     DB_XAssetUnloadHandlers;      // 0x8DC948
-			extern DB_XAssetOverridePromoter_t*  DB_XAssetOverridePromoters;   // 0x8DC9D8
-			extern DB_XAssetSetNameHandler_t*    DB_XAssetSetNameHandlers;     // 0x8DCB88
-			extern DB_XAssetFreeHandler_t*       DB_XAssetFreeHandlers;        // 0x8DC798
-			extern DB_XAssetAllocHandler_t*      DB_XAssetAllocHandlers;       // 0x8DC708
-			extern const char**                  DB_XAssetDefaultNames;        // 0x8DC8B8
-			extern void**                        DB_XAssetPool;                // 0x8DC828
-			extern DB_XAssetGetNameHandler*      DB_XAssetGetNameHandlers;
-			extern DB_GetXAssetSizeHandler_t*    DB_GetXAssetSizeHandler;
-
-			// ── String table ────────────────────────────────────────────────────────
-			extern StringTable_Find_t            StringTable_Find;        // 0x68DE50
-			extern char**                        g_stringTableBase;       // &dword_3702390
+			// ── Misc engine functions (true names; see addr_mapping.csv) ────────────
 
 			// ── Override-system globals ────────────────────────────────────────────
-			extern XAssetEntryPoolEntry**   g_freeAssetEntries;       // 0x957884
-			extern XAssetEntry**            g_inuseEntry;             // 0x957564
-			extern XAssetHeader**           g_inuseHeader;            // 0x9575E8
-			extern unsigned int*            g_assetRefCount;          // 0x46DEB28
 
 			// ── Engine state globals ────────────────────────────────────────────────
-			extern XAssetEntryPoolEntry* g_assetEntryPool;
-			extern XZoneName*            g_zoneNames;
-			extern bool*                 g_dbInitialized;
-			extern bool*                 g_dbHasLoadedZones;
-			extern int*                  g_zoneCount;
-			extern XZoneLoadedEntry*     g_zoneLoaded;
-			extern ZoneFileEntry*        g_zoneFileNames;
-			extern PMem_Pool*            g_pmem_pools;
-			extern bool*                 g_dbInUse;
-			extern int*                  g_syncValue;
-			extern int*                  g_dbReaderCount;
-			extern int*                  g_dbWriterCount;
-			extern bool*                 g_assetsDirty;
-			extern unsigned __int16*     db_hashTable;
-			extern unsigned int*         com_frameTime;          // 0x00351DF34 — process-wide ms timer (timeGetTime), monotonic
 
-			extern gentity_s*            g_entities;
 
 			// ── Weapon / aim-assist globals ────────────────────────────────────────
-			extern WeaponDef**           bg_weaponDefs;     // 0x8F6770 — array of WeaponDef* indexed by weapon index
-			extern AimAssistGlobals*     aaGlobArray;       // 0x8E8690 — per-client aim-assist state (stride 0xE3C × 2)
 
 			// ── DB load queue (consumed by DB_ProcessZoneQueue / sub_48F260) ──────
-			extern XZoneQueueEntry*      g_zoneLoadQueue;        // 0x9592B8 — load queue (max 32, stride 0x44)
-			extern int*                  g_zonesToLoad;          // 0xA51A44 — count consumed by the worker
-			extern int*                  g_pendingZoneCount;     // 0x957314 — outstanding zones (decremented on failure)
-			extern HANDLE*               g_dbSecondaryEvent;     // 0x1FF51C4 — completion signal (set when worker drains the batch)
 
 			// Vanilla pointer — kept until/unless we reconstruct sub_48EE10.
-			extern DB_OpenZoneFile_t     DB_OpenZoneFile;        // 0x48EE10
 
 			// Copy-info deferred-link queue (used by T4_Reconstructed::DB_PushCopyInfo
 			// and T4_Reconstructed::DB_FlushCopyInfoQueue — sub_48D720 / sub_48E560).
 			//   g_copyInfo[i] = XAssetEntry* enqueued while g_syncValue == 0.
 			//   g_copyInfoCount ∈ [0, 0xC00]. Past 0xC00 → Com_Error "g_copyInfo exceeded".
-			extern int*                  g_copyInfoCount;    // dword_957E8C
-			extern XAssetEntry**         g_copyInfo;         // dword_AD1DD8
 
 			// ── cmd_* pointers ──────────────────────────────────────────────────────
-			extern DWORD*  cmd_id;
-			extern DWORD*  cmd_argc;
-			extern DWORD** cmd_argv;
 
 			// ── fs/dedicated dvar pointer arrays (dvar_t is at file global scope) ──
-			extern dvar_t** fs_game;
-			extern dvar_t** fs_localAppData;
-			extern dvar_t** fs_basepath;
-			extern dvar_t** dedicated;
 
 			// ── db stream globals ───────────────────────────────────────────────────
-			extern unsigned long& db_streamEnabled;
-			extern unsigned long& db_streamReadBlocksTotal;
-			extern unsigned long& db_streamReadBlocksDone;
-			extern unsigned long& db_streamDecompBytesTotal;
-			extern unsigned long& db_streamDecompBytesDone;
-			extern const char**   language_system;
 
 			// ── Asm/naked wrappers (cdecl bridges over vanilla usercall) ───────────
 			extern void Cbuf_AddText(const char* text, int localClientNum);
@@ -323,18 +229,6 @@ namespace T4
 		extern "C"
 		{
 			// ── Vanilla function pointers (script/game) ─────────────────────────────
-			extern AddFunction_t AddFunction;
-			extern EmitMethod_t EmitMethod;
-			extern Scr_GetFunction_t Scr_GetFunction;
-			extern CScr_GetFunction_t CScr_GetFunction;
-			extern CScr_GetMethod_t CScr_GetMethod;
-			extern Player_GetMethod_t Player_GetMethod;
-			extern ScriptEnt_GetMethod_t ScriptEnt_GetMethod;
-			extern ScriptVehicle_GetMethod_t ScriptVehicle_GetMethod;
-			extern HudElem_GetMethod_t HudElem_GetMethod;
-			extern Helicopter_GetMethod_t Helicopter_GetMethod;
-			extern Actor_GetMethod_t Actor_GetMethod;
-			extern BuiltIn_GetMethod_t BuiltIn_GetMethod;
 			extern RemoveRefToValue_t RemoveRefToValue;
 
 			// ── Asm/naked wrappers ──────────────────────────────────────────────────
@@ -352,7 +246,6 @@ namespace T4
 	{
 		extern "C"
 		{
-			extern Dvar_FindMalleableVarT Dvar_FindMalleableVar;
 
 			// Asm/naked wrappers (cdecl bridges over vanilla usercall)
 			extern dvar_t* Dvar_RegisterBool(bool value, const char *dvarName, int flags, const char *description = "");

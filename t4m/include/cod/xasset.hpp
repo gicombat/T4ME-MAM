@@ -5635,7 +5635,7 @@ namespace T4
 		ASSERT_STRUCT_OFFSET(ZoneFileEntry, fileSize, 0x44);
 		ASSERT_STRUCT_OFFSET(ZoneFileEntry, fileSource, 0x48);
 
-		WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)>DB_FindXAssetHeader{ 0x0, 0x48DA30 };
+		WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)>DB_FindXAssetHeader{ "DB_FindXAssetHeader" };
 	}
 } // namespace T4::engine
 

@@ -2,6 +2,8 @@
 // Microsoft Visual C++ generated include file.
 // Used by t4m.rc
 #define IDB_TEXT                        101
+#define IDB_TEXT_GER                    102
+#define IDR_ADDR_CSV                    103
 #define TEXTFILE                        256
 
 // Nächste Standardwerte für neue Objekte

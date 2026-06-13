@@ -62,7 +62,6 @@ namespace T4M
 
 void PatchT4MAM_WeaponState();
 
-
 // =====================================================================
 // Field accessors (raw offsets where t4_headers.h doesn't type the field)
 // =====================================================================
@@ -75,7 +74,7 @@ static inline unsigned char& raw_bref (void* base,       int offset) { return *(
 
 static inline WeaponDef* GetWeaponDef(unsigned int idx)
 {
-    return ((WeaponDef**)0x008F6770)[idx];
+    return ((WeaponDef**)T4M::GetAddress("bg_weaponDefs"))[idx];
 }
 
 
@@ -85,6 +84,10 @@ static inline WeaponDef* GetWeaponDef(unsigned int idx)
 // =====================================================================
 
 // sub_421FF0 — __usercall(esi=ps, [esp+4]=arg_0); returns bool in al. (multi-caller)
+// Vanilla call targets used by the naked shims below — resolved at runtime
+// (variant-aware) in PatchT4MAM_WeaponState(); naked bodies do `call p_X`.
+
+
 static __declspec(naked) char call_IsWeaponInputBlocked(playerState_s* /*ps*/, int /*arg_0*/)
 {
     __asm 
@@ -94,8 +97,7 @@ static __declspec(naked) char call_IsWeaponInputBlocked(playerState_s* /*ps*/, i
         push    ebx
         mov     esi, [esp+10h]              ; ps (1st arg, +4 + 12 shift = +0x10)
         push    [esp+14h]                    ; arg_0 (2nd arg, +8 + 12 shift = +0x14)
-        mov     eax, 0x00421FF0
-        call    eax
+        call T4::engine::p_IsWeaponInputBlocked
         add     esp, 4
         pop     ebx
         pop     edi
@@ -115,8 +117,7 @@ static __declspec(naked) int call_PM_Weapon_AnimCmdState_Resync(int /*arg_0*/, p
         push    ebx
         mov     ecx, [esp+10h]               ; arg_0 (1st arg)
         push    [esp+14h]                     ; pm (2nd arg)
-        mov     eax, 0x0041FF60
-        call    eax
+        call T4::engine::p_PM_Weapon_AnimCmdState_Resync
         add     esp, 4
         pop     ebx
         pop     edi
@@ -134,8 +135,7 @@ static __declspec(naked) char call_PM_Weapon_HasAnimSync(playerState_s* /*ps*/)
         push    edi
         push    ebx
         mov     ecx, [esp+10h]
-        mov     eax, 0x0041FED0
-        call    eax
+        call T4::engine::p_PM_Weapon_HasAnimSync
         pop     ebx
         pop     edi
         pop     esi
@@ -153,8 +153,7 @@ static __declspec(naked) void call_PM_Weapon_DispatchAnimHandler(pmove_t* /*pm*/
         push    ebx
         mov     edi, [esp+10h]               ; pm
         push    [esp+14h]                     ; arg_0
-        mov     eax, 0x0041DE50
-        call    eax
+        call T4::engine::p_PM_Weapon_DispatchAnimHandler
         add     esp, 4
         pop     ebx
         pop     edi
@@ -174,8 +173,7 @@ static __declspec(naked) int call_PM_Weapon_TickValidation(pmove_t* /*pm*/, int 
         push    ebx
         push    [esp+14h]                     ; callValidation (right arg, pushed first)
         push    [esp+14h]                     ; pm (left arg, pushed second)
-        mov     eax, 0x0041E0B0
-        call    eax
+        call T4::engine::p_PM_Weapon_TickValidation
         add     esp, 8
         pop     ebx
         pop     edi
@@ -194,8 +192,7 @@ static __declspec(naked) int call_PM_Weapon_FinalGate(playerState_s* /*ps*/, int
         push    ebx
         mov     eax, [esp+10h]
         push    [esp+14h]
-        mov     edx, 0x0041E700
-        call    edx
+        call T4::engine::p_PM_Weapon_FinalGate
         add     esp, 4
         pop     ebx
         pop     edi
@@ -213,8 +210,7 @@ static __declspec(naked) void call_PM_Weapon_TickSprintMachine(pmove_t* /*pm*/)
         push    edi
         push    ebx
         mov     ecx, [esp+10h]
-        mov     eax, 0x00421EA0
-        call    eax
+        call T4::engine::p_PM_Weapon_TickSprintMachine
         pop     ebx
         pop     edi
         pop     esi
@@ -231,8 +227,7 @@ static __declspec(naked) void call_PM_Weapon_TickIdleMachine(pmove_t* /*pm*/)
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x00421F20
-        call    edx
+        call T4::engine::p_PM_Weapon_TickIdleMachine
         pop     ebx
         pop     edi
         pop     esi
@@ -249,8 +244,7 @@ static __declspec(naked) void call_PM_Weapon_TickOffhandMachine(pmove_t* /*pm*/)
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x004217D0
-        call    edx
+        call T4::engine::p_PM_Weapon_TickOffhandMachine
         pop     ebx
         pop     edi
         pop     esi
@@ -267,8 +261,7 @@ static __declspec(naked) void call_PM_Weapon_TickPickup(pmove_t* /*pm*/)
         push    edi
         push    ebx
         push    [esp+10h]
-        mov     eax, 0x00420260
-        call    eax
+        call T4::engine::p_PM_Weapon_TickPickup
         add     esp, 4
         pop     ebx
         pop     edi
@@ -286,8 +279,7 @@ static __declspec(naked) void call_PM_Weapon_TickRecoil(pmove_t* /*pm*/)
         push    edi
         push    ebx
         mov     edx, [esp+10h]
-        mov     eax, 0x0041F8D0
-        call    eax
+        call T4::engine::p_PM_Weapon_TickRecoil
         pop     ebx
         pop     edi
         pop     esi
@@ -306,8 +298,7 @@ static __declspec(naked) void call_PM_Weapon_ProcessAttackInput(playerState_s* /
         push    ebx
         push    [esp+14h]                     ; callValidation (right arg, pushed first)
         push    [esp+14h]                     ; ps (left arg, pushed second)
-        mov     eax, 0x00420A60
-        call    eax
+        call T4::engine::p_PM_Weapon_ProcessAttackInput
         add     esp, 8
         pop     ebx
         pop     edi
@@ -327,8 +318,7 @@ static __declspec(naked) void call_PM_Weapon_FinalizeStateExit(playerState_s* /*
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x004225D0
-        call    edx
+        call T4::engine::p_PM_Weapon_FinalizeStateExit
         pop     ebx
         pop     edi
         pop     esi
@@ -346,8 +336,7 @@ static __declspec(naked) void call_Anim_TriggerEvent(playerState_s* /*ps*/, int 
         push    ebx
         mov     eax, [esp+10h]
         mov     ecx, [esp+14h]
-        mov     edx, 0x00412BF0
-        call    edx
+        call T4::engine::p_Anim_TriggerEvent
         pop     ebx
         pop     edi
         pop     esi
@@ -364,8 +353,7 @@ static __declspec(naked) int call_PM_Weapon_IsLocked(pmove_t* /*pm*/)
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x00420CC0
-        call    edx
+        call T4::engine::p_PM_Weapon_IsLocked
         pop     ebx
         pop     edi
         pop     esi
@@ -383,8 +371,7 @@ static __declspec(naked) void call_PM_Weapon_TickDrop(pmove_t* /*pm*/, int /*isQ
         push    ebx
         mov     ecx, [esp+10h]
         push    [esp+14h]
-        mov     eax, 0x0041F010
-        call    eax
+        call T4::engine::p_PM_Weapon_TickDrop
         add     esp, 4
         pop     ebx
         pop     edi
@@ -404,8 +391,7 @@ static __declspec(naked) void call_PM_Weapon_RefreshReload(playerState_s* /*ps*/
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x0041F4E0
-        call    edx
+        call T4::engine::p_PM_Weapon_RefreshReload
         pop     ebx
         pop     edi
         pop     esi
@@ -422,8 +408,7 @@ static __declspec(naked) int call_PM_Weapon_CheckFastReload(playerState_s* /*ps*
         push    edi
         push    ebx
         mov     edi, [esp+10h]
-        mov     eax, 0x0041F410
-        call    eax
+        call T4::engine::p_PM_Weapon_CheckFastReload
         pop     ebx
         pop     edi
         pop     esi
@@ -441,8 +426,7 @@ static __declspec(naked) void call_PM_Weapon_SubmitAnimEvent(playerState_s* /*ps
         push    ebx
         mov     eax, [esp+10h]
         push    [esp+14h]
-        mov     edx, 0x0041D420
-        call    edx
+        call T4::engine::p_PM_Weapon_SubmitAnimEvent
         add     esp, 4
         pop     ebx
         pop     edi
@@ -461,8 +445,7 @@ static __declspec(naked) void call_PM_Weapon_ReloadFinalize(playerState_s* /*ps*
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x0041E940
-        call    edx
+        call T4::engine::p_PM_Weapon_ReloadFinalize
         pop     ebx
         pop     edi
         pop     esi
@@ -529,8 +512,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_CanForceFire(pmove_t* pm)
         push    edi
         push    ebx
         mov     eax, weaponIdx
-        mov     edx, 0x00420500
-        call    edx
+        call T4::engine::p_PM_Weapon_GetInputMask
         mov     mask, eax
         pop     ebx
         pop     edi
@@ -618,8 +600,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_FireRefresh(playerState_s* ps, int a
         push    offhandIdx                    ; arg_0 = ps[+0xFC]
         mov     edi, ps
         mov     esi, 1
-        mov     eax, 0x0041E5E0
-        call    eax
+        call T4::engine::p_PM_Weapon_OffhandSelect
         add     esp, 4
         pop     ebx
         pop     edi
@@ -677,8 +658,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_DetonateCheck(pmove_t* pm)
         push    ebx
         push    1Bh
         mov     eax, ps
-        mov     edx, 0x0041D420
-        call    edx
+        call T4::engine::p_PM_Weapon_SubmitAnimEvent
         add     esp, 4
         pop     ebx
         pop     edi
@@ -738,8 +718,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_OffhandStateBridge(pmove_t* pm)
         push    ebx
         push    1
         mov     eax, ps
-        mov     edx, 0x0041D420
-        call    edx
+        call T4::engine::p_PM_Weapon_SubmitAnimEvent
         add     esp, 4
         pop     ebx
         pop     edi
@@ -775,7 +754,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* pm, int arg_0)
     if (raw_int(w, 0x5F0) != 0) 
     {
         // dword_1F552A4 holds a dvar_t* pointer; deref then check [+0x10] (dvar bool field).
-        unsigned char* dvar_ptr = *(unsigned char**)0x01F552A4;
+        unsigned char* dvar_ptr = *(unsigned char**)T4M::GetAddress("dvar_g_testForDpadItem");
         if (dvar_ptr[0x10] != 0) 
         {
             bl = 0;
@@ -813,8 +792,7 @@ extern "C" char T4_Reconstructed::PM_Weapon_DefaultGate(pmove_t* pm, int arg_0)
             push    ebx
             mov     ecx, ps
             xor     edx, edx
-            mov     eax, 0x0041D440
-            call    eax
+            call T4::engine::p_PM_Weapon_SetVmAnimState
             pop     ebx
             pop     edi
             pop     esi
@@ -879,7 +857,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* pm, int arg
         return;
 
     float wpf = raw_float(ps, 0x110);
-    bool slowAnim = (wpf <= *(float*)0x008B7B30);  // ds:String2 — float 0.0 sentinel
+    bool slowAnim = (wpf <= *(float*)T4M::GetAddress("flt_zero_8B7B30"));  // ds:String2 — float 0.0 sentinel
 
     if (!slowAnim && raw_int(w, 0x524) != 0) 
         return;
@@ -901,11 +879,9 @@ extern "C" void T4_Reconstructed::PM_Weapon_AnimSyncCleanup(pmove_t* pm, int arg
         push    edi
         push    ebx
         mov     ecx, pm
-        mov     eax, 0x00419F20
-        call    eax
+        call T4::engine::p_PM_Weapon_AdsBlendReset
         push    [ps]                          ; arg_0 = ps (NOT pm)
-        mov     eax, 0x00420E70
-        call    eax
+        call T4::engine::p_PM_Weapon_FireSwitchEvent
         add     esp, 4
         pop     ebx
         pop     edi
@@ -1245,7 +1221,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
 
     // Vanilla: mov eax, dword_46DE3B0; add eax, 18B78h; cmp [eax], 0; jz skip
     // dword_46DE3B0 holds a pointer; we deref then add 0x18B78 to get an event-list struct.
-    char* clientBase = *(char**)0x046DE3B0;
+    char* clientBase = *(char**)T4M::GetAddress("clientStatePtr");
     int* eventListBase = (int*)(clientBase + 0x18B78);
     if (*eventListBase != 0) 
     {
@@ -1262,8 +1238,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
             push    0                          ; dummy stack arg (vanilla pushes edi=random)
             mov     eax, eventListBase         ; eax = events list
             mov     ecx, offhand_x_F8          ; ecx = ps[+0xF8] (offhand-related index)
-            mov     edx, 0x00406D00
-            call    edx
+            call T4::engine::p_EventList_GetEntry
             add     esp, 4                     ; clean dummy
             test    eax, eax
             jz      done
@@ -1272,8 +1247,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
             test    ecx, ecx
             jz      done
 
-            mov     edx, 0x007AA7A8
-            call    edx
+            call T4::engine::p_rand
             cdq
             idiv    dword ptr [edi + 34h]
             lea     edx, [edx + edx*4]
@@ -1286,8 +1260,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandStart(pmove_t* pm)
             push    eax
             push    [ps]
             mov     eax, 1
-            mov     edx, 0x00406E70
-            call    edx
+            call T4::engine::p_WeaponEvent_ApplyToPS
             add     esp, 10h
 
 done:
@@ -1365,8 +1338,7 @@ extern "C" void T4_Reconstructed::PM_Weapon_Tick_OffhandHold(pmove_t* pm)
             push    offhandIdx                 ; arg_0 = ps[+0xFC]
             mov     edi, ps
             mov     esi, 1
-            mov     eax, 0x0041E5E0
-            call    eax
+            call T4::engine::p_PM_Weapon_OffhandSelect
             add     esp, 4
             pop     ebx
             pop     edi
@@ -1565,8 +1537,7 @@ extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Tick_OffhandInit_S
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x00421300
-        call    edx
+        call T4::engine::p_PM_Weapon_Tick_OffhandInit_Stub
         pop     ebx
         pop     edi
         pop     esi
@@ -1582,8 +1553,7 @@ extern "C" __declspec(naked) void T4_Reconstructed::PM_Weapon_Tick_Offhand_Stub(
         push    edi
         push    ebx
         mov     eax, [esp+10h]
-        mov     edx, 0x00421630
-        call    edx
+        call T4::engine::p_PM_Weapon_Tick_Offhand_Stub
         pop     ebx
         pop     edi
         pop     esi
@@ -1767,7 +1737,7 @@ dispatch_setup:
     }
     if (do_float_store) 
     {
-        raw_iref(ps, 0x914) = *(int*)0x008AF224;
+        raw_iref(ps, 0x914) = *(int*)T4M::GetAddress("flt_255");
     }
 
     // Bail if not anim-sync and any timer pending
@@ -1962,22 +1932,6 @@ namespace T4M
     void CG_ApplyViewmodelRotOfs_Wrapper();   // naked __usercall(ecx=cg) → cdecl
 }
 
-// === Vanilla globals (read-only) ===
-static const uintptr_t ADDR_bg_WeaponDefs        = 0x008F6770;
-static const uintptr_t ADDR_cg_gun_move_f        = 0x03688A88;
-static const uintptr_t ADDR_cg_gun_move_r        = 0x03688A70;
-static const uintptr_t ADDR_cg_gun_move_u        = 0x0368EB98;
-static const uintptr_t ADDR_cg_gun_ofs_f         = 0x0368EBB4;
-static const uintptr_t ADDR_cg_gun_ofs_r         = 0x03688A38;
-static const uintptr_t ADDR_cg_gun_ofs_u         = 0x034660B4;
-static const uintptr_t ADDR_cg_gun_minspeed      = 0x034660B0;
-static const uintptr_t ADDR_cg_gun_move_rate     = 0x03466564;
-static const uintptr_t ADDR_cg_gun_rot_p         = 0x03688AC4;
-static const uintptr_t ADDR_cg_gun_rot_y         = 0x03688A20;
-static const uintptr_t ADDR_cg_gun_rot_r         = 0x03466118;
-static const uintptr_t ADDR_cg_gun_rot_minspeed  = 0x03688B48;
-static const uintptr_t ADDR_cg_gun_rot_rate      = 0x03466060;
-
 // dvar.value lives at *(float*)(dvar_ptr + 0x10).
 static inline float DvarF(uintptr_t dvarSlotAddr)
 {
@@ -2007,7 +1961,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
     int weaponIdx = (CgI(cg, 0xAACA8) & 0x02)
                   ? CgI(cg, 0xAAD94)
                   : CgI(cg, 0xAAD9C);
-    const WeaponDef* wd = ((const WeaponDef* const*)ADDR_bg_WeaponDefs)[weaponIdx];
+    const WeaponDef* wd = ((const WeaponDef* const*)T4M::GetAddress("bg_weaponDefs"))[weaponIdx];
 
     int stanceBits = CgI(cg, 0xACE1C);
     bool prone = (stanceBits & 0x08) != 0;
@@ -2021,7 +1975,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
     else            
         minSpeed = wd->fStandMoveMinSpeed;
 
-    minSpeed += DvarF(ADDR_cg_gun_minspeed);
+    minSpeed += DvarF(T4M::GetAddress("cg_gun_minspeed"));
 
     if (-minSpeed >= 0.0f) 
         minSpeed = 0.0f;
@@ -2071,9 +2025,9 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
             }
         }
 
-        float gmf = DvarF(ADDR_cg_gun_move_f);
-        float gmr = DvarF(ADDR_cg_gun_move_r);
-        float gmu = DvarF(ADDR_cg_gun_move_u);
+        float gmf = DvarF(T4M::GetAddress("cg_gun_move_f"));
+        float gmr = DvarF(T4M::GetAddress("cg_gun_move_r"));
+        float gmu = DvarF(T4M::GetAddress("cg_gun_move_u"));
         smTargetF = ofsF * t + gmf * t;
         smTargetR = ofsR * t + gmr * t;
         smTargetU = ofsU * t + gmu * t;
@@ -2081,18 +2035,18 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
 
     if (isType28) 
     {
-        float gof = DvarF(ADDR_cg_gun_ofs_f);
-        float gor = DvarF(ADDR_cg_gun_ofs_r);
-        float gou = DvarF(ADDR_cg_gun_ofs_u);
+        float gof = DvarF(T4M::GetAddress("cg_gun_ofs_f"));
+        float gor = DvarF(T4M::GetAddress("cg_gun_ofs_r"));
+        float gou = DvarF(T4M::GetAddress("cg_gun_ofs_u"));
         smTargetF = gof + (wd->vDuckedOfs[0] + smTargetF);
         smTargetR = gor + (wd->vDuckedOfs[1] + smTargetR);
         smTargetU = gou + (wd->vDuckedOfs[2] + smTargetU);
     } 
     else if (isType0B) 
     {
-        float gof = DvarF(ADDR_cg_gun_ofs_f);
-        float gor = DvarF(ADDR_cg_gun_ofs_r);
-        float gou = DvarF(ADDR_cg_gun_ofs_u);
+        float gof = DvarF(T4M::GetAddress("cg_gun_ofs_f"));
+        float gor = DvarF(T4M::GetAddress("cg_gun_ofs_r"));
+        float gou = DvarF(T4M::GetAddress("cg_gun_ofs_u"));
         smTargetF = gof + (wd->vProneOfs[0] + smTargetF);
         smTargetR = gor + (wd->vProneOfs[1] + smTargetR);
         smTargetU = gou + (wd->vProneOfs[2] + smTargetU);
@@ -2102,7 +2056,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
     const float kMs2S   =  0.001f;
     const float kEpsPos =  1.0e-4f;
     const float kEpsNeg = -1.0e-4f;
-    float gunMoveRate = DvarF(ADDR_cg_gun_move_rate);
+    float gunMoveRate = DvarF(T4M::GetAddress("cg_gun_move_rate"));
     float dt_ms = (float)CgI(cg, 0xAAC78);
     bool useProneRate = (CgF(cg, 0xAADCC) == 11.0f);
 
@@ -2158,9 +2112,9 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelMoveOfs(void* cg, float* outO
             t_sprint = counter / dur;
         }
 
-        float gmf = DvarF(ADDR_cg_gun_move_f);
-        float gmr = DvarF(ADDR_cg_gun_move_r);
-        float gmu = DvarF(ADDR_cg_gun_move_u);
+        float gmf = DvarF(T4M::GetAddress("cg_gun_move_f"));
+        float gmr = DvarF(T4M::GetAddress("cg_gun_move_r"));
+        float gmu = DvarF(T4M::GetAddress("cg_gun_move_u"));
         float tgtSF = gmf * t_sprint + wd->sprintOfs[0] * t_sprint;
         float tgtSR = gmr * t_sprint + wd->sprintOfs[1] * t_sprint;
         float tgtSU = gmu * t_sprint + wd->sprintOfs[2] * t_sprint;
@@ -2240,7 +2194,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelRotOfs(void* cg, float* outRo
     int weaponIdx = (CgI(cg, 0xAACA8) & 0x02)
                   ? CgI(cg, 0xAAD94)
                   : CgI(cg, 0xAAD9C);
-    const WeaponDef* wd = ((const WeaponDef* const*)ADDR_bg_WeaponDefs)[weaponIdx];
+    const WeaponDef* wd = ((const WeaponDef* const*)T4M::GetAddress("bg_weaponDefs"))[weaponIdx];
 
     int stanceBits = CgI(cg, 0xACE1C);
     bool prone = (stanceBits & 0x08) != 0;
@@ -2254,7 +2208,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelRotOfs(void* cg, float* outRo
     else            
         minSpeed = wd->fStandRotMinSpeed;
 
-    minSpeed += DvarF(ADDR_cg_gun_rot_minspeed);
+    minSpeed += DvarF(T4M::GetAddress("cg_gun_rot_minspeed"));
 
     float curSpeed = CgF(cg, 0xB8378);
     bool moving    = (curSpeed > minSpeed);
@@ -2287,9 +2241,9 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelRotOfs(void* cg, float* outRo
             pitchOfs = wd->vStandRot[0];  yawOfs = wd->vStandRot[1];  rollOfs = wd->vStandRot[2];
         }
 
-        float grp = DvarF(ADDR_cg_gun_rot_p);
-        float gry = DvarF(ADDR_cg_gun_rot_y);
-        float grr = DvarF(ADDR_cg_gun_rot_r);
+        float grp = DvarF(T4M::GetAddress("cg_gun_rot_p"));
+        float gry = DvarF(T4M::GetAddress("cg_gun_rot_y"));
+        float grr = DvarF(T4M::GetAddress("cg_gun_rot_r"));
         smTargetP = pitchOfs * t + grp * t;
         smTargetY = yawOfs   * t + gry * t;
         smTargetR = rollOfs  * t + grr * t;
@@ -2315,7 +2269,7 @@ extern "C" void T4_Reconstructed::CG_ApplyViewmodelRotOfs(void* cg, float* outRo
     const float kMs2S   =  0.001f;
     const float kEpsPos =  1.0e-4f;
     const float kEpsNeg = -1.0e-4f;
-    float gunRotRate = DvarF(ADDR_cg_gun_rot_rate);
+    float gunRotRate = DvarF(T4M::GetAddress("cg_gun_rot_rate"));
     float dt_ms      = (float)CgI(cg, 0xAAC78);
     bool useProneRate = (CgF(cg, 0xAADCC) == 11.0f);
 
@@ -2515,7 +2469,7 @@ __declspec(naked) void T4M::CG_ApplyViewmodelRotOfs_Wrapper()
 
 static void InstallPmCheckAdsHook()
 {
-    static auto pm_checkads_hook = safetyhook::create_mid(0x0041DD10,
+    static auto pm_checkads_hook = safetyhook::create_mid(T4M::GetAddress("PM_CheckAds"),
         [](SafetyHookContext& ctx) 
         {
             auto* pm  = (char*)ctx.edi;
@@ -2536,13 +2490,13 @@ static void InstallPmCheckAdsHook()
 
 void PatchT4MAM_WeaponState()
 {
-    Detours::X86::DetourFunction((uintptr_t)0x00422160, (uintptr_t)&T4M::PM_Weapon_Wrapper, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("PM_Weapon"), (uintptr_t)&T4M::PM_Weapon_Wrapper, Detours::X86Option::USE_JUMP);
 
     // sub_465FF0 — viewmodel translation (lowReady pull added)
-    Detours::X86::DetourFunction((uintptr_t)0x00465FF0, (uintptr_t)&T4M::CG_ApplyViewmodelMoveOfs_Wrapper, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("CG_ApplyViewmodelMoveOfs"), (uintptr_t)&T4M::CG_ApplyViewmodelMoveOfs_Wrapper, Detours::X86Option::USE_JUMP);
 
     // sub_4664E0 — viewmodel rotation (lowReady pull added)
-    Detours::X86::DetourFunction((uintptr_t)0x004664E0, (uintptr_t)&T4M::CG_ApplyViewmodelRotOfs_Wrapper, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("CG_ApplyViewmodelRotOfs"), (uintptr_t)&T4M::CG_ApplyViewmodelRotOfs_Wrapper, Detours::X86Option::USE_JUMP);
 
     // sub_41DD10 (PM_CheckAds) — block ADS while lowReady intent is set
     InstallPmCheckAdsHook();

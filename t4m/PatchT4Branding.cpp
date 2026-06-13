@@ -62,34 +62,33 @@ void PatchT4_Branding()
 	//	nop(0x59D68B, 5);	// don't play intro video
 	//}
 
+	nop(T4M::GetAddress("pc_newversionavailable_check"), 5); // disable pc_newversionavailable check
+
 	IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
-		nop(0x5FD91B, 5);										// disable pc_newversionavailable check
-#ifdef IS_BETA
-		PatchMemory(0x851208, (PBYTE)CONSOLEVERSION_BETA_VULKAN_STR, 14);	// change the console input version
-		PatchMemory(0x871EE8, (PBYTE)va("T4Me-MAM-SP r%i%s\n", VERSION, BETA), 32);
+		#ifdef IS_BETA
+		PatchMemory(T4M::GetAddress("console_input_version"), (PBYTE)CONSOLEVERSION_BETA_VULKAN_STR, 14);	// change the console input version
+		PatchMemory(T4M::GetAddress("version_banner"), (PBYTE)va("T4Me-MAM-SP r%i%s\n", VERSION, BETA), 32);
 #else		
-		PatchMemory(0x851208, (PBYTE)CONSOLEVERSION_VULKAN_STR, 14);	// change the console input version
-		PatchMemory(0x871EE8, (PBYTE)va("T4Me-MAM-SP %i\n", VERSION), 32);
+		PatchMemory(T4M::GetAddress("console_input_version"), (PBYTE)CONSOLEVERSION_VULKAN_STR, 14);	// change the console input version
+		PatchMemory(T4M::GetAddress("version_banner"), (PBYTE)va("T4Me-MAM-SP %i\n", VERSION), 32);
 #endif
-		Detours::X86::DetourFunction((uintptr_t)0x5B5A20, (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
-		Detours::X86::DetourFunction((uintptr_t)0x4743D2, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
-		Detours::X86::DetourFunction((uintptr_t)0x59D393, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
-
+		Detours::X86::DetourFunction(T4M::GetAddress("shortVersion_call_site"), (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
+		Detours::X86::DetourFunction(T4M::GetAddress("consoleVersionWindow_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
+		Detours::X86::DetourFunction(T4M::GetAddress("versionInfo_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
 	}
 	else
 	{
-		nop(0x5FD91B, 5);									// disable pc_newversionavailable check
 #ifdef IS_BETA
-		PatchMemory(0x851208, (PBYTE)CONSOLEVERSION_BETA_STR, 14);	// change the console input version
-		PatchMemory(0x871EE8, (PBYTE)va("T4Me-MAM-SP r%i%s\n", VERSION, BETA), 32);
+		PatchMemory(T4M::GetAddress("console_input_version"), (PBYTE)CONSOLEVERSION_BETA_STR, 14);	// change the console input version
+		PatchMemory(T4M::GetAddress("version_banner"), (PBYTE)va("T4Me-MAM-SP r%i%s\n", VERSION, BETA), 32);
 #else		
-		PatchMemory(0x851208, (PBYTE)CONSOLEVERSION_STR, 14);	// change the console input version
-		PatchMemory(0x871EE8, (PBYTE)va("T4Me-MAM-SP %i\n", VERSION), 32);
+		PatchMemory(T4M::GetAddress("console_input_version"), (PBYTE)CONSOLEVERSION_STR, 14);	// change the console input version
+		PatchMemory(T4M::GetAddress("version_banner"), (PBYTE)va("T4Me-MAM-SP %i\n", VERSION), 32);
 #endif
-		Detours::X86::DetourFunction((uintptr_t)0x5B5A20, (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
-		Detours::X86::DetourFunction((uintptr_t)0x4743D2, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
-		Detours::X86::DetourFunction((uintptr_t)0x59D393, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
+		Detours::X86::DetourFunction(T4M::GetAddress("shortVersion_call_site"), (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
+		Detours::X86::DetourFunction(T4M::GetAddress("consoleVersionWindow_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
+		Detours::X86::DetourFunction(T4M::GetAddress("versionInfo_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
 	}
 }

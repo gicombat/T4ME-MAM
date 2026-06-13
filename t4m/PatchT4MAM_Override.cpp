@@ -257,28 +257,28 @@ void PatchT4MAM_Override()
 {
 	// Active detours: redirect the vanilla addresses to our C++
 	// reconstructions (in T4.cpp).
-	Detours::X86::DetourFunction((uintptr_t)0x0048F340, (uintptr_t)&T4_Reconstructed::DB_UnloadZoneAssets, Detours::X86Option::USE_JUMP);
-	Detours::X86::DetourFunction((uintptr_t)0x0048D7D0, (uintptr_t)&T4M::DB_FindDefaultAsset_Wrapper, Detours::X86Option::USE_JUMP);
-	Detours::X86::DetourFunction((uintptr_t)0x0048D760, (uintptr_t)&T4M::DB_FindXAssetByName_Wrapper, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_UnloadZoneAssets"), (uintptr_t)&T4_Reconstructed::DB_UnloadZoneAssets, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_FindDefaultAsset"), (uintptr_t)&T4M::DB_FindDefaultAsset_Wrapper, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_FindXAssetByName"), (uintptr_t)&T4M::DB_FindXAssetByName_Wrapper, Detours::X86Option::USE_JUMP);
 
 	// TEMPORAIRE — ce détour sera retiré une fois que tous les appelants
 	// seront remplacés par des fonctions T4M full-C++ qui appellent directement
 	// T4_Reconstructed::DB_LinkXAssetEntry en __cdecl. À terme le wrapper et ce détour ne seront plus nécessaires.
-	Detours::X86::DetourFunction((uintptr_t)0x0048D860, (uintptr_t)&T4M::DB_LinkXAssetEntry_Wrapper, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_LinkXAssetEntry"), (uintptr_t)&T4M::DB_LinkXAssetEntry_Wrapper, Detours::X86Option::USE_JUMP);
 
 	// @modified — sub_44B7E0 → reconstruction T4M (cl.serverTime au lieu de
 	// com_frameTime, pour reset du compteur entre scènes).
-	Detours::X86::DetourFunction((uintptr_t)0x0044B7E0, (uintptr_t)&T4M::Key_FormatIntroSeconds_Wrapper, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("Key_FormatIntroSeconds"), (uintptr_t)&T4M::Key_FormatIntroSeconds_Wrapper, Detours::X86Option::USE_JUMP);
 
 	// SafetyHook on sub_62BEB0 — fast_restart server cmd handler.
-	static auto SV_FastRestart = safetyhook::create_mid(0x0062BEB0, [](SafetyHookContext& ctx)
+	static auto SV_FastRestart = safetyhook::create_mid(T4M::GetAddress("SV_FastRestart"), [](SafetyHookContext& ctx)
 	{
 		T4M::resetFakeIntroSecondValue = true;
 	});
 
 	// TEMPORAIRE — 0x0048DFF0
-	 Detours::X86::DetourFunction((uintptr_t)0x0048DFF0, (uintptr_t)&T4_Reconstructed::DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
+	 Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_LinkXAssetEntryOverrideAware"), (uintptr_t)&T4_Reconstructed::DB_LinkXAssetEntryOverrideAware, Detours::X86Option::USE_JUMP);
 
 	// Full vanilla-faithful reconstruction of DB_FindXAssetHeader (sub_48DA30).
-	 Detours::X86::DetourFunction((uintptr_t)0x0048DA30, (uintptr_t)&T4_Reconstructed::DB_FindXAssetHeader, Detours::X86Option::USE_JUMP);
+	 Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("DB_FindXAssetHeader"), (uintptr_t)&T4_Reconstructed::DB_FindXAssetHeader, Detours::X86Option::USE_JUMP);
 }

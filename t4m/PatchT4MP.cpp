@@ -41,7 +41,7 @@ static void __declspec(naked) WindowedWindowStyleHookStub()
 
 dvar_t* Dvar_RegisterBoolMP(bool value, const char *dvarName, int flags, const char *description)
 {
-	DWORD _Dvar_RegisterBool = 0x5C5190;
+	DWORD _Dvar_RegisterBool = T4M::GetAddress("Dvar_RegisterBool");
 	dvar_t* result = 0;
 
 	__asm
@@ -66,7 +66,7 @@ void PatchT4MP()
 	//	loadGameOverlay();
 
 
-	*(BYTE*)0x494C5C = 0xEB; // force enable ingame console
+	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	//DWORD func = 0x5D5470;
 	//__asm
 	//{
@@ -78,12 +78,12 @@ void PatchT4MP()
 	//nop(0x5CEB56, 5); // disable pc_newversionavailable check
 
 
-	nop(0x5CF675, 5); // remove optimal settings popup
-	*(BYTE*)0x5D03E6 = (BYTE)0xEB; // skip safe mode check
+	nop(T4M::GetAddress("mp_optimalSettingsPopup_nop_site"), 5); // remove optimal settings popup
+	*(BYTE*)T4M::GetAddress("mp_safeModeCheck_site") = (BYTE)0xEB; // skip safe mode check
 
-	PatchMemory(0x856380, (PBYTE)CONSOLEVERSION_STR, 14);	// change the console input version
+	PatchMemory(T4M::GetAddress("console_input_version"), (PBYTE)CONSOLEVERSION_STR, 14);	// change the console input version
 
-	Detours::X86::DetourFunction((uintptr_t)0x592B11, (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
-	Detours::X86::DetourFunction((uintptr_t)0x48C532, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
-	Detours::X86::DetourFunction((uintptr_t)0x5658ED, (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("shortVersion_call_site"), (uintptr_t)&SetShortVersion, Detours::X86Option::USE_CALL); // change version number bottom right of main
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("consoleVersionWindow_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of console window
+	Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("versionInfo_call_site"), (uintptr_t)&SetConsoleVersion, Detours::X86Option::USE_CALL); // change the version info of version 
 }

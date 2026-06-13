@@ -1,181 +1,902 @@
 #pragma once
 
-namespace T4 { namespace engine {
-	WEAK symbol<void(scriptInstance_t inst)>Scr_VM_Init{ 0x0, 0x693B20 };
-	WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId, VariableStackBuffer* stackValue)>VM_UnarchiveStack{ 0x0, 0x697BB0 };
-	WEAK symbol<unsigned int(scriptInstance_t inst)>VM_ExecuteInternal{ 0x0, 0x693E80 };
-	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)>VM_Execute{ 0x0, 0x6992E0 };
-	WEAK symbol<void(scriptInstance_t inst, int bComplete)>Scr_ShutdownSystem{ 0x0, 0x699930 };
-	WEAK symbol<BOOL()>Scr_IsSystemActive{ 0x0, 0x699C30 };
-	WEAK symbol<scr_animtree_t()>Scr_GetAnimTree{ 0x0, 0x699DD0 };
-	WEAK symbol<unsigned int()>Scr_GetFunc{ 0x0, 0x69A2C0 };
-	WEAK symbol<void(VariableUnion value)>Scr_AddAnim{ 0x0, 0x69A6D0 };
-	WEAK symbol<void(scriptInstance_t inst)>Scr_AddArray{ 0x0, 0x69AA50 };
+namespace T4
+{
+	namespace engine
+	{
+		WEAK symbol<void(scriptInstance_t inst)>Scr_VM_Init{ "Scr_VM_Init" };
+		WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId, VariableStackBuffer* stackValue)>VM_UnarchiveStack{ "VM_UnarchiveStack" };
+		WEAK symbol<unsigned int(scriptInstance_t inst)>VM_ExecuteInternal{ "VM_ExecuteInternal" };
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)>VM_Execute{ "VM_Execute" };
+		WEAK symbol<void(scriptInstance_t inst, int bComplete)>Scr_ShutdownSystem{ "Scr_ShutdownSystem" };
+		WEAK symbol<BOOL()>Scr_IsSystemActive{ "Scr_IsSystemActive" };
+		WEAK symbol<scr_animtree_t()>Scr_GetAnimTree{ "Scr_GetAnimTree" };
+		WEAK symbol<unsigned int()>Scr_GetFunc{ "Scr_GetFunc" };
+		WEAK symbol<void(VariableUnion value)>Scr_AddAnim{ "Scr_AddAnim" };
+		WEAK symbol<void(scriptInstance_t inst)>Scr_AddArray{ "Scr_AddArray" };
 
-	inline void* Scr_Init_ADDR() { return CALL_ADDR(0x0, 0x693C20); }
-	void Scr_Init(scriptInstance_t inst, void* call_addr = Scr_Init_ADDR());
-	inline void* Scr_Shutdown_ADDR() { return CALL_ADDR(0x0, 0x693C90); }
-	void Scr_Shutdown(scriptInstance_t inst, void* call_addr = Scr_Shutdown_ADDR());
-	inline void* Scr_ErrorInternal_ADDR() { return CALL_ADDR(0x0, 0x693CF0); }
-	void Scr_ErrorInternal(scriptInstance_t inst, void* call_addr = Scr_ErrorInternal_ADDR());
-	inline void* Scr_ClearOutParams_ADDR() { return CALL_ADDR(0x0, 0x693DA0); }
-	void Scr_ClearOutParams(scriptInstance_t inst, void* call_addr = Scr_ClearOutParams_ADDR());
-	inline void* GetDummyObject_ADDR() { return CALL_ADDR(0x0, 0x693DE0); }
-	unsigned int GetDummyObject(scriptInstance_t inst, void* call_addr = GetDummyObject_ADDR());
-	inline void* GetDummyFieldValue_ADDR() { return CALL_ADDR(0x0, 0x693E30); }
-	unsigned int GetDummyFieldValue(scriptInstance_t inst, void* call_addr = GetDummyFieldValue_ADDR());
-	inline void* VM_CancelNotifyInternal_ADDR() { return CALL_ADDR(0x0, 0x6978C0); }
-	void VM_CancelNotifyInternal(scriptInstance_t inst, unsigned int notifyListOwnerId, unsigned int startLocalId, unsigned int notifyListId, unsigned int notifyNameListId, unsigned int stringValue, void* call_addr = VM_CancelNotifyInternal_ADDR());
-	inline void* VM_CancelNotify_ADDR() { return CALL_ADDR(0x0, 0x697950); }
-	void VM_CancelNotify(scriptInstance_t inst, unsigned int a2, unsigned int a3, void* call_addr = VM_CancelNotify_ADDR());
-	inline void* VM_ArchiveStack_ADDR() { return CALL_ADDR(0x0, 0x697A00); }
-	VariableStackBuffer * VM_ArchiveStack(scriptInstance_t inst, void* call_addr = VM_ArchiveStack_ADDR());
-	inline void* Scr_AddLocalVars_ADDR() { return CALL_ADDR(0x0, 0x697B60); }
-	int Scr_AddLocalVars(scriptInstance_t inst, unsigned int a2, void* call_addr = Scr_AddLocalVars_ADDR());
-	inline void* VM_TerminateStack_ADDR() { return CALL_ADDR(0x0, 0x697D80); }
-	void VM_TerminateStack(scriptInstance_t inst, unsigned int endLocalId, unsigned int startLocalId, VariableStackBuffer* name, void* call_addr = VM_TerminateStack_ADDR());
-	inline void* VM_TrimStack_ADDR() { return CALL_ADDR(0x0, 0x697F20); }
-	void VM_TrimStack(scriptInstance_t inst, unsigned int parentId, VariableStackBuffer * a3, int fromEndon, void* call_addr = VM_TrimStack_ADDR());
-	inline void* Scr_TerminateRunningThread_ADDR() { return CALL_ADDR(0x0, 0x698150); }
-	void Scr_TerminateRunningThread(scriptInstance_t inst, unsigned int a2, void* call_addr = Scr_TerminateRunningThread_ADDR());
-	inline void* Scr_TerminateWaitThread_ADDR() { return CALL_ADDR(0x0, 0x698200); }
-	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int a2, unsigned int a3, void* call_addr = Scr_TerminateWaitThread_ADDR());
-	inline void* Scr_CancelWaittill_ADDR() { return CALL_ADDR(0x0, 0x698310); }
-	void Scr_CancelWaittill(scriptInstance_t inst, unsigned int startLocalId, void* call_addr = Scr_CancelWaittill_ADDR());
-	inline void* Scr_TerminateWaittillThread_ADDR() { return CALL_ADDR(0x0, 0x698400); }
-	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int a2, unsigned int a3, void* call_addr = Scr_TerminateWaittillThread_ADDR());
-	inline void* Scr_TerminateThread_ADDR() { return CALL_ADDR(0x0, 0x698610); }
-	void Scr_TerminateThread(unsigned int a2, scriptInstance_t inst, void* call_addr = Scr_TerminateThread_ADDR());
-	inline void* VM_Notify_ADDR() { return CALL_ADDR(0x0, 0x698670); }
-	void VM_Notify(scriptInstance_t inst, int notifyListOwnerId, unsigned int stringValue, VariableValue * top, void* call_addr = VM_Notify_ADDR());
-	inline void* Scr_NotifyNum_Internal_ADDR() { return CALL_ADDR(0x0, 0x698CC0); }
-	void Scr_NotifyNum_Internal(scriptInstance_t inst, int entNum, int entClass, unsigned int notifStr, int numParams, void* call_addr = Scr_NotifyNum_Internal_ADDR());
-	inline void* Scr_CancelNotifyList_ADDR() { return CALL_ADDR(0x0, 0x698DE0); }
-	void Scr_CancelNotifyList(unsigned int notifyListOwnerId, scriptInstance_t inst, void* call_addr = Scr_CancelNotifyList_ADDR());
-	inline void* VM_TerminateTime_ADDR() { return CALL_ADDR(0x0, 0x698FE0); }
-	void VM_TerminateTime(scriptInstance_t inst, unsigned int parentId, void* call_addr = VM_TerminateTime_ADDR());
-	inline void* VM_Resume_ADDR() { return CALL_ADDR(0x0, 0x6990E0); }
-	void VM_Resume(scriptInstance_t inst, unsigned int timeId, void* call_addr = VM_Resume_ADDR());
-	inline void* Scr_ExecThread_ADDR() { return CALL_ADDR(0x0, 0x699560); }
-	unsigned short Scr_ExecThread(scriptInstance_t inst, unsigned int handle, unsigned int paramCount, void* call_addr = Scr_ExecThread_ADDR());
-	inline void* Scr_ExecEntThread_ADDR() { return CALL_ADDR(0x0, 0x699640); }
-	unsigned short Scr_ExecEntThreadNum(scriptInstance_t inst, int entNum, unsigned int handle, int numParams, unsigned int clientNum, void* call_addr = Scr_ExecEntThread_ADDR());
-	inline void* Scr_AddExecThread_ADDR() { return CALL_ADDR(0x0, 0x699730); }
-	void Scr_AddExecThread(scriptInstance_t inst, unsigned int handle, void* call_addr = Scr_AddExecThread_ADDR());
-	inline void* VM_SetTime_ADDR() { return CALL_ADDR(0x0, 0x6997E0); }
-	void VM_SetTime(scriptInstance_t inst, void* call_addr = VM_SetTime_ADDR());
-	inline void* Scr_InitSystem_ADDR() { return CALL_ADDR(0x0, 0x699860); }
-	void Scr_InitSystem(scriptInstance_t inst, void* call_addr = Scr_InitSystem_ADDR());
-	inline void* Scr_GetInt_ADDR() { return CALL_ADDR(0x0, 0x699C50); }
-	int Scr_GetInt(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetInt_ADDR());
-	inline void* Scr_GetAnim_ADDR() { return CALL_ADDR(0x0, 0x699CE0); }
-	scr_anim_s Scr_GetAnim(unsigned int index, XAnimTree_s * anims, void* call_addr = Scr_GetAnim_ADDR());
-	inline void* Scr_GetFloat_ADDR() { return CALL_ADDR(0x0, 0x699E90); }
-	float Scr_GetFloat(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetFloat_ADDR());
-	inline void* Scr_GetConstString_ADDR() { return CALL_ADDR(0x0, 0x699F30); }
-	unsigned int Scr_GetConstString(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetConstString_ADDR());
-	inline void* Scr_GetConstLowercaseString_ADDR() { return CALL_ADDR(0x0, 0x699FB0); }
-	unsigned int Scr_GetConstLowercaseString(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetConstLowercaseString_ADDR());
-	inline void* Scr_GetString_ADDR() { return CALL_ADDR(0x0, 0x69A0D0); }
-	const char * Scr_GetString(unsigned int index, scriptInstance_t inst, void* call_addr = Scr_GetString_ADDR());
-	inline void* Scr_GetConstStringIncludeNull_ADDR() { return CALL_ADDR(0x0, 0x69A100); }
-	unsigned int Scr_GetConstStringIncludeNull(scriptInstance_t inst, void* call_addr = Scr_GetConstStringIncludeNull_ADDR());
-	inline void* Scr_GetDebugString_ADDR() { return CALL_ADDR(0x0, 0x69A130); }
-	char * Scr_GetDebugString(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetDebugString_ADDR());
-	inline void* Scr_GetConstIString_ADDR() { return CALL_ADDR(0x0, 0x69A1A0); }
-	unsigned int Scr_GetConstIString(unsigned int index, void* call_addr = Scr_GetConstIString_ADDR());
-	inline void* Scr_GetVector_ADDR() { return CALL_ADDR(0x0, 0x69A220); }
-	void Scr_GetVector(scriptInstance_t inst, float * value, unsigned int index, void* call_addr = Scr_GetVector_ADDR());
-	inline void* Scr_GetEntityRef_ADDR() { return CALL_ADDR(0x0, 0x69A330); }
-	scr_entref_t * Scr_GetEntityRef(scriptInstance_t inst, scr_entref_t * retstr, unsigned int index, void* call_addr = Scr_GetEntityRef_ADDR());
-	inline void* Scr_GetObject_ADDR() { return CALL_ADDR(0x0, 0x69A460); }
-	VariableUnion Scr_GetObject(scriptInstance_t inst, void* call_addr = Scr_GetObject_ADDR());
-	inline void* Scr_GetType_ADDR() { return CALL_ADDR(0x0, 0x69A4E0); }
-	VariableType Scr_GetType(scriptInstance_t inst, unsigned int index, void* call_addr = Scr_GetType_ADDR());
-	inline void* Scr_GetTypeName_ADDR() { return CALL_ADDR(0x0, 0x69A530); }
-	const char * Scr_GetTypeName(scriptInstance_t inst, void* call_addr = Scr_GetTypeName_ADDR());
-	inline void* Scr_GetPointerType_ADDR() { return CALL_ADDR(0x0, 0x69A580); }
-	VariableType Scr_GetPointerType(scriptInstance_t inst, unsigned int a2, void* call_addr = Scr_GetPointerType_ADDR());
-	inline void* Scr_AddInt_ADDR() { return CALL_ADDR(0x0, 0x69A610); }
-	void Scr_AddInt(scriptInstance_t inst, int value, void* call_addr = Scr_AddInt_ADDR());
-	inline void* Scr_AddFloat_ADDR() { return CALL_ADDR(0x0, 0x69A670); }
-	void Scr_AddFloat(scriptInstance_t inst, float value, void* call_addr = Scr_AddFloat_ADDR());
-	inline void* Scr_AddUndefined_ADDR() { return CALL_ADDR(0x0, 0x69A720); }
-	void Scr_AddUndefined(scriptInstance_t inst, void* call_addr = Scr_AddUndefined_ADDR());
-	inline void* Scr_AddObject_ADDR() { return CALL_ADDR(0x0, 0x69A770); }
-	void Scr_AddObject(scriptInstance_t inst, unsigned int entid, void* call_addr = Scr_AddObject_ADDR());
-	inline void* Scr_AddString_ADDR() { return CALL_ADDR(0x0, 0x69A7E0); }
-	void Scr_AddString(scriptInstance_t inst, const char * string, void* call_addr = Scr_AddString_ADDR());
-	inline void* Scr_AddIString_ADDR() { return CALL_ADDR(0x0, 0x69A860); }
-	void Scr_AddIString(char * string, void* call_addr = Scr_AddIString_ADDR());
-	inline void* Scr_AddConstString_ADDR() { return CALL_ADDR(0x0, 0x69A8D0); }
-	void Scr_AddConstString(scriptInstance_t inst, unsigned int id, void* call_addr = Scr_AddConstString_ADDR());
-	inline void* Scr_AddVector_ADDR() { return CALL_ADDR(0x0, 0x69A940); }
-	void Scr_AddVector(scriptInstance_t inst, float * value, void* call_addr = Scr_AddVector_ADDR());
-	inline void* Scr_MakeArray_ADDR() { return CALL_ADDR(0x0, 0x69A9D0); }
-	void Scr_MakeArray(scriptInstance_t inst, void* call_addr = Scr_MakeArray_ADDR());
-	inline void* Scr_AddArrayStringIndexed_ADDR() { return CALL_ADDR(0x0, 0x69AAF0); }
-	void Scr_AddArrayStringIndexed(unsigned int id, scriptInstance_t inst, void* call_addr = Scr_AddArrayStringIndexed_ADDR());
-	inline void* Scr_Error_ADDR() { return CALL_ADDR(0x0, 0x69AB70); }
-	void Scr_Error(const char * err, scriptInstance_t inst, int is_terminal, void* call_addr = Scr_Error_ADDR());
-	inline void* Scr_TerminalError_ADDR() { return CALL_ADDR(0x0, 0x69ABD0); }
-	void Scr_TerminalError(scriptInstance_t inst, const char * Source, void* call_addr = Scr_TerminalError_ADDR());
-	inline void* Scr_ParamError_ADDR() { return CALL_ADDR(0x0, 0x69AC00); }
-	void Scr_ParamError(int a1, scriptInstance_t a2, const char * Source, void* call_addr = Scr_ParamError_ADDR());
-	inline void* Scr_ObjectError_ADDR() { return CALL_ADDR(0x0, 0x69AC30); }
-	void Scr_ObjectError(scriptInstance_t inst, const char * a2, void* call_addr = Scr_ObjectError_ADDR());
-	inline void* SetEntityFieldValue_ADDR() { return CALL_ADDR(0x0, 0x69AC50); }
-	bool SetEntityFieldValue(scriptInstance_t inst, int offset, int entnum, classNum_e classnum, int clientNum, VariableValue * value, void* call_addr = SetEntityFieldValue_ADDR());
-	inline void* GetEntityFieldValue_ADDR() { return CALL_ADDR(0x0, 0x69ACE0); }
-	VariableValue GetEntityFieldValue(int offset, int entnum, scriptInstance_t inst, int classnum, int clientNum, void* call_addr = GetEntityFieldValue_ADDR());
-	inline void* Scr_SetStructField_ADDR() { return CALL_ADDR(0x0, 0x69AD50); }
-	void Scr_SetStructField(unsigned int a1, unsigned int a2, scriptInstance_t inst, void* call_addr = Scr_SetStructField_ADDR());
-	inline void* Scr_IncTime_ADDR() { return CALL_ADDR(0x0, 0x69ADE0); }
-	void Scr_IncTime(scriptInstance_t inst, void* call_addr = Scr_IncTime_ADDR());
-	inline void* Scr_RunCurrentThreads_ADDR() { return CALL_ADDR(0x0, 0x69AE30); }
-	void Scr_RunCurrentThreads(scriptInstance_t inst, void* call_addr = Scr_RunCurrentThreads_ADDR());
-	inline void* Scr_ResetTimeout_ADDR() { return CALL_ADDR(0x0, 0x69AE60); }
-	void Scr_ResetTimeout(scriptInstance_t inst, void* call_addr = Scr_ResetTimeout_ADDR());
+		// WaW sub_693C20 — usercall(inst@eax) -> void ; no stack args
+		inline void Scr_Init(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_Init"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_693C90 — usercall(inst@edi) -> void ; no stack args
+		inline void Scr_Shutdown(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_Shutdown"));
+			__asm
+			{
+				mov   edi, inst
+				call  fn
+			}
+		}
+		// WaW sub_693CF0 — usercall(inst@eax) -> void ; no stack args
+		inline void Scr_ErrorInternal(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ErrorInternal"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_693DA0 — usercall(inst@edi) -> void ; no stack args
+		inline void Scr_ClearOutParams(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ClearOutParams"));
+			__asm
+			{
+				mov   edi, inst
+				call  fn
+			}
+		}
+		// WaW sub_693DE0 — usercall(inst@edi) -> uint@eax ; no stack args
+		inline unsigned int GetDummyObject(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GetDummyObject"));
+			unsigned int result;
+			__asm
+			{
+				mov   edi, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_693E30 — usercall(inst@eax) -> uint@eax ; no stack args
+		inline unsigned int GetDummyFieldValue(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GetDummyFieldValue"));
+			unsigned int result;
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_6978C0 — usercall(inst@ecx, notifyListOwnerId@eax, startLocalId@stack0, notifyListId@stack1, notifyNameListId@stack2, stringValue@stack3) -> void ; caller-cleans
+		inline void VM_CancelNotifyInternal(scriptInstance_t inst, unsigned int notifyListOwnerId, unsigned int startLocalId, unsigned int notifyListId, unsigned int notifyNameListId, unsigned int stringValue)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_CancelNotifyInternal"));
+			__asm
+			{
+				push  stringValue
+				push  notifyNameListId
+				push  notifyListId
+				push  startLocalId
+				mov   ecx, inst
+				mov   eax, notifyListOwnerId
+				call  fn
+				add   esp, 10h
+			}
+		}
+		// WaW sub_697950 — usercall(inst@edi, a2@stack0, a3@stack1) -> void ; caller-cleans
+		inline void VM_CancelNotify(scriptInstance_t inst, unsigned int a2, unsigned int a3)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_CancelNotify"));
+			__asm
+			{
+				push  a3
+				push  a2
+				mov   edi, inst
+				call  fn
+				add   esp, 8
+			}
+		}
+		// WaW sub_697A00 — usercall(inst@eax) -> VariableStackBuffer*@eax ; no stack args
+		inline VariableStackBuffer* VM_ArchiveStack(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_ArchiveStack"));
+			VariableStackBuffer* result;
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_697B60 — usercall(inst@eax, a2@edx) -> int@eax ; no stack args
+		inline int Scr_AddLocalVars(scriptInstance_t inst, unsigned int a2)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddLocalVars"));
+			int result;
+			__asm
+			{
+				mov   eax, inst
+				mov   edx, a2
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_697D80 — usercall(inst@esi, endLocalId@stack0, startLocalId@stack1, name@stack2) -> void ; caller-cleans
+		inline void VM_TerminateStack(scriptInstance_t inst, unsigned int endLocalId, unsigned int startLocalId, VariableStackBuffer* name)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_TerminateStack"));
+			__asm
+			{
+				push  name
+				push  startLocalId
+				push  endLocalId
+				mov   esi, inst
+				call  fn
+				add   esp, 0Ch
+			}
+		}
+		// WaW sub_697F20 — usercall(inst@eax, parentId@stack0, a3@stack1, fromEndon@stack2) -> void ; caller-cleans
+		inline void VM_TrimStack(scriptInstance_t inst, unsigned int parentId, VariableStackBuffer* a3, int fromEndon)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_TrimStack"));
+			__asm
+			{
+				push  fromEndon
+				push  a3
+				push  parentId
+				mov   eax, inst
+				call  fn
+				add   esp, 0Ch
+			}
+		}
+		// WaW sub_698150 — usercall(inst@edx, a2@stack0) -> void ; caller-cleans
+		inline void Scr_TerminateRunningThread(scriptInstance_t inst, unsigned int a2)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_TerminateRunningThread"));
+			__asm
+			{
+				push  a2
+				mov   edx, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_698200 — usercall(inst@eax, a2@stack0, a3@stack1) -> void ; caller-cleans
+		inline void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int a2, unsigned int a3)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_TerminateWaitThread"));
+			__asm
+			{
+				push  a3
+				push  a2
+				mov   eax, inst
+				call  fn
+				add   esp, 8
+			}
+		}
+		// WaW sub_698310 — usercall(inst@ecx, startLocalId@eax) -> void ; no stack args
+		inline void Scr_CancelWaittill(scriptInstance_t inst, unsigned int startLocalId)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_CancelWaittill"));
+			__asm
+			{
+				mov   ecx, inst
+				mov   eax, startLocalId
+				call  fn
+			}
+		}
+		// WaW sub_698400 — usercall(inst@eax, a2@stack0, a3@stack1) -> void ; caller-cleans
+		inline void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int a2, unsigned int a3)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_TerminateWaittillThread"));
+			__asm
+			{
+				push  a3
+				push  a2
+				mov   eax, inst
+				call  fn
+				add   esp, 8
+			}
+		}
+		// WaW sub_698610 — usercall(a2@edi, inst@esi) -> void ; caller-cleans, no stack args
+		inline void Scr_TerminateThread(unsigned int a2, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_TerminateThread"));
+			__asm
+			{
+				mov   edi, a2
+				mov   esi, inst
+				call  fn
+			}
+		}
+		// WaW sub_698670 — usercall(inst@eax, notifyListOwnerId@stack0, stringValue@stack1, top@stack2) -> void ; caller-cleans
+		inline void VM_Notify(scriptInstance_t inst, int notifyListOwnerId, unsigned int stringValue, VariableValue* top)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_Notify"));
+			__asm
+			{
+				push  top
+				push  stringValue
+				push  notifyListOwnerId
+				mov   eax, inst
+				call  fn
+				add   esp, 0Ch
+			}
+		}
+		// WaW sub_698CC0 — usercall(inst@eax, entNum@stack0, entClass@stack1, notifStr@stack2, numParams@stack3) -> void ; caller-cleans
+		inline void Scr_NotifyNum_Internal(scriptInstance_t inst, int entNum, int entClass, unsigned int notifStr, int numParams)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_NotifyNum_Internal"));
+			__asm
+			{
+				push  numParams
+				push  notifStr
+				push  entClass
+				push  entNum
+				mov   eax, inst
+				call  fn
+				add   esp, 10h
+			}
+		}
+		// WaW sub_698DE0 — usercall(notifyListOwnerId@eax, inst@stack0) -> void ; caller-cleans
+		inline void Scr_CancelNotifyList(unsigned int notifyListOwnerId, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_CancelNotifyList"));
+			__asm
+			{
+				push  inst
+				mov   eax, notifyListOwnerId
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_698FE0 — usercall(inst@eax, parentId@stack0) -> void ; caller-cleans
+		inline void VM_TerminateTime(scriptInstance_t inst, unsigned int parentId)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_TerminateTime"));
+			__asm
+			{
+				push  parentId
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_6990E0 — usercall(inst@eax, timeId@stack0) -> void ; caller-cleans
+		inline void VM_Resume(scriptInstance_t inst, unsigned int timeId)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_Resume"));
+			__asm
+			{
+				push  timeId
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_699560 — usercall(inst@edi, handle@stack0, paramCount@stack1) -> ushort@ax ; caller-cleans
+		inline unsigned short Scr_ExecThread(scriptInstance_t inst, unsigned int handle, unsigned int paramCount)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ExecThread"));
+			unsigned short result;
+			__asm
+			{
+				push  paramCount
+				push  handle
+				mov   edi, inst
+				call  fn
+				add   esp, 8
+				mov   result, ax
+			}
+			return result;
+		}
+		// WaW sub_699640 — usercall(inst@edi, entNum@stack0, handle@stack1, numParams@stack2, clientNum@stack3) -> ushort@ax ; caller-cleans
+		inline unsigned short Scr_ExecEntThreadNum(scriptInstance_t inst, int entNum, unsigned int handle, int numParams, unsigned int clientNum)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ExecEntThreadNum"));
+			unsigned short result;
+			__asm
+			{
+				push  clientNum
+				push  numParams
+				push  handle
+				push  entNum
+				mov   edi, inst
+				call  fn
+				add   esp, 10h
+				mov   result, ax
+			}
+			return result;
+		}
+		// WaW sub_699730 — usercall(inst@edi, handle@stack0) -> void ; caller-cleans
+		inline void Scr_AddExecThread(scriptInstance_t inst, unsigned int handle)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddExecThread"));
+			__asm
+			{
+				push  handle
+				mov   edi, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_6997E0 — usercall(inst@eax) -> void ; caller-cleans, no stack args
+		inline void VM_SetTime(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("VM_SetTime"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_699860 — usercall(inst@edi) -> void ; caller-cleans, no stack args
+		// The true Scr_InitSystem (allocates per-instance script var slots). Not to be
+		// confused with sub_60C5C0 = XAnimInit, which older code mislabeled "Scr_InitSystem".
+		inline void Scr_InitSystem(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_InitSystem"));
+			__asm
+			{
+				mov   edi, inst
+				call  fn
+			}
+		}
+		// WaW sub_699C50 — usercall(inst@eax, index@ecx) -> int@eax ; caller-cleans, no stack args
+		inline int Scr_GetInt(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetInt"));
+			int result;
+			__asm
+			{
+				mov   eax, inst
+				mov   ecx, index
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_699CE0 — usercall(index@eax, anims@ecx) -> scr_anim_s(4 bytes)@eax ; caller-cleans, no stack args
+		inline scr_anim_s Scr_GetAnim(unsigned int index, XAnimTree_s* anims)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetAnim"));
+			scr_anim_s result;
+			__asm
+			{
+				mov   eax, index
+				mov   ecx, anims
+				call  fn
+				mov   dword ptr result, eax
+			}
+			return result;
+		}
+		// WaW sub_699E90 — usercall(inst@eax, index@ecx) -> float@xmm0 ; caller-cleans, no stack args
+		inline float Scr_GetFloat(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetFloat"));
+			float result;
+			__asm
+			{
+				mov   eax, inst
+				mov   ecx, index
+				call  fn
+				movss result, xmm0
+			}
+			return result;
+		}
+		// WaW sub_699F30 — usercall(inst@eax, index@stack0) -> uint@eax ; caller-cleans
+		inline unsigned int Scr_GetConstString(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetConstString"));
+			unsigned int result;
+			__asm
+			{
+				push  index
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_699FB0 — usercall(inst@ecx, index@stack0) -> uint@eax ; caller-cleans
+		inline unsigned int Scr_GetConstLowercaseString(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetConstLowercaseString"));
+			unsigned int result;
+			__asm
+			{
+				push  index
+				mov   ecx, inst
+				call  fn
+				add   esp, 4
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A0D0 — usercall(index@eax, inst@esi) -> const char*@eax ; caller-cleans, no stack args
+		inline const char* Scr_GetString(unsigned int index, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetString"));
+			const char* result;
+			__asm
+			{
+				mov   eax, index
+				mov   esi, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A100 — usercall(inst@eax) -> uint@eax ; caller-cleans, no stack args
+		inline unsigned int Scr_GetConstStringIncludeNull(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetConstStringIncludeNull"));
+			unsigned int result;
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A130 — usercall(inst@eax, index@ecx) -> char*@eax ; caller-cleans, no stack args
+		inline char* Scr_GetDebugString(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetDebugString"));
+			char* result;
+			__asm
+			{
+				mov   eax, inst
+				mov   ecx, index
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A1A0 — usercall(index@eax) -> uint@eax ; caller-cleans, no stack args
+		inline unsigned int Scr_GetConstIString(unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetConstIString"));
+			unsigned int result;
+			__asm
+			{
+				mov   eax, index
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A220 — usercall(inst@eax, value@ecx, index@stack0) -> void ; caller-cleans
+		inline void Scr_GetVector(scriptInstance_t inst, float* value, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetVector"));
+			__asm
+			{
+				push  index
+				mov   eax, inst
+				mov   ecx, value
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69A330 — usercall(inst@eax, retstr@stack0, index@stack1) -> scr_entref_t*@eax (struct-ret buf) ; caller-cleans
+		inline scr_entref_t* Scr_GetEntityRef(scriptInstance_t inst, scr_entref_t* retstr, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetEntityRef"));
+			scr_entref_t* result;
+			__asm
+			{
+				push  index
+				push  retstr
+				mov   eax, inst
+				call  fn
+				add   esp, 8
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A460 — usercall(inst@eax) -> VariableUnion@eax ; caller-cleans
+		inline VariableUnion Scr_GetObject(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetObject"));
+			VariableUnion result;
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+				mov   dword ptr result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A4E0 — usercall(inst@eax, index@ecx) -> VariableType@eax ; caller-cleans
+		inline VariableType Scr_GetType(scriptInstance_t inst, unsigned int index)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetType"));
+			VariableType result;
+			__asm
+			{
+				mov   eax, inst
+				mov   ecx, index
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A530 — usercall(inst@eax) -> const char*@eax ; caller-cleans
+		inline const char* Scr_GetTypeName(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetTypeName"));
+			const char* result;
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A580 — usercall(inst@eax, a2@ecx) -> VariableType@eax ; caller-cleans
+		inline VariableType Scr_GetPointerType(scriptInstance_t inst, unsigned int a2)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetPointerType"));
+			VariableType result;
+			__asm
+			{
+				mov   eax, inst
+				mov   ecx, a2
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+		// WaW sub_69A610 — usercall(inst@eax, value@stack0) -> void ; caller-cleans
+		inline void Scr_AddInt(scriptInstance_t inst, int value)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddInt"));
+			__asm
+			{
+				push  value
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69A670 — usercall(inst@eax, value@stack0 float-as-dword) -> void ; caller-cleans
+		inline void Scr_AddFloat(scriptInstance_t inst, float value)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddFloat"));
+			__asm
+			{
+				push  value
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69A720 — usercall(inst@eax) -> void ; caller-cleans
+		inline void Scr_AddUndefined(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddUndefined"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_69A770 — usercall(inst@eax, entid@esi) -> void ; caller-cleans
+		inline void Scr_AddObject(scriptInstance_t inst, unsigned int entid)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddObject"));
+			__asm
+			{
+				mov   eax, inst
+				mov   esi, entid
+				call  fn
+			}
+		}
+		// WaW sub_69A7E0 — usercall(inst@eax, string@stack0) -> void ; caller-cleans
+		inline void Scr_AddString(scriptInstance_t inst, const char* string)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddString"));
+			__asm
+			{
+				push  string
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69A860 — usercall(string@esi) -> void ; caller-cleans, no stack args
+		inline void Scr_AddIString(char* string)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddIString"));
+			__asm
+			{
+				mov   esi, string
+				call  fn
+			}
+		}
+		// WaW sub_69A8D0 — usercall(inst@eax, id@esi) -> void ; caller-cleans, no stack args
+		inline void Scr_AddConstString(scriptInstance_t inst, unsigned int id)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddConstString"));
+			__asm
+			{
+				mov   esi, id
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_69A940 — usercall(inst@eax, value@stack0) -> void ; caller-cleans
+		inline void Scr_AddVector(scriptInstance_t inst, float* value)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddVector"));
+			__asm
+			{
+				push  value
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69A9D0 — usercall(inst@eax) -> void ; caller-cleans, no stack args
+		inline void Scr_MakeArray(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_MakeArray"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_69AAF0 — usercall(id@ecx, inst@edi) -> void ; caller-cleans, no stack args
+		inline void Scr_AddArrayStringIndexed(unsigned int id, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_AddArrayStringIndexed"));
+			__asm
+			{
+				mov   ecx, id
+				mov   edi, inst
+				call  fn
+			}
+		}
+		// WaW sub_69AB70 — usercall(err@ecx, inst@edi, is_terminal@stack0) -> void ; caller-cleans
+		inline void Scr_Error(const char* err, scriptInstance_t inst, int is_terminal)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_Error"));
+			__asm
+			{
+				push  is_terminal
+				mov   ecx, err
+				mov   edi, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69ABD0 — usercall(inst@eax, Source@stack0) -> void ; caller-cleans
+		inline void Scr_TerminalError(scriptInstance_t inst, const char* Source)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_TerminalError"));
+			__asm
+			{
+				push  Source
+				mov   eax, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69AC00 — usercall(a1@eax, a2@ecx, Source@stack0) -> void ; caller-cleans
+		inline void Scr_ParamError(int a1, scriptInstance_t a2, const char* Source)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ParamError"));
+			__asm
+			{
+				push  Source
+				mov   eax, a1
+				mov   ecx, a2
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69AC30 — usercall(inst@eax, a2@ecx) -> void ; caller-cleans, no stack args
+		inline void Scr_ObjectError(scriptInstance_t inst, const char* a2)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ObjectError"));
+			__asm
+			{
+				mov   ecx, a2
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_69AC50 — usercall(inst@edi, fieldOffset@eax, classnum@ecx, entnum@stack0, clientNum@stack1, value@stack2) -> bool@al ; caller-cleans
+		// NB: 'offset' is a MASM operator → param renamed fieldOffset to keep inline asm valid.
+		inline bool SetEntityFieldValue(scriptInstance_t inst, int fieldOffset, int entnum, classNum_e classnum, int clientNum, VariableValue* value)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SetEntityFieldValue"));
+			bool result;
+			__asm
+			{
+				push  value
+				push  clientNum
+				push  entnum
+				mov   edi, inst
+				mov   eax, fieldOffset
+				mov   ecx, classnum
+				call  fn
+				add   esp, 0Ch
+				mov   result, al
+			}
+			return result;
+		}
+		// WaW sub_69ACE0 — usercall(fieldOffset@eax, classnum@ecx, inst@stack0, entnum@stack1, clientNum@stack2) -> VariableValue in edx:eax ; caller-cleans
+		// NB: 'offset' is a MASM operator → param renamed fieldOffset to keep inline asm valid.
+		inline VariableValue GetEntityFieldValue(int fieldOffset, int entnum, scriptInstance_t inst, int classnum, int clientNum)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("GetEntityFieldValue"));
+			VariableValue result;
+			__asm
+			{
+				push  clientNum
+				push  entnum
+				push  inst
+				mov   eax, fieldOffset
+				mov   ecx, classnum
+				call  fn
+				add   esp, 0Ch
+				lea   ecx, result
+				mov[ecx], eax        // VariableUnion value
+				mov[ecx + 4], edx      // type tag
+			}
+			return result;
+		}
+		// WaW sub_69AD50 — usercall(a1@eax, a2@ecx, inst@stack0) -> void ; caller-cleans
+		inline void Scr_SetStructField(unsigned int a1, unsigned int a2, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_SetStructField"));
+			__asm
+			{
+				push  inst
+				mov   eax, a1
+				mov   ecx, a2
+				call  fn
+				add   esp, 4
+			}
+		}
+		// WaW sub_69ADE0 — usercall(inst@eax) -> void ; caller-cleans, no stack args
+		inline void Scr_IncTime(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_IncTime"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+		// WaW sub_69AE30 — usercall(inst@esi) -> void ; caller-cleans, no stack args
+		inline void Scr_RunCurrentThreads(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_RunCurrentThreads"));
+			__asm
+			{
+				mov   esi, inst
+				call  fn
+			}
+		}
+		// WaW sub_69AE60 — usercall(inst@eax) -> void ; caller-cleans, no stack args
+		inline void Scr_ResetTimeout(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ResetTimeout"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
 
-	void SetVariableFieldValue(scriptInstance_t inst, unsigned int id, VariableValue* value);
-	void SetNewVariableValue(scriptInstance_t inst, unsigned int id, VariableValue* value);
-	void Scr_ClearErrorMessage(scriptInstance_t inst);
-	void VM_Shutdown(scriptInstance_t inst);
-	void Scr_ShutdownVariables(scriptInstance_t inst);
-	void ClearVariableValue(scriptInstance_t inst, unsigned int id);
-	unsigned int Scr_GetThreadNotifyName(scriptInstance_t inst, unsigned int startLocalId);
-	void Scr_RemoveThreadNotifyName(scriptInstance_t inst, unsigned int startLocalId);
-	unsigned int GetArraySize(scriptInstance_t inst, unsigned int id);
-	void IncInParam(scriptInstance_t inst);
-	unsigned int GetParentLocalId(scriptInstance_t inst, unsigned int threadId);
-	void Scr_ClearWaitTime(scriptInstance_t inst, unsigned int startLocalId);
-	void Scr_SetThreadWaitTime(scriptInstance_t inst, unsigned int startLocalId, unsigned int waitTime);
-	void Scr_SetThreadNotifyName(scriptInstance_t inst, unsigned int startLocalId, unsigned int stringValue);
-	void Scr_DebugTerminateThread(scriptInstance_t inst, int topThread);
-	unsigned int Scr_GetThreadWaitTime(scriptInstance_t inst, unsigned int startLocalId);
-	const char* Scr_GetStackThreadPos(scriptInstance_t inst, unsigned int endLocalId, VariableStackBuffer* stackValue, bool killThread);
-	unsigned int Scr_GetSelf(scriptInstance_t inst, unsigned int threadId);
-	unsigned int GetVariableKeyObject(scriptInstance_t inst, unsigned int id);
-	int MT_Realloc(scriptInstance_t inst, int oldNumBytes, int newNumbytes);
-	void CScr_GetObjectField(classNum_e classnum, int entnum, int clientNum, int offset);
-	int CScr_SetObjectField(classNum_e classnum, int entnum, int clientNum, int offset);
-	void Scr_SetErrorMessage(scriptInstance_t inst, const char* error);
-	bool Scr_IsStackClear(scriptInstance_t inst);
-	void SL_CheckExists(scriptInstance_t inst, unsigned int stringValue);
-	const char* Scr_ReadCodePos(scriptInstance_t inst, const char** pos);
-	unsigned int Scr_ReadUnsignedInt(scriptInstance_t inst, const char** pos);
-	unsigned short Scr_ReadUnsignedShort(scriptInstance_t inst, const char** pos);
-	unsigned char Scr_ReadUnsignedByte(scriptInstance_t inst, const char** pos);
-	float Scr_ReadFloat(scriptInstance_t inst, const char** pos);
-	const float* Scr_ReadVector(scriptInstance_t inst, const char** pos);
-	BOOL IsFieldObject(scriptInstance_t inst, unsigned int id);
-	void RemoveVariableValue(scriptInstance_t inst, unsigned int parentId, unsigned int index);
-	VariableStackBuffer* GetRefVariableStackBuffer(scriptInstance_t inst, int id);
-	unsigned int GetNewObjectVariableReverse(scriptInstance_t inst, unsigned int parentId, unsigned int id);
-	unsigned int GetNewVariableIndexReverseInternal(scriptInstance_t inst, unsigned int parentId, unsigned int name);
-	unsigned int Scr_GetLocalVar(scriptInstance_t inst, int pos);
-	void Scr_EvalBoolNot(scriptInstance_t inst, VariableValue* value);
-	unsigned int GetInternalVariableIndex(scriptInstance_t inst, unsigned int unsignedValue);
-	const char* Scr_ReadData(scriptInstance_t inst, const char** pos, unsigned int count);
-	unsigned int Scr_GetNumParam(scriptInstance_t inst);
-} } // namespace T4::engine
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int id, VariableValue* value)>SetVariableFieldValue{ "SetVariableFieldValue" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int id, VariableValue* value)>SetNewVariableValue{ "SetNewVariableValue" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst)>Scr_ClearErrorMessage{ "Scr_ClearErrorMessage" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst)>VM_Shutdown{ "VM_Shutdown" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst)>Scr_ShutdownVariables{ "Scr_ShutdownVariables" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int id)>ClearVariableValue{ "ClearVariableValue" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int startLocalId)>Scr_GetThreadNotifyName{ "Scr_GetThreadNotifyName" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId)>Scr_RemoveThreadNotifyName{ "Scr_RemoveThreadNotifyName" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int id)>GetArraySize{ "GetArraySize" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst)>IncInParam{ "IncInParam" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int threadId)>GetParentLocalId{ "GetParentLocalId" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId)>Scr_ClearWaitTime{ "Scr_ClearWaitTime" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId, unsigned int waitTime)>Scr_SetThreadWaitTime{ "Scr_SetThreadWaitTime" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int startLocalId, unsigned int stringValue)>Scr_SetThreadNotifyName{ "Scr_SetThreadNotifyName" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, int topThread)>Scr_DebugTerminateThread{ "Scr_DebugTerminateThread" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int startLocalId)>Scr_GetThreadWaitTime{ "Scr_GetThreadWaitTime" };
+		// Warning Adress unknow for now
+		WEAK symbol<const char* (scriptInstance_t inst, unsigned int endLocalId, VariableStackBuffer* stackValue, bool killThread)>Scr_GetStackThreadPos{ "Scr_GetStackThreadPos" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int threadId)>Scr_GetSelf{ "Scr_GetSelf" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int id)>GetVariableKeyObject{ "GetVariableKeyObject" };
+		// Warning Adress unknow for now
+		WEAK symbol<int(scriptInstance_t inst, int oldNumBytes, int newNumbytes)>MT_Realloc{ "MT_Realloc" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(classNum_e classnum, int entnum, int clientNum, int offset)>CScr_GetObjectField{ "CScr_GetObjectField" };
+		// Warning Adress unknow for now
+		WEAK symbol<int(classNum_e classnum, int entnum, int clientNum, int offset)>CScr_SetObjectField{ "CScr_SetObjectField" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, const char* error)>Scr_SetErrorMessage{ "Scr_SetErrorMessage" };
+		// Warning Adress unknow for now
+		WEAK symbol<bool(scriptInstance_t inst)>Scr_IsStackClear{ "Scr_IsStackClear" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int stringValue)>SL_CheckExists{ "SL_CheckExists" };
+		// Warning Adress unknow for now
+		WEAK symbol<const char* (scriptInstance_t inst, const char** pos)>Scr_ReadCodePos{ "Scr_ReadCodePos" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, const char** pos)>Scr_ReadUnsignedInt{ "Scr_ReadUnsignedInt" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned short(scriptInstance_t inst, const char** pos)>Scr_ReadUnsignedShort{ "Scr_ReadUnsignedShort" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned char(scriptInstance_t inst, const char** pos)>Scr_ReadUnsignedByte{ "Scr_ReadUnsignedByte" };
+		// Warning Adress unknow for now
+		WEAK symbol<float(scriptInstance_t inst, const char** pos)>Scr_ReadFloat{ "Scr_ReadFloat" };
+		// Warning Adress unknow for now
+		WEAK symbol<const float* (scriptInstance_t inst, const char** pos)>Scr_ReadVector{ "Scr_ReadVector" };
+		// Warning Adress unknow for now
+		WEAK symbol<BOOL(scriptInstance_t inst, unsigned int id)>IsFieldObject{ "IsFieldObject" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, unsigned int parentId, unsigned int index)>RemoveVariableValue{ "RemoveVariableValue" };
+		// Warning Adress unknow for now
+		WEAK symbol<VariableStackBuffer* (scriptInstance_t inst, int id)>GetRefVariableStackBuffer{ "GetRefVariableStackBuffer" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int id)>GetNewObjectVariableReverse{ "GetNewObjectVariableReverse" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int name)>GetNewVariableIndexReverseInternal{ "GetNewVariableIndexReverseInternal" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, int pos)>Scr_GetLocalVar{ "Scr_GetLocalVar" };
+		// Warning Adress unknow for now
+		WEAK symbol<void(scriptInstance_t inst, VariableValue* value)>Scr_EvalBoolNot{ "Scr_EvalBoolNot" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int unsignedValue)>GetInternalVariableIndex{ "GetInternalVariableIndex" };
+		// Warning Adress unknow for now
+		WEAK symbol<const char* (scriptInstance_t inst, const char** pos, unsigned int count)>Scr_ReadData{ "Scr_ReadData" };
+		// Warning Adress unknow for now
+		WEAK symbol<unsigned int(scriptInstance_t inst)>Scr_GetNumParam{ "Scr_GetNumParam" };
+
+		// moved from T4.cpp extern "C" (T4::engine — namespace sorting done later)
+		WEAK symbol<void*(const char**, int*)> CScr_GetFunction{ "CScr_GetFunction" };
+		WEAK symbol<void*(const char**, int*)> CScr_GetMethod{ "CScr_GetMethod" };
+	}
+} // namespace T4::engine

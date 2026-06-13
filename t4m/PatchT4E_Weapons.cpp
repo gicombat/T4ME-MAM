@@ -22,7 +22,7 @@ void PatchT4E_Weapons()
 
 	perk_weapRateEnhanced = T4::dvar::Dvar_RegisterInt(0,"perk_weapRateEnhanced", 0, 1, DVAR_FLAG_CHEAT, "Double tap will shoot 2x the bullets for every shot");
 
-	static auto DoubleTap20_Bullet_Fire = safetyhook::create_mid(0x004E6868, [](SafetyHookContext& ctx) 
+	static auto DoubleTap20_Bullet_Fire = safetyhook::create_mid(T4M::GetAddress("DoubleTap20_Bullet_Fire_hook"), [](SafetyHookContext& ctx) 
 	{
 
 		gentity_s* attacker = (gentity_s*)ctx.edi;
@@ -41,7 +41,7 @@ void PatchT4E_Weapons()
 
 	static auto* perks_phdflopper_engine_enum = T4::dvar::Dvar_RegisterInt(PERK_SPECIALTY_DETECTEXPLOSIVE,"perks_phdflopper_engine_enum",0, PERK_COUNT - 1,0,"Which perk enum to apply PHD engine edits implementation to");
 
-	static auto crashland_test = safetyhook::create_mid(0x4153A5, [](SafetyHookContext& ctx) 
+	static auto crashland_test = safetyhook::create_mid(T4M::GetAddress("crashland_test_hook"), [](SafetyHookContext& ctx) 
 	{
 
 		playerState_s* client = (playerState_s*)ctx.esi;
@@ -52,7 +52,7 @@ void PatchT4E_Weapons()
 
 		});
 
-	static auto G_Damage_PHD_test = safetyhook::create_mid(0x004F61B9, [](SafetyHookContext& ctx) 
+	static auto G_Damage_PHD_test = safetyhook::create_mid(T4M::GetAddress("G_Damage_PHD_test_hook"), [](SafetyHookContext& ctx) 
 	{
 
 		gclient_s* client = (gclient_s*)ctx.esi;
@@ -65,7 +65,7 @@ void PatchT4E_Weapons()
 
 		});
 
-	static auto DoubleTap20_Bullet_Imapct = safetyhook::create_mid(0x00469557, [](SafetyHookContext& ctx) 
+	static auto DoubleTap20_Bullet_Imapct = safetyhook::create_mid(T4M::GetAddress("DoubleTap20_Bullet_Impact_hook"), [](SafetyHookContext& ctx) 
 	{
 		playerState_s* ps = *(playerState_s**)(ctx.ebp + 0x18);
 

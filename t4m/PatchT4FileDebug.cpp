@@ -10,7 +10,6 @@
 // ==========================================================
 #include "StdInc.h"
 
-DWORD fsopen = 0x7AC6ED;
 
 std::map<FILE*, std::string> openFiles1;
 std::map<std::string, FILE*> openFiles2;
@@ -22,6 +21,8 @@ FILE* fopen_hook(const char* file, const char* mode)
 		T4::engine::Com_Printf(0, "File '%s' is already open! Returning previous handle\n", file);
 		return openFiles2[std::string(file)];
 	}
+
+	DWORD fsopen = T4M::GetAddress("fsopen");
 
 	FILE* fp;
 	__asm
@@ -40,10 +41,10 @@ FILE* fopen_hook(const char* file, const char* mode)
 	return fp;
 }
 
-DWORD fclose_nolock = 0x7ACF6E;
 
 void* fclose_hook(FILE* f)
 {
+	DWORD fclose_nolock = T4M::GetAddress("fclose_nolock");
 	void* r;
 	__asm
 	{
@@ -68,6 +69,6 @@ void* fclose_hook(FILE* f)
 
 void PatchT4_FileDebug()
 {
-	callp(0x7AC7B1, fopen_hook, PATCH_JUMP);
-	callp(0x7AD03A, fclose_hook, PATCH_CALL);
+	callp(T4M::GetAddress("fopen_hook_site"), fopen_hook, PATCH_JUMP);
+	callp(T4M::GetAddress("fclose_hook_site"), fclose_hook, PATCH_CALL);
 }

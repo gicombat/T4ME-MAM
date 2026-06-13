@@ -1,31 +1,145 @@
 #pragma once
 
-namespace T4 { namespace engine {
-	WEAK symbol<unsigned int(scriptInstance_t inst, const char* file, PrecacheEntry* entries, int entriesCount)> Scr_LoadScriptInternal { 0x0, 0x689980 };
-	WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadScripts { 0x0, 0x689C80 };
-	WEAK symbol<void(scriptInstance_t inst, void *(__cdecl *Alloc)(int), int user, int modChecksum)> Scr_PrecacheAnimTrees { 0x0, 0x689D60 };
-	WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadAnimTrees { 0x0, 0x689DC0 };
+namespace T4
+{
+	namespace engine
+	{
+		WEAK symbol<unsigned int(scriptInstance_t inst, const char* file, PrecacheEntry* entries, int entriesCount)> Scr_LoadScriptInternal{ "Scr_LoadScriptInternal" };
+		WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadScripts{ "Scr_EndLoadScripts" };
+		WEAK symbol<void(scriptInstance_t inst, void* (__cdecl* Alloc)(int), int user, int modChecksum)> Scr_PrecacheAnimTrees{ "Scr_PrecacheAnimTrees" };
+		WEAK symbol<void(scriptInstance_t inst)>Scr_EndLoadAnimTrees{ "Scr_EndLoadAnimTrees" };
 
-	inline void* Scr_IsIdentifier_ADDR() { return CALL_ADDR(0x0, 0x689470); }
-	bool Scr_IsIdentifier(char* token, void* call_addr = Scr_IsIdentifier_ADDR());
-	inline void* Scr_GetFunctionHandle_ADDR() { return CALL_ADDR(0x0, 0x6894B0); }
-	unsigned int Scr_GetFunctionHandle(const char* file, scriptInstance_t inst, const char* handle, void* call_addr = Scr_GetFunctionHandle_ADDR());
-	inline void* SL_TransferToCanonicalString_ADDR() { return CALL_ADDR(0x0, 0x6895A0); }
-	unsigned int SL_TransferToCanonicalString(scriptInstance_t inst, unsigned int stringValue, void* call_addr = SL_TransferToCanonicalString_ADDR());
-	inline void* SL_GetCanonicalString_ADDR() { return CALL_ADDR(0x0, 0x6895F0); }
-	unsigned int SL_GetCanonicalString(const char* token, scriptInstance_t inst, void* call_addr = SL_GetCanonicalString_ADDR());
-	inline void* Scr_BeginLoadScripts_ADDR() { return CALL_ADDR(0x0, 0x689660); }
-	void Scr_BeginLoadScripts(scriptInstance_t inst, int user, void* call_addr = Scr_BeginLoadScripts_ADDR());
-	inline void* Scr_BeginLoadAnimTrees_ADDR() { return CALL_ADDR(0x0, 0x689880); }
-	void Scr_BeginLoadAnimTrees(scriptInstance_t inst, int user, void* call_addr = Scr_BeginLoadAnimTrees_ADDR());
-	inline void* Scr_ScanFile_ADDR() { return CALL_ADDR(0x0, 0x689900); }
-	int Scr_ScanFile(int max_size, char* buf, void* call_addr = Scr_ScanFile_ADDR());
-	inline void* Scr_LoadScript_ADDR() { return CALL_ADDR(0x0, 0x689C60); }
-	unsigned int Scr_LoadScript(const char* file, scriptInstance_t inst, void* call_addr = Scr_LoadScript_ADDR());
-	inline void* Scr_FreeScripts_ADDR() { return CALL_ADDR(0x0, 0x689E50); }
-	void Scr_FreeScripts(scriptInstance_t inst, void* call_addr = Scr_FreeScripts_ADDR());
+		// WaW sub_689470 — usercall(token@ecx) -> bool@al ; no stack args
+		inline bool Scr_IsIdentifier(char* token)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_IsIdentifier"));
+			bool result;
+			__asm
+			{
+				mov   ecx, token
+				call  fn
+				mov   result, al
+			}
+			return result;
+		}
 
-	int Scr_IsInOpcodeMemory(scriptInstance_t inst, const char* pos);
-	void SL_BeginLoadScripts(scriptInstance_t inst);
-	void Scr_SetLoadedImpureScript(bool loadedImpureScript);
-} } // namespace T4::engine
+		// WaW sub_6894B0 — usercall(file@eax, inst@ecx, handle@stack0) -> uint@eax ; caller-cleans
+		inline unsigned int Scr_GetFunctionHandle(const char* file, scriptInstance_t inst, const char* handle)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_GetFunctionHandle"));
+			unsigned int result;
+			__asm
+			{
+				push  handle
+				mov   eax, file
+				mov   ecx, inst
+				call  fn
+				add   esp, 4
+				mov   result, eax
+			}
+			return result;
+		}
+
+		// WaW sub_6895A0 — usercall(inst@eax, stringValue@edi) -> uint@eax ; no stack args
+		inline unsigned int SL_TransferToCanonicalString(scriptInstance_t inst, unsigned int stringValue)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_TransferToCanonicalString"));
+			unsigned int result;
+			__asm
+			{
+				mov   eax, inst
+				mov   edi, stringValue
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+
+		// WaW sub_6895F0 — usercall(token@eax, inst@esi) -> uint@eax ; no stack args
+		inline unsigned int SL_GetCanonicalString(const char* token, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("SL_GetCanonicalString"));
+			unsigned int result;
+			__asm
+			{
+				mov   eax, token
+				mov   esi, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+
+		// WaW sub_689660 — usercall(inst@edi, user@stack0) -> void ; caller-cleans
+		inline void Scr_BeginLoadScripts(scriptInstance_t inst, int user)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_BeginLoadScripts"));
+			__asm
+			{
+				push  user
+				mov   edi, inst
+				call  fn
+				add   esp, 4
+			}
+		}
+
+		// WaW sub_689880 — usercall(inst@ecx, user@eax) -> void ; no stack args
+		inline void Scr_BeginLoadAnimTrees(scriptInstance_t inst, int user)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_BeginLoadAnimTrees"));
+			__asm
+			{
+				mov   ecx, inst
+				mov   eax, user
+				call  fn
+			}
+		}
+
+		// WaW sub_689900 — usercall(max_size@edi, buf@stack0) -> int@eax ; caller-cleans
+		inline int Scr_ScanFile(int max_size, char* buf)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_ScanFile"));
+			int result;
+			__asm
+			{
+				push  buf
+				mov   edi, max_size
+				call  fn
+				add   esp, 4
+				mov   result, eax
+			}
+			return result;
+		}
+
+		// WaW sub_689C60 — usercall(file@ecx, inst@edx) -> uint@eax ; no stack args
+		inline unsigned int Scr_LoadScript(const char* file, scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_LoadScript"));
+			unsigned int result;
+			__asm
+			{
+				mov   ecx, file
+				mov   edx, inst
+				call  fn
+				mov   result, eax
+			}
+			return result;
+		}
+
+		// WaW sub_689E50 — usercall(inst@eax) -> void ; no stack args
+		inline void Scr_FreeScripts(scriptInstance_t inst)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("Scr_FreeScripts"));
+			__asm
+			{
+				mov   eax, inst
+				call  fn
+			}
+		}
+
+		// Warning Adress unknow for now
+		WEAK symbol<int(scriptInstance_t inst, const char* pos)>Scr_IsInOpcodeMemory{ "Scr_IsInOpcodeMemory" };
+		WEAK symbol<void(scriptInstance_t inst)>SL_BeginLoadScripts{ "SL_BeginLoadScripts" };
+		WEAK symbol<void(bool loadedImpureScript)>Scr_SetLoadedImpureScript{ "Scr_SetLoadedImpureScript" };
+	}
+} // namespace T4::engine
