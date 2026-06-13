@@ -31,6 +31,9 @@ void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
 void PatchT4MAM_WeaponState();
+void PatchT4MAM_ModelIndex();
+void PatchT4MAM_ConfigStrings();
+void PatchT4MAM_Loopback();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -75,6 +78,9 @@ void PatchT4()
 	PatchT4MAM_Override();
 	PatchT4MAM_WeaponState();
 	PatchT4MAM_LowReady();
+	PatchT4MAM_ModelIndex(); // faithful G_ModelIndex recon + detour (instrumented)
+	PatchT4MAM_ConfigStrings(); // CS subsystem reconstruction (detours gated OFF until flip)
+	PatchT4MAM_Loopback(); // enlarge SP loopback packet queue (16 -> 128 slots) for >520-model gamestates
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();
@@ -116,8 +122,9 @@ void PatchT4_PreLoad()
 	// Increase hunk total
 	Memory::VP::Patch<uint32_t>(T4M::GetAddress("hunk_total"), 15728640); //hunk total
 
+	// Don't know why but break loading save for now, so let's keep it commented ...
 	// Remove duplicate calls in serverthread
-	Memory::VP::Nop(T4M::GetAddress("duplicate_call_serverthread"), 0x2D); //duplicate_call_serverthread
+	// Memory::VP::Nop(T4M::GetAddress("duplicate_call_serverthread"), 0x2D);
 
 }
 

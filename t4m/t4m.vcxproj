@@ -197,6 +197,9 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_LowReady.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
+    <ClCompile Include="PatchT4MAM_ModelIndex.cpp" />
+    <ClCompile Include="PatchT4MAM_ConfigStrings.cpp" />
+    <ClCompile Include="PatchT4MAM_Loopback.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
     <ClCompile Include="PatchT4NoBorder.cpp" />
     <ClCompile Include="PatchT4Script.cpp" />

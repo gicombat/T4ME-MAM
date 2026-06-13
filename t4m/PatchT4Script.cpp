@@ -68,8 +68,8 @@ namespace T4M
 	// But use some original function
 	int BG_GetWeaponIndexForName(const char* name)
 	{
-		if (*(bool*)T4M::GetAddress("dword_18F6DB8"));
-		return ((int(__cdecl*)(const char*, void*))T4M::GetAddress("BG_FindWeaponIndex_Internal"))(name, (void*)T4M::GetAddress("BG_LoadWeaponByIndex"));
+		if (*(bool*)T4M::GetAddress("dword_18F6DB8"))
+			return ((int(__cdecl*)(const char*, void*))T4M::GetAddress("BG_FindWeaponIndex_Internal"))(name, (void*)T4M::GetAddress("BG_LoadWeaponByIndex"));
 
 		return ((int(__cdecl*)(const char*))T4M::GetAddress("BG_FindWeaponIndex"))(name);
 	}
