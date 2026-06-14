@@ -410,6 +410,7 @@ static bool IsUsingVulkan;
 // so for now a dirty fix how i like them as usual (that's false)
 static bool AlreadySaidPopupNoVulkan = false;
 
+static dvar_t* censored_ver;
 static dvar_t* loadout_preset_usa;
 static dvar_t* loadout_preset_rus;
 static dvar_t* con_external;

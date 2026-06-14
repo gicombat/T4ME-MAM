@@ -294,6 +294,7 @@ void PatchT4_Console()
 	switch_mode_input_pressed = T4::dvar::Dvar_RegisterBool(0, "i_sm_pressed", T4::dvar::DVAR_FLAG_CHANGEABLE_RESET, "Hackou boolean to help register a new input.");
 	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
+	censored_ver = T4::dvar::Dvar_RegisterBool(0, "censored_ver", T4::dvar::DVAR_FLAG_ARCHIVE, "Indicate if we want to play as a censored version (aka german) or uncensored version");
 
 	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	FilterConsoleSpam();

@@ -913,15 +913,14 @@ static T4::engine::symbol<DWORD()> Sys_GetTimeDelta{ "Sys_GetTimeDelta" };
 // "<type>,<name>\n" via va (off_8DCA68[ecx*4] is the type name, edx is the asset name) before
 // writing missingasset.csv. The previous thunk set ONLY ecx -> edx held garbage (e.g. 0x72) ->
 // va did strlen(0x72) -> access violation. Only hit when the missingasset dvar (developer) is on.
-__declspec(naked) static void Call_DB_RecordMissingAsset(int /*type*/, const char* /*name*/)
+static void Call_DB_RecordMissingAsset(int typ, const char* name)
 {
 	static void* fn = (void*)T4M::GetAddress("DB_RecordMissingAsset");  // sub_48D460, variant-aware
 	__asm
 	{
-		mov     ecx, [esp + 4]        ; ecx = type (cdecl arg_0)
-		mov     edx, [esp + 8]        ; edx = name (cdecl arg_1)
-		mov     eax, 0x0048D460
-		jmp     eax                    ; tail-jump; callee returns to our caller
+		mov     ecx, typ;   ecx = type(__usercall) -- 'type' is a MASM keyword, use 'typ'
+		mov     edx, name;  edx = name(__usercall) --BOTH regs required(edx garbage->va AV)
+		call    fn;         vanilla
 	}
 }
 
@@ -1213,7 +1212,8 @@ loc_48DDB0:
 			const uint8_t* dvar = reinterpret_cast<const uint8_t*>(*T4::engine::developer);
 			useAlt = dvar && dvar[0x10] != 0;
 		}
-		if (useAlt) Call_DB_RecordMissingAsset(type, name);
+		if (useAlt) 
+			Call_DB_RecordMissingAsset(type, name);
 	}
 
 	if (waitStartDelta != 0 && useDefault)
