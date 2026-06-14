@@ -405,21 +405,21 @@ namespace Dvars
 // Installation (called by Sys_RunInit). Installs the active detours.
 void PatchT4_Override();
 
-static bool IsUsingVulkan;
+extern bool IsUsingVulkan;
 // I don't know what i am doing episode 9999, but there is a problem of order execution and the value of IsUsingVulkan is not correctly saved
 // so for now a dirty fix how i like them as usual (that's false)
 static bool AlreadySaidPopupNoVulkan = false;
 
-static dvar_t* censored_ver;
-static dvar_t* loadout_preset_usa;
-static dvar_t* loadout_preset_rus;
-static dvar_t* con_external;
-static dvar_t* enable_scoreboard;
-static dvar_t* disable_intro;
-static dvar_t* vulkan;
+extern dvar_t* censored_ver;
+extern dvar_t* loadout_preset_usa;
+extern dvar_t* loadout_preset_rus;
+extern dvar_t* con_external;
+extern dvar_t* enable_scoreboard;
+extern dvar_t* disable_intro;
+extern dvar_t* vulkan;
 // Tweak switch Mode
-static dvar_t* is_watching_for_switch_mode_input;
-static dvar_t* switch_mode_input_pressed;
+extern dvar_t* is_watching_for_switch_mode_input;
+extern dvar_t* switch_mode_input_pressed;
 
 #define CONFIG_FILE_LOCATION ".\\T4M-MAM.conf"
 #define IS_BETA

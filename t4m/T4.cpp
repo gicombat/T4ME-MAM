@@ -14,6 +14,18 @@
 #include "Timeapi.h" 
 #pragma comment(lib, "winmm.lib")
 
+bool IsUsingVulkan;
+dvar_t* censored_ver;
+dvar_t* loadout_preset_usa;
+dvar_t* loadout_preset_rus;
+dvar_t* con_external;
+dvar_t* enable_scoreboard;
+dvar_t* disable_intro;
+dvar_t* vulkan;
+// Tweak switch Mode
+dvar_t* is_watching_for_switch_mode_input;
+dvar_t* switch_mode_input_pressed;
+
 
 namespace T4
 {

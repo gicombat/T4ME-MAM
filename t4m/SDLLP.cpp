@@ -11,7 +11,7 @@
 // included. T4.h transitively pulls in <d3d9.h> via cod/xasset.hpp, which forward-declares
 // `Direct3DCreate9` without dllexport. Defining it later with dllexport then triggers
 // C2375 ("redefinition; different linkage"). Declaring it here first makes dllexport
-// "sticky" — when d3d9.h re-declares without an attribute, MSVC keeps the export.
+// "sticky" when d3d9.h re-declares without an attribute, MSVC keeps the export.
 struct IDirect3D9;
 extern "C" __declspec(dllexport) IDirect3D9* __stdcall Direct3DCreate9(UINT SDKVersion);
 
@@ -176,7 +176,7 @@ extern "C"
 	{
 		static FARPROC function = 0;
 
-		IsUsingVulkan = SDLLP::UseVulkan();
+		//IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -194,7 +194,7 @@ extern "C"
 		void D3DPERF_EndEvent()
 	{
 		static FARPROC function = 0;
-		IsUsingVulkan = SDLLP::UseVulkan();
+		//IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -212,7 +212,7 @@ extern "C"
 		IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion)
 	{
 		static FARPROC function = 0;
-		IsUsingVulkan = SDLLP::UseVulkan();
+		//IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");

@@ -187,10 +187,10 @@ void NullFunction()
 }
 
 void EnableVulkan()
-{
+{	
 	LPCSTR Str1;
 	CHAR buf[255];
-	wsprintf(buf, "%u", 1);
+	wsprintf(buf, "%u", (int)vulkan->current.boolean);
 	Str1 = buf;
 
 	WritePrivateProfileString("Options", "EnableVulkan", Str1, CONFIG_FILE_LOCATION);
