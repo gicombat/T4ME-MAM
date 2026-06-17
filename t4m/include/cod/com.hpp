@@ -15,6 +15,9 @@ namespace T4
 		WEAK symbol<void(int channel, const char* fmt, ...)>Com_PrintError{ "Com_PrintError" };   // sub_59A380 ("^1Error: ", type 3)
 		WEAK symbol<void(int channel, const char* fmt, ...)>Com_PrintWarning{ "Com_PrintWarning" }; // sub_59A440 ("^3", type 2)
 		WEAK symbol<int(const char* src, const char* fmt, ...)>Com_sscanf{ "Com_sscanf" };
+		// CRT sprintf (sub_7AA926, unbounded: dst+fmt+varargs). Distinct from Com_sprintf (0x5F6D00, bounded dst+size).
+		// Named crt_sprintf (not "sprintf") to avoid ambiguity with the C runtime ::sprintf under `using namespace`.
+		WEAK symbol<int(char* dst, const char* fmt, ...)>crt_sprintf{ "sprintf" };
 
 		// non-variadic — symbol<> (moved from T4.cpp extern "C")
 		WEAK symbol<void(int channel, int arg)> Com_DvarDump{ "Com_DvarDump" };

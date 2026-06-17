@@ -42,6 +42,10 @@ namespace T4M
 	ExeVariant CurrentExeVariant();
 	const char* ExeVariantName(ExeVariant v);
 
+	// True when the host process is a WaW mod tool (sp_tool.exe / mp_tool.exe), not the game.
+	// T4M stays inert there (checked first in DllMain).
+	bool IsModToolProcess();
+
 	// Loads the embedded CSV resource IDR_ADDR_CSV.
 	// Idempotent: once loaded it is a no-op unless force == true.
 	// Returns the number of rows parsed (0 on failure). Safe at DLL init time

@@ -126,6 +126,11 @@ bool __stdcall DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 {
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
+		// T4M must stay inert under the WaW mod tools (sp_tool.exe / mp_tool.exe):
+		// they load this DLL but are not the game. Checked BEFORE the 0x401000 sig
+		// read so neither activation nor the "incompatible exe" MessageBox fires there.
+		if (T4M::IsModToolProcess())
+			return true;
 
 		DWORD sig = *(DWORD*)0x401000;
 		if (sig == T4M::ExeVariant::LanFixed || sig == T4M::ExeVariant::SteamDefault || sig == T4M::ExeVariant::SteamGer) // LanFixed | Steam | Steam-GER

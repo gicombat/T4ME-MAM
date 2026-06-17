@@ -126,6 +126,21 @@ namespace T4M
 		}
 	}
 
+	// True when the host process is a WaW mod tool (sp_tool.exe / mp_tool.exe) rather
+	// than the game. These load the DLL but must not trigger T4M (no patches, no UI).
+	bool IsModToolProcess()
+	{
+		char exePath[MAX_PATH] = {};
+		GetModuleFileNameA(nullptr, exePath, MAX_PATH);
+		const char* exeName = strrchr(exePath, '\\');
+		exeName = exeName ? exeName + 1 : exePath;
+		static const char* const kModTools[] = { "sp_tool.exe", "mp_tool.exe" };
+		for (const char* tool : kModTools)
+			if (_stricmp(exeName, tool) == 0)
+				return true;
+		return false;
+	}
+
 	// ---- helpers ---------------------------------------------------------
 	static inline void Trim(std::string& s)
 	{

@@ -39,12 +39,34 @@ namespace T4M
 
 namespace T4M
 {
+    // @wrapper — Anim_AddTreeSlot (sub_60C8E0) is __usercall: the anim NAME is
+    // passed in EDI (ambient), with (tree, slot) on the stack (vanilla pushes
+    // slot then tree; caller-cleans). Vanilla sub_464A50 keeps the name live in
+    // EDI across the preceding Anim_RegisterByName call, so the slot getter
+    // re-resolves the right anim. The cdecl symbol Anim_AddTreeSlot(tree, slot)
+    // can't set EDI, so EDI stays stale -> DB_FindXAssetHeader(XANIM, garbage)
+    // -> "Could not load xanim <garbage>". This thunk loads EDI = name.
+    static void Call_Anim_AddTreeSlot(void* tree, int slot, const char* name)
+    {
+        static void* fn = (void*)T4M::GetAddress("Anim_AddTreeSlot");  // sub_60C8E0
+        __asm
+        {
+            push    edi             ; preserve callee-saved edi
+            push    slot            ; arg_4
+            push    tree            ; arg_0
+            mov     edi, name       ; ambient name (usercall: edi = name)
+            call    fn              ; sub_60C8E0, caller-cleans
+            add     esp, 8          ; clean the 2 pushed args
+            pop     edi             ; restore edi
+        }
+    }
+
     // Mirror sub_464A50's empty-string fallback: empty -> sidleAnim.
     static void RegisterTreeSlot(void* tree, const char* name, const char* fallback, int slot_idx)
     {
         const char* eff = (name && *name) ? name : fallback;
         T4::engine::Anim_RegisterByName(eff, T4::engine::AnimAllocCb);
-        T4::engine::Anim_AddTreeSlot(tree, slot_idx);
+        Call_Anim_AddTreeSlot(tree, slot_idx, eff);
     }
 }
 

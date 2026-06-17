@@ -166,8 +166,6 @@ namespace T4_Reconstructed
     typedef int  (__cdecl* SL_Intern_t)(int a, const char* str, int c, int len);
     static SL_Intern_t SL_Intern_Low = nullptr;// idx < 0x585
     static SL_Intern_t SL_Intern_High = nullptr;// idx >= 0x585
-    typedef int  (__cdecl* ComSprintf_t)(char* dst, const char* fmt, ...);     // sub_7AA926
-    static ComSprintf_t cs_sprintf = nullptr;
     typedef char* (__cdecl* Va_t)(const char* fmt, ...);                       // sub_5F6D80
     static Va_t cs_va = nullptr;
 
@@ -369,7 +367,7 @@ namespace T4_Reconstructed
                     SV_CS_Send_cs(1, "%c %s", 'd', bigbuf);
                     acc_len = 0;
                 }
-                acc_len += cs_sprintf(bigbuf + acc_len, "%x %x %s", idx, len, str); // FIX: idx,len,str
+                acc_len += T4::engine::crt_sprintf(bigbuf + acc_len, "%x %x %s", idx, len, str); // FIX: idx,len,str
             }
             else
             {
@@ -425,7 +423,7 @@ namespace T4_Reconstructed
             { char* d = infobuf; const char* s = lastStr; while ((*d++ = *s++) != 0) {} }
             char* value = SV_Info_ValueForKey(infobuf, cs_va("%i", i));
             int vlen = (int)strlen(value);
-            cs_sprintf(bigbuf, "%x %x \\%d\\%s", lastIndex, vlen + 3, i, value); // FIX: lastIndex,vlen+3,i,value
+            T4::engine::crt_sprintf(bigbuf, "%x %x \\%d\\%s", lastIndex, vlen + 3, i, value); // FIX: lastIndex,vlen+3,i,value
             SV_CS_Send_cs_target(client, 1, "%c %s", 'd', bigbuf);
         }
     }
@@ -1597,7 +1595,6 @@ static void ResolveCsAddrs()
 	a_68E680 = (DWORD)T4M::GetAddress("SL_RemoveRefToString");
 	a_6AF000 = (DWORD)T4M::GetAddress("sub_6AF000");
 	pg_6AF0F0 = (pg_arg1_t)T4M::GetAddress("sub_6AF0F0");
-	cs_sprintf = (ComSprintf_t)T4M::GetAddress("sprintf");
 	cs_strncpyz = (StrncpyZ_t)T4M::GetAddress("I_strncpyz");
 	gs_memset = (GsMemset_t)T4M::GetAddress("Mem_Memset");
 	pg_memset = (pg_memset_t)T4M::GetAddress("Mem_Memset");
