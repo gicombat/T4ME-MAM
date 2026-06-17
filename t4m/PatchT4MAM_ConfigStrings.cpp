@@ -34,23 +34,12 @@
 static DWORD a_401000 = 0;
 static DWORD a_45CE1E = 0;
 static DWORD a_474620 = 0;
-static DWORD a_48E560 = 0;
 static DWORD a_496050 = 0;
-static DWORD a_4962F0 = 0;
 static DWORD a_5720F0 = 0;
 static DWORD a_572210 = 0;
-static DWORD a_59A310 = 0;
-static DWORD a_59A380 = 0;
-static DWORD a_59E970 = 0;
-static DWORD a_5A3320 = 0;
-static DWORD a_5DE720 = 0;
-static DWORD a_5E5100 = 0;
 static DWORD a_5EF390 = 0;
-static DWORD a_5F0210 = 0;
 static DWORD a_5F69E0 = 0;
-static DWORD a_5F6D80 = 0;
 static DWORD a_5F6DF0 = 0;
-static DWORD a_5FDBF0 = 0;
 static DWORD a_62F250 = 0;
 static DWORD a_62F500 = 0;
 static DWORD a_6311E0 = 0;
@@ -60,9 +49,6 @@ static DWORD a_63248C = 0;
 static DWORD a_633FA0 = 0;
 static DWORD a_638520 = 0;
 static DWORD a_6393F0 = 0;
-static DWORD a_639910 = 0;
-static DWORD a_642A60 = 0;
-static DWORD a_64C890 = 0;
 static DWORD a_64CAE0 = 0;
 static DWORD a_674C70 = 0;
 static DWORD a_674D00 = 0;
@@ -78,47 +64,14 @@ static DWORD a_676990 = 0;
 static DWORD a_6772E0 = 0;
 static DWORD a_678330 = 0;
 static DWORD a_67AB80 = 0;
-static DWORD a_68DE50 = 0;
-static DWORD a_68E390 = 0;
 static DWORD a_68E680 = 0;
 static DWORD a_6AF000 = 0;
-static DWORD a_6AF0F0 = 0;
-static DWORD a_6F6CE0 = 0;
-static DWORD a_6F6D60 = 0;
-static DWORD a_7AA926 = 0;
-static DWORD a_7AA9C0 = 0;
-static DWORD a_7AB559 = 0;
-static DWORD a_7AFF40 = 0;
-static DWORD a_7AFFC0 = 0;
 static DWORD a_7EB000 = 0;
-static DWORD a_84F750 = 0;
-static DWORD a_8875C8 = 0;
-static DWORD a_8875F0 = 0;
-static DWORD a_887664 = 0;
-static DWORD a_88951C = 0;
-static DWORD a_88C220 = 0;
-static DWORD a_88C244 = 0;
-static DWORD a_8D55F8 = 0;
 static DWORD a_18FABD0 = 0;
 static DWORD a_190E0A8 = 0;
-static DWORD a_1F552C4 = 0;
-static DWORD a_1F552DC = 0;
-static DWORD a_1F552FC = 0;
-static DWORD a_2122AFC = 0;
-static DWORD a_2122B00 = 0;
-static DWORD a_212B2F8 = 0;
-static DWORD a_234FC08 = 0;
-static DWORD a_234FC14 = 0;
-static DWORD a_234FC20 = 0;
 static DWORD a_2350424 = 0;
 static DWORD a_2350426 = 0;
 static DWORD a_2350F42 = 0;
-static DWORD a_2351C10 = 0;
-static DWORD a_23BCC08 = 0;
-static DWORD a_23BCC10 = 0;
-static DWORD a_23D4AE4 = 0;
-static DWORD a_23D5C30 = 0;
-static DWORD a_2547090 = 0;
 static DWORD a_26AA55C = 0;
 static DWORD a_26AA56C = 0;
 static DWORD a_2CAD98C = 0;
@@ -132,27 +85,13 @@ static DWORD a_300DCA0 = 0;
 static DWORD a_300DCA8 = 0;
 static DWORD a_300DCAC = 0;
 static DWORD a_300DCB0 = 0;
-static DWORD a_300FFEC = 0;
-static DWORD a_3010014 = 0;
-static DWORD a_301011C = 0;
-static DWORD a_302012C = 0;
-static DWORD a_3058528 = 0;
 static DWORD a_305A63C = 0;
 static DWORD a_305BC74 = 0;
 static DWORD a_305C474 = 0;
 static DWORD a_305D5FC = 0;
 static DWORD a_307D5FC = 0;
-static DWORD a_307D6E0 = 0;
-static DWORD a_3122688 = 0;
-static DWORD a_3168570 = 0;
 static DWORD a_34651D8 = 0;
 static DWORD a_3467010 = 0;
-static DWORD a_3702390 = 0;
-static DWORD a_46E5054 = 0;
-static DWORD a_48AE508 = 0;
-static DWORD a_48AE50C = 0;
-static DWORD a_48AE510 = 0;
-static DWORD a_4DA997C = 0;
 
 
 // ============================================================================
@@ -214,34 +153,33 @@ using namespace T4::engine;
 
 namespace T4_Reconstructed
 {
-    // dword_3702390 : POINTEUR runtime vers la base du pool de strings internées
-    // (stride 0xC ; texte d'un CS = (*ptr) + handle*0xC + 4). On lit la VALEUR.
-    #define cs_stringPoolPtr ((unsigned char**)a_3702390)
+    // String pool base = T4::engine::gScrMemTreePub->mt_buffer (dword_3702390). CS text = base + handle*0xC + 4.
 
-    #define cs_assertToken ((const char*)a_887664)// unk_887664 (length-prefixed)
+    static const char* cs_assertToken = nullptr;// unk_887664 (length-prefixed)
     static const char  cs_empty[1] = { 0 };                            // chaîne vide locale
 
     // --- helpers vanilla (par VA) -------------------------------------------
     typedef void (__cdecl* StrncpyZ_t)(char* dst, const char* src, int count); // sub_7AA9C0
-    #define cs_strncpyz ((StrncpyZ_t)a_7AA9C0)
+    static StrncpyZ_t cs_strncpyz = nullptr;
     typedef void (__cdecl* ComMemset_t)(void* dst, int fill, int dwordCount);  // sub_5E5100
-    #define cs_memsetDwords ((ComMemset_t)a_5E5100)
+    static ComMemset_t cs_memsetDwords = nullptr;
     typedef int  (__cdecl* SL_Intern_t)(int a, const char* str, int c, int len);
-    #define SL_Intern_Low ((SL_Intern_t)a_68DE50)// idx < 0x585
-    #define SL_Intern_High ((SL_Intern_t)a_68E390)// idx >= 0x585
+    static SL_Intern_t SL_Intern_Low = nullptr;// idx < 0x585
+    static SL_Intern_t SL_Intern_High = nullptr;// idx >= 0x585
     typedef int  (__cdecl* ComSprintf_t)(char* dst, const char* fmt, ...);     // sub_7AA926
-    #define cs_sprintf ((ComSprintf_t)a_7AA926)
+    static ComSprintf_t cs_sprintf = nullptr;
     typedef char* (__cdecl* Va_t)(const char* fmt, ...);                       // sub_5F6D80
-    #define cs_va ((Va_t)a_5F6D80)
+    static Va_t cs_va = nullptr;
 
-    #define p_sv_state ((int*)a_234FC08)// ==2 => SV actif
-    #define p_sv_running ((int*)a_234FC14)
-    #define g_clientsBase ((unsigned char*)a_2547090)// dword_2547090
+    static int* p_sv_state = nullptr;// ==2 => SV actif
+    static int* p_sv_running = nullptr;
+    static unsigned char* g_clientsBase = nullptr;// dword_2547090
     static const int CLIENT_STRIDE  = 0x58D30;
-    #define ERR_BAD_INDEX ((const char*)a_8875C8)// "SV_SetConfigstring: bad index %i"
-    #define ERR_BIG_BUNDLE ((const char*)a_8875F0)// "…big config string…"
-    #define CS_STRPOOL (*(unsigned char**)a_3702390)
-    #define CS_SVS_PTR (*(unsigned char**)a_23D5C30)
+    static const char* ERR_BAD_INDEX = nullptr;// "SV_SetConfigstring: bad index %i"
+    static const char* ERR_BIG_BUNDLE = nullptr;// "…big config string…"
+    #define CS_STRPOOL ((unsigned char*)T4::engine::gScrMemTreePub->mt_buffer)
+    static unsigned char** p_23D5C30 = nullptr;
+    #define CS_SVS_PTR (*p_23D5C30)
 
     // ========================================================================
     // @faithful  SV_GetConfigstring (sub_6315C0). __usercall esi=idx/edi=dstSize/dst@stack.
@@ -255,7 +193,7 @@ namespace T4_Reconstructed
         if ((handle & 0xFFFF) == 0) { cs_strncpyz(dst, cs_empty, dstSize - 1); dst[dstSize - 1] = 0; return; }
         if (handle == 0)            { cs_strncpyz(dst, (const char*)0, dstSize - 1); dst[dstSize - 1] = 0; return; }
 
-        const char* src = (const char*)(*cs_stringPoolPtr + handle * 0xC + 4);
+        const char* src = (const char*)(CS_STRPOOL + handle * 0xC + 4);
         cs_strncpyz(dst, src, dstSize - 1);
         dst[dstSize - 1] = 0;
     }
@@ -306,7 +244,7 @@ namespace T4_Reconstructed
         unsigned short sentinel = *g_csSentinel;
         if (sentinel != 0) SL_RemoveRefToString_thunk(sentinel, 0);
 
-        cs_memsetDwords((void*)a_234FC08, 0, 0x21806); // 0x86018 octets (gameState)
+        cs_memsetDwords((void*)p_sv_state, 0, 0x21806); // 0x86018 octets (gameState)
         *(int*)a_2FCDA04 = 0;
 
         // Flip : la table CS vit hors gameState → le memset ci-dessus ne la couvre plus.
@@ -497,17 +435,18 @@ namespace T4_Reconstructed
     using T4::engine::msg_s;
 
     // ---- send-side absolutes (NOT relocated) -------------------------------
-    #define CS_HUNK_OFF   (*(unsigned int*)a_46E5054)                  // dword_46E5054 (temp Hunk offset)
-    #define cs_hunkBase ((unsigned char*)a_212B2F8)// dword_212B2F8
-    #define cs_boundsNodes ((unsigned char*)a_2351C10)// unk_2351C10
-    #define cs_boundsNodesEnd ((unsigned char*)a_23BCC10)// unk_23BCC10
-    #define cs_entBaselines ((unsigned char*)a_23BCC08)// unk_23BCC08
-    #define cs_entBaselineCount ((int*)a_23D4AE4)// dword_23D4AE4
-    #define cs_dword_234FC20 ((int*)a_234FC20)
+    static unsigned int* p_46E5054 = nullptr;
+    #define CS_HUNK_OFF (*p_46E5054)                  // dword_46E5054 (temp Hunk offset)
+    static unsigned char* cs_hunkBase = nullptr;// dword_212B2F8
+    static unsigned char* cs_boundsNodes = nullptr;// unk_2351C10
+    static unsigned char* cs_boundsNodesEnd = nullptr;// unk_23BCC10
+    static unsigned char* cs_entBaselines = nullptr;// unk_23BCC08
+    static int* cs_entBaselineCount = nullptr;// dword_23D4AE4
+    static int* cs_dword_234FC20 = nullptr;
     static const int CS_BOUNDS_STRIDE   = 0x1AC;
     static const int CS_BASELINE_STRIDE = 0x118;
     // Built-in CS static table base (dword_8D55F8): stride 0x10, [+0]/[+0xC]=csNum, [+4]=defaultStr.
-    #define cs_staticTable ((unsigned char*)a_8D55F8)// dword_8D55F8
+    static unsigned char* cs_staticTable = nullptr;// dword_8D55F8
 
     // Com_DPrintf format strings. Content matched to vanilla data segment
     // (aSvSendclientga / aGoingFromCsCon / aSendingIBytesI). Literals used instead
@@ -520,9 +459,9 @@ namespace T4_Reconstructed
 
     // ---- send-side cdecl helper VAs ----------------------------------------
     typedef void (__cdecl* GsDPrintf_t)(int channel, const char* fmt, ...);      // sub_59A310
-    #define gs_dprintf ((GsDPrintf_t)a_59A310)
+    static GsDPrintf_t gs_dprintf = nullptr;
     typedef void (__cdecl* GsSnapshot_t)(void);                                  // sub_639910
-    #define gs_snapshot ((GsSnapshot_t)a_639910)
+    static GsSnapshot_t gs_snapshot = nullptr;
 
     // ---- send-side naked thunks (NEW; distinct from existing cs_memsetDwords) ----
 
@@ -531,7 +470,7 @@ namespace T4_Reconstructed
     // dst STACK arg. NOT __usercall esi=dst — the send verify misread that pushed esi as a
     // register input. Cross-checked vs the parse-side pg_memset + call sites @0x1448/@0x4058D6.
     typedef void* (__cdecl* GsMemset_t)(void* dst, int fill, unsigned int count);
-    #define gs_memset ((GsMemset_t)a_7AFF40)
+    static GsMemset_t gs_memset = nullptr;
     // sub_678330  ResetReliableFragBuffers. edi=netchan(client+0x14). bool al (ignored). retn.
     __declspec(naked) void __cdecl gs_resetFrag(void* /*netchan*/) {
         __asm {
@@ -683,7 +622,7 @@ namespace T4_Reconstructed
     // ---- helpers: vanilla clientNum + inlined MSG byte/short/long writes -----
     static const int CS_CLIENT_STRIDE = 0x58D30;
     static inline int gs_clientNum(void* client) {
-        return (int)(((unsigned char*)client - (unsigned char*)a_2547090) / CS_CLIENT_STRIDE);
+        return (int)(((unsigned char*)client - g_clientsBase) / CS_CLIENT_STRIDE);
     }
     static inline void gs_rawByte(msg_s* m, unsigned char v) {
         if (m->cursize < m->maxsize) { m->data[m->cursize] = (char)v; m->cursize += 1; }
@@ -717,7 +656,7 @@ namespace T4_Reconstructed
         }
     }
     static inline const char* gs_csText(unsigned short handle) {
-        return handle ? (const char*)(*cs_stringPoolPtr + (unsigned)handle * 0xC + 4)
+        return handle ? (const char*)(CS_STRPOOL + (unsigned)handle * 0xC + 4)
                       : (const char*)0;                  // vanilla: ecx=0 when handle==0
     }
 
@@ -908,67 +847,67 @@ namespace T4_Reconstructed
     //   splitSize (+0x18) = size of the post-split `splitData` region
     //   readcount (+0x1C) = current read cursor ; lastEntityRef (+0x24) = entity-number delta base.
     struct rec_csAuto_t { int index; const char* name; int unk; int pad; }; // stride 0x10
-    #define g_csAuto ((rec_csAuto_t*)a_8D55F8)// dword_8D55F8
+    static rec_csAuto_t* g_csAuto = nullptr;// dword_8D55F8
 
     // g_csData (blob base) is now a file-scope relocatable global (see top, B3 fix).
     #define G_CSCURSOR (*g_csCursor)                                        // dword_307D5FC write cursor (relocatable)
 
-    #define BASELINE_ENTITY_TABLE ((char*)a_3122688)                       // unk_3122688 stride 0x118 (absolute)
-    #define BASELINE_CLIENT_TABLE ((char*)a_3168570)                       // unk_3168570 stride 0x118 (absolute)
+    static char* BASELINE_ENTITY_TABLE = nullptr;                       // unk_3122688 stride 0x118 (absolute)
+    static char* BASELINE_CLIENT_TABLE = nullptr;                       // unk_3168570 stride 0x118 (absolute)
 
-    #define G_1F552DC (*(char**)a_1F552DC)
-    #define G_1F552FC (*(char**)a_1F552FC)
-    #define G_1F552C4 (*(int*)a_1F552C4)
-    #define G_307D6E0 (*(int*)a_307D6E0)
-    #define G_3010014 (*(int*)a_3010014)
-    #define G_302012C (*(int*)a_302012C)
-    #define G_300FFEC (*(int*)a_300FFEC)
-    #define G_301011C (*(int*)a_301011C)
-    #define G_2122B00 (*(char**)a_2122B00)
-    #define G_2122AFC (*(int*)a_2122AFC)
-    #define G_4DA997C (*(int*)a_4DA997C)
-    #define G_3058528 ((void*)a_3058528)// byte_3058528 (0x301654)
-    #define G_48AE508 ((void*)a_48AE508)// qword_48AE508
-    #define G_48AE50C ((void*)a_48AE50C)
-    #define G_48AE510 ((void*)a_48AE510)
+    static char** p_1F552DC = nullptr;
+    #define G_1F552DC (*p_1F552DC)
+    #define G_1F552FC ((char*)*T4::engine::dvar_singlethreadRender)
+    static int* p_1F552C4 = nullptr;
+    #define G_1F552C4 (*p_1F552C4)
+    static int* p_307D6E0 = nullptr;
+    #define G_307D6E0 (*p_307D6E0)
+    static int* p_3010014 = nullptr;
+    #define G_3010014 (*p_3010014)
+    static int* p_302012C = nullptr;
+    #define G_302012C (*p_302012C)
+    static int* p_300FFEC = nullptr;
+    #define G_300FFEC (*p_300FFEC)
+    static int* p_301011C = nullptr;
+    #define G_301011C (*p_301011C)
+    #define G_2122B00 ((char*)*T4::engine::fs_game)
+    static int* p_2122AFC = nullptr;
+    #define G_2122AFC (*p_2122AFC)
+    static int* p_4DA997C = nullptr;
+    #define G_4DA997C (*p_4DA997C)
+    static void* G_3058528 = nullptr;// byte_3058528 (0x301654)
+    static void* G_48AE508 = nullptr;// qword_48AE508
+    static void* G_48AE50C = nullptr;
+    static void* G_48AE510 = nullptr;
 
     // unk_* are LENGTH-PREFIXED error tokens consumed by cs_error (sub_59AC50):
     // pass by VA (the IDA `unk_<VA>` name IS the address). Do NOT convert to C literals.
-    #define STR_TOO_MANY_CS ((const char*)a_84F750)// unk_84F750 (db 15h,"configstring > M...")
-    #define STR_CS_OVERFLOW ((const char*)a_88951C)// unk_88951C (length-prefixed)
-    #define STR_BAD_ENT ((const char*)a_88C220)// unk_88C220 (length-prefixed)
-    #define STR_BAD_CLI ((const char*)a_88C244)// unk_88C244 (length-prefixed)
+    static const char* STR_TOO_MANY_CS = nullptr;// unk_84F750 (db 15h,"configstring > M...")
+    static const char* STR_CS_OVERFLOW = nullptr;// unk_88951C (length-prefixed)
+    static const char* STR_BAD_ENT = nullptr;// unk_88C220 (length-prefixed)
+    static const char* STR_BAD_CLI = nullptr;// unk_88C244 (length-prefixed)
     // aClParsegamesta / aFFF are PLAIN printf/scanf strings -> C literals (content faithful).
     static const char* const STR_BAD_CMD     = "CL_ParseGamestate: bad command byte %d\n"; // aClParsegamesta
     static const char* const STR_FMT_3F      = "%f %f %f";                  // aFFF
 
     // ---- parse cdecl helper VAs --------------------------------------------
     typedef void* (__cdecl* pg_memset_t)(void*, int, unsigned int);
-    #define pg_memset ((pg_memset_t)a_7AFF40)// sub_7AFF40
+    static pg_memset_t pg_memset = nullptr;// sub_7AFF40
     typedef void* (__cdecl* pg_memcpy_t)(void*, const void*, unsigned int);
-    #define pg_memcpy ((pg_memcpy_t)a_7AFFC0)// sub_7AFFC0
-    typedef int   (__cdecl* pg_sscanf_t)(const char*, const char*, ...);
-    #define pg_sscanf ((pg_sscanf_t)a_7AB559)// sub_7AB559
+    static pg_memcpy_t pg_memcpy = nullptr;// sub_7AFFC0
     typedef void  (__cdecl* pg_preload_t)(int, int);
-    #define pg_5F0210 ((pg_preload_t)a_5F0210)// sub_5F0210
+    static pg_preload_t pg_5F0210 = nullptr;// sub_5F0210
     typedef void  (__cdecl* pg_void0_t)(void);
     // sub_474620: __usercall (index in ESI, vanilla `xor esi,esi` -> 0). NOT void(void).
     // Modeled as the CL_PG_ResetSnapshotSlot0 naked thunk (file scope) so ESI is set.
-    #define pg_59E970 ((pg_void0_t)a_59E970)
-    #define pg_64C890 ((pg_void0_t)a_64C890)
-    #define pg_642A60 ((pg_void0_t)a_642A60)
-    #define pg_6F6CE0 ((pg_void0_t)a_6F6CE0)
-    #define pg_5A3320 ((pg_void0_t)a_5A3320)
-    #define pg_6F6D60 ((pg_void0_t)a_6F6D60)
-    #define pg_5FDBF0 ((pg_void0_t)a_5FDBF0)
-    #define pg_48E560 ((pg_void0_t)a_48E560)
+    static pg_void0_t pg_59E970 = nullptr;
+    static pg_void0_t pg_64C890 = nullptr;
+    static pg_void0_t pg_642A60 = nullptr;
     typedef void  (__cdecl* pg_arg1_t)(void*);
-    #define pg_4962F0 ((pg_arg1_t)a_4962F0)
-    #define pg_6AF0F0 ((pg_arg1_t)a_6AF0F0)
-    typedef void  (__cdecl* pg_err_t)(int, const char*, ...);
-    #define pg_59A380 ((pg_err_t)a_59A380)// Com_PrintError (bad cmd / drop)
+    static pg_arg1_t pg_4962F0 = nullptr;
+    static pg_arg1_t pg_6AF0F0 = nullptr;
     typedef void  (__cdecl* pg_clreset_t)(int, int);
-    #define pg_5DE720 ((pg_clreset_t)a_5DE720)
+    static pg_clreset_t pg_5DE720 = nullptr;
 
     // ---- parse __usercall thunks (forward declarations; bodies defined at file
     //      scope after the namespace). extern "C" -> flat names; these declarations
@@ -1105,7 +1044,7 @@ namespace T4_Reconstructed
                 // loc_64CDB6: parse mapCenter "%f %f %f" from CS slot 12 (dword_305A66C)
                 {
                     int off = g_clientCsOffsets[12];
-                    pg_sscanf(g_csData + off, STR_FMT_3F, G_48AE508, G_48AE50C, G_48AE510);
+                    T4::engine::Com_sscanf(g_csData + off, STR_FMT_3F, G_48AE508, G_48AE50C, G_48AE510);
                 }
                 continue;                                    // jmp loc_64CB85
             }
@@ -1130,7 +1069,7 @@ namespace T4_Reconstructed
             }
             else {
             bad_command:                                     // loc_64CEB8
-                pg_59A380(1, STR_BAD_CMD, cmd);              // Com_Error(1, fmt, cmd)
+                T4::engine::Com_PrintError(1, STR_BAD_CMD, cmd);     // sub_59A380
                 msg->overflowed = 1;                         // [ebx]=1
                 msg->cursize    = msg->readcount;            // [ebx+14h]=[ebx+1Ch]
                 msg->splitSize  = 0;                         // [ebx+18h]=0
@@ -1143,11 +1082,11 @@ namespace T4_Reconstructed
         G_301011C = CL_PG_ReadLong(msg);                     // sub_675560
 
         if (G_1F552FC[0x10] != 0) {
-            pg_6F6CE0();
-            pg_5A3320();
-            pg_6F6D60();
-            pg_5FDBF0();
-            pg_48E560();
+            T4::engine::Sys_SyncDatabase();
+            T4::engine::DB_PostLoadXZone();
+            T4::engine::Sys_WakeDatabase();
+            T4::engine::DB_WaitForPendingLoads();
+            T4::engine::DB_CheckPendingComplete();
         }
 
         pg_64C890();                                         // loc_64CF26
@@ -1586,7 +1525,7 @@ extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end)
 {
     if (start < 0)                start = 0;
     if (end < 0 || end > g_maxCS) end   = g_maxCS;
-    unsigned char* pool = *(unsigned char**)a_3702390;   // dword_3702390 (interned string pool)
+    unsigned char* pool = CS_STRPOOL;   // = T4::engine::gScrMemTreePub->mt_buffer
     int count = 0, totalLen = 0, models = 0;
     for (int i = start; i < end; ++i) {
         unsigned short handle = g_csTable[i];
@@ -1609,26 +1548,23 @@ extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end)
 
 static void ResolveCsAddrs()
 {
+	using namespace T4_Reconstructed;   // voir les pointeurs typés (cs_*/gs_*/pg_*) résolus ci-dessous
 	a_401000 = (DWORD)T4M::GetAddress("text_start");
 	a_45CE1E = (DWORD)T4M::GetAddress("csf_imm_45CE1E");
 	a_474620 = (DWORD)T4M::GetAddress("ResetClientSnapshotSlot");
-	a_48E560 = (DWORD)T4M::GetAddress("DB_CheckPendingComplete");
 	a_496050 = (DWORD)T4M::GetAddress("sub_496050");
-	a_4962F0 = (DWORD)T4M::GetAddress("sub_4962F0");
+	pg_4962F0 = (pg_arg1_t)T4M::GetAddress("sub_4962F0");
 	a_5720F0 = (DWORD)T4M::GetAddress("sub_5720F0");
 	a_572210 = (DWORD)T4M::GetAddress("sub_572210");
-	a_59A310 = (DWORD)T4M::GetAddress("Com_DPrintf");
-	a_59A380 = (DWORD)T4M::GetAddress("Com_PrintError");
-	a_59E970 = (DWORD)T4M::GetAddress("sub_59E970");
-	a_5A3320 = (DWORD)T4M::GetAddress("DB_PostLoadXZone");
-	a_5DE720 = (DWORD)T4M::GetAddress("sub_5DE720");
-	a_5E5100 = (DWORD)T4M::GetAddress("sub_5E5100");
+	gs_dprintf = (GsDPrintf_t)T4M::GetAddress("Com_DPrintf");
+	pg_59E970 = (pg_void0_t)T4M::GetAddress("sub_59E970");
+	pg_5DE720 = (pg_clreset_t)T4M::GetAddress("sub_5DE720");
+	cs_memsetDwords = (ComMemset_t)T4M::GetAddress("sub_5E5100");
 	a_5EF390 = (DWORD)T4M::GetAddress("sub_5EF390");
-	a_5F0210 = (DWORD)T4M::GetAddress("sub_5F0210");
+	pg_5F0210 = (pg_preload_t)T4M::GetAddress("sub_5F0210");
 	a_5F69E0 = (DWORD)T4M::GetAddress("Q_stricmpn");
-	a_5F6D80 = (DWORD)T4M::GetAddress("Com_FormatMsg");
+	cs_va = (Va_t)T4M::GetAddress("Com_FormatMsg");
 	a_5F6DF0 = (DWORD)T4M::GetAddress("Info_ValueForKey");
-	a_5FDBF0 = (DWORD)T4M::GetAddress("DB_WaitForPendingLoads");
 	a_62F250 = (DWORD)T4M::GetAddress("SV_DropClient");
 	a_62F500 = (DWORD)T4M::GetAddress("SV_SendClientGameState");
 	a_6311E0 = (DWORD)T4M::GetAddress("SV_SetConfigstrings");
@@ -1638,9 +1574,9 @@ static void ResolveCsAddrs()
 	a_633FA0 = (DWORD)T4M::GetAddress("SV_SendServerCommand");
 	a_638520 = (DWORD)T4M::GetAddress("SV_WritePendingReliable");
 	a_6393F0 = (DWORD)T4M::GetAddress("SV_Netchan_Transmit");
-	a_639910 = (DWORD)T4M::GetAddress("sub_639910");
-	a_642A60 = (DWORD)T4M::GetAddress("sub_642A60");
-	a_64C890 = (DWORD)T4M::GetAddress("sub_64C890");
+	gs_snapshot = (GsSnapshot_t)T4M::GetAddress("sub_639910");
+	pg_642A60 = (pg_void0_t)T4M::GetAddress("sub_642A60");
+	pg_64C890 = (pg_void0_t)T4M::GetAddress("sub_64C890");
 	a_64CAE0 = (DWORD)T4M::GetAddress("CL_ParseGamestate");
 	a_674C70 = (DWORD)T4M::GetAddress("MSG_Init");
 	a_674D00 = (DWORD)T4M::GetAddress("MSG_WriteBits");
@@ -1656,47 +1592,44 @@ static void ResolveCsAddrs()
 	a_6772E0 = (DWORD)T4M::GetAddress("ReadDeltaBaseline");
 	a_678330 = (DWORD)T4M::GetAddress("ResetReliableFragBuffers");
 	a_67AB80 = (DWORD)T4M::GetAddress("MSG_WriteDeltaStruct");
-	a_68DE50 = (DWORD)T4M::GetAddress("SL_GetStringOfSize");
-	a_68E390 = (DWORD)T4M::GetAddress("SL_GetLowercaseStringOfLen");
+	SL_Intern_Low = (SL_Intern_t)T4M::GetAddress("SL_GetStringOfSize");
+	SL_Intern_High = (SL_Intern_t)T4M::GetAddress("SL_GetLowercaseStringOfLen");
 	a_68E680 = (DWORD)T4M::GetAddress("SL_RemoveRefToString");
 	a_6AF000 = (DWORD)T4M::GetAddress("sub_6AF000");
-	a_6AF0F0 = (DWORD)T4M::GetAddress("sub_6AF0F0");
-	a_6F6CE0 = (DWORD)T4M::GetAddress("Sys_SyncDatabase");
-	a_6F6D60 = (DWORD)T4M::GetAddress("Sys_WakeDatabase");
-	a_7AA926 = (DWORD)T4M::GetAddress("sprintf");
-	a_7AA9C0 = (DWORD)T4M::GetAddress("I_strncpyz");
-	a_7AB559 = (DWORD)T4M::GetAddress("Com_sscanf");
-	a_7AFF40 = (DWORD)T4M::GetAddress("Mem_Memset");
-	a_7AFFC0 = (DWORD)T4M::GetAddress("Sys_MemCpy");
+	pg_6AF0F0 = (pg_arg1_t)T4M::GetAddress("sub_6AF0F0");
+	cs_sprintf = (ComSprintf_t)T4M::GetAddress("sprintf");
+	cs_strncpyz = (StrncpyZ_t)T4M::GetAddress("I_strncpyz");
+	gs_memset = (GsMemset_t)T4M::GetAddress("Mem_Memset");
+	pg_memset = (pg_memset_t)T4M::GetAddress("Mem_Memset");
+	pg_memcpy = (pg_memcpy_t)T4M::GetAddress("Sys_MemCpy");
 	a_7EB000 = (DWORD)T4M::GetAddress("dword_7EB000");
-	a_84F750 = (DWORD)T4M::GetAddress("unk_84F750");
-	a_8875C8 = (DWORD)T4M::GetAddress("dword_8875C8");
-	a_8875F0 = (DWORD)T4M::GetAddress("dword_8875F0");
-	a_887664 = (DWORD)T4M::GetAddress("unk_887664");
-	a_88951C = (DWORD)T4M::GetAddress("unk_88951C");
-	a_88C220 = (DWORD)T4M::GetAddress("unk_88C220");
-	a_88C244 = (DWORD)T4M::GetAddress("unk_88C244");
-	a_8D55F8 = (DWORD)T4M::GetAddress("dword_8D55F8");
+	STR_TOO_MANY_CS = (const char*)T4M::GetAddress("unk_84F750");
+	ERR_BAD_INDEX = (const char*)T4M::GetAddress("dword_8875C8");
+	ERR_BIG_BUNDLE = (const char*)T4M::GetAddress("dword_8875F0");
+	cs_assertToken = (const char*)T4M::GetAddress("unk_887664");
+	STR_CS_OVERFLOW = (const char*)T4M::GetAddress("unk_88951C");
+	STR_BAD_ENT = (const char*)T4M::GetAddress("unk_88C220");
+	STR_BAD_CLI = (const char*)T4M::GetAddress("unk_88C244");
+	cs_staticTable = (unsigned char*)T4M::GetAddress("dword_8D55F8");
+	g_csAuto = (rec_csAuto_t*)T4M::GetAddress("dword_8D55F8");
 	a_18FABD0 = (DWORD)T4M::GetAddress("dword_18FABD0");
 	a_190E0A8 = (DWORD)T4M::GetAddress("dword_190E0A8");
-	a_1F552C4 = (DWORD)T4M::GetAddress("cl_paused");
-	a_1F552DC = (DWORD)T4M::GetAddress("sv_running");
-	a_1F552FC = (DWORD)T4M::GetAddress("dvar_singlethreadRender");
-	a_2122AFC = (DWORD)T4M::GetAddress("dword_2122AFC");
-	a_2122B00 = (DWORD)T4M::GetAddress("fs_game");
-	a_212B2F8 = (DWORD)T4M::GetAddress("dword_212B2F8");
-	a_234FC08 = (DWORD)T4M::GetAddress("dword_234FC08");
-	a_234FC14 = (DWORD)T4M::GetAddress("dword_234FC14");
-	a_234FC20 = (DWORD)T4M::GetAddress("dword_234FC20");
+	p_1F552C4 = (int*)T4M::GetAddress("cl_paused");
+	p_1F552DC = (char**)T4M::GetAddress("sv_running");
+	p_2122AFC = (int*)T4M::GetAddress("dword_2122AFC");
+	cs_hunkBase = (unsigned char*)T4M::GetAddress("dword_212B2F8");
+	p_sv_state = (int*)T4M::GetAddress("dword_234FC08");
+	p_sv_running = (int*)T4M::GetAddress("dword_234FC14");
+	cs_dword_234FC20 = (int*)T4M::GetAddress("dword_234FC20");
 	a_2350424 = (DWORD)T4M::GetAddress("word_2350424");
 	a_2350426 = (DWORD)T4M::GetAddress("word_2350426");
 	a_2350F42 = (DWORD)T4M::GetAddress("word_2350F42");
-	a_2351C10 = (DWORD)T4M::GetAddress("unk_2351C10");
-	a_23BCC08 = (DWORD)T4M::GetAddress("unk_23BCC08");
-	a_23BCC10 = (DWORD)T4M::GetAddress("unk_23BCC10");
-	a_23D4AE4 = (DWORD)T4M::GetAddress("dword_23D4AE4");
-	a_23D5C30 = (DWORD)T4M::GetAddress("dword_23D5C30");
-	a_2547090 = (DWORD)T4M::GetAddress("dword_2547090");
+	cs_boundsNodes = (unsigned char*)T4M::GetAddress("unk_2351C10");
+	cs_entBaselines = (unsigned char*)T4M::GetAddress("unk_23BCC08");
+	cs_boundsNodesEnd = (unsigned char*)T4M::GetAddress("unk_23BCC10");
+	cs_entBaselineCount = (int*)T4M::GetAddress("dword_23D4AE4");
+	p_23D5C30 = (unsigned char**)T4M::GetAddress("dword_23D5C30");
+	g_clientsBase = (unsigned char*)T4M::GetAddress("dword_2547090");
 	a_26AA55C = (DWORD)T4M::GetAddress("dword_26AA55C");
 	a_26AA56C = (DWORD)T4M::GetAddress("dword_26AA56C");
 	a_2CAD98C = (DWORD)T4M::GetAddress("dword_2CAD98C");
@@ -1710,27 +1643,26 @@ static void ResolveCsAddrs()
 	a_300DCA8 = (DWORD)T4M::GetAddress("dword_300DCA8");
 	a_300DCAC = (DWORD)T4M::GetAddress("dword_300DCAC");
 	a_300DCB0 = (DWORD)T4M::GetAddress("dword_300DCB0");
-	a_300FFEC = (DWORD)T4M::GetAddress("dword_300FFEC");
-	a_3010014 = (DWORD)T4M::GetAddress("dword_3010014");
-	a_301011C = (DWORD)T4M::GetAddress("dword_301011C");
-	a_302012C = (DWORD)T4M::GetAddress("dword_302012C");
-	a_3058528 = (DWORD)T4M::GetAddress("byte_3058528");
+	p_300FFEC = (int*)T4M::GetAddress("dword_300FFEC");
+	p_3010014 = (int*)T4M::GetAddress("dword_3010014");
+	p_301011C = (int*)T4M::GetAddress("dword_301011C");
+	p_302012C = (int*)T4M::GetAddress("dword_302012C");
+	G_3058528 = (void*)T4M::GetAddress("byte_3058528");
 	a_305A63C = (DWORD)T4M::GetAddress("dword_305A63C");
 	a_305BC74 = (DWORD)T4M::GetAddress("dword_305BC74");
 	a_305C474 = (DWORD)T4M::GetAddress("dword_305C474");
 	a_305D5FC = (DWORD)T4M::GetAddress("byte_305D5FC");
 	a_307D5FC = (DWORD)T4M::GetAddress("dword_307D5FC");
-	a_307D6E0 = (DWORD)T4M::GetAddress("dword_307D6E0");
-	a_3122688 = (DWORD)T4M::GetAddress("unk_3122688");
-	a_3168570 = (DWORD)T4M::GetAddress("unk_3168570");
+	p_307D6E0 = (int*)T4M::GetAddress("dword_307D6E0");
+	BASELINE_ENTITY_TABLE = (char*)T4M::GetAddress("unk_3122688");
+	BASELINE_CLIENT_TABLE = (char*)T4M::GetAddress("unk_3168570");
 	a_34651D8 = (DWORD)T4M::GetAddress("dword_34651D8");
 	a_3467010 = (DWORD)T4M::GetAddress("dword_3467010");
-	a_3702390 = (DWORD)T4M::GetAddress("gScrMemTreePub");
-	a_46E5054 = (DWORD)T4M::GetAddress("dword_46E5054");
-	a_48AE508 = (DWORD)T4M::GetAddress("dword_48AE508");
-	a_48AE50C = (DWORD)T4M::GetAddress("dword_48AE50C");
-	a_48AE510 = (DWORD)T4M::GetAddress("dword_48AE510");
-	a_4DA997C = (DWORD)T4M::GetAddress("dword_4DA997C");
+	p_46E5054 = (unsigned int*)T4M::GetAddress("dword_46E5054");
+	G_48AE508 = (void*)T4M::GetAddress("dword_48AE508");
+	G_48AE50C = (void*)T4M::GetAddress("dword_48AE50C");
+	G_48AE510 = (void*)T4M::GetAddress("dword_48AE510");
+	p_4DA997C = (int*)T4M::GetAddress("dword_4DA997C");
 	g_csTable = (unsigned short*)a_2350426;
 	g_csSentinel = (unsigned short*)a_2350424;
 	g_clientCsOffsets = (int*)a_305A63C;
