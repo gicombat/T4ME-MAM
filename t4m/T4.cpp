@@ -807,7 +807,7 @@ static void* DB_AllocAssetHeader(int type)
 			T4M::DB_EnumAssetPoolB(type, DB_PoolDumpAsset_cb, &type, 1);
 	}
 
-	T4::engine::DB_FatalError(1, "Exceeded limit of %d '%s' assets.\n",
+	T4::engine::Com_Error(T4::engine::ERR_DROP, "Exceeded limit of %d '%s' assets.\n",
 		T4::g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
 
 	return nullptr;
@@ -828,7 +828,7 @@ XAssetEntry* T4_Reconstructed::DB_AllocXAssetEntry(int type, unsigned char zoneI
 	if (!head)
 	{
 		InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount);
-		T4::engine::DB_FatalError(1, "Could not allocate asset - increase XASSET_SIZE or XASSET_ENTRY_SIZE.\n");
+		T4::engine::Com_Error(T4::engine::ERR_DROP, "Could not allocate asset - increase XASSET_SIZE or XASSET_ENTRY_SIZE.\n");
 		return nullptr;
 	}
 
@@ -1284,14 +1284,14 @@ T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntry(int type, const ch
 		InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount);
 		if (type == 0xB || type == 0xC)
 		{
-			T4::engine::DB_FatalError(1,
+			T4::engine::Com_Error(T4::engine::ERR_DROP,
 				"Couldn't find the bsp for this map.  "
 				"Please build the fast file associated with %s and try again.",
 				name);
 		}
 		else
 		{
-			T4::engine::DB_FatalError(1,
+			T4::engine::Com_Error(T4::engine::ERR_DROP,
 				"Could not load default asset '%s' for asset type '%s'.\n"
 				"Tried to load asset '%s'.",
 				T4::DB_XAssetDefaultNames[type],
@@ -1432,7 +1432,7 @@ void T4_Reconstructed::DB_PushCopyInfo(T4::engine::XAssetEntry* entry)
 	{
 		// Vanilla: push "g_copyInfo exceeded" string, call sub_5FE8C0 (noreturn).
 		// Com_Error is the engine's noreturn fatal path and matches sub_5FE8C0's role.
-		T4::Com_Error(1, "g_copyInfo exceeded");
+		T4::Com_Error(T4::engine::ERR_DROP, "g_copyInfo exceeded");
 	}
 	T4::g_copyInfo[count] = entry;
 	*T4::g_copyInfoCount = count + 1;
@@ -1625,7 +1625,7 @@ T4::engine::XAssetEntry* T4_Reconstructed::DB_LinkXAssetEntryOverrideAware(T4::e
 		if (hasEmptyDefault && type != 0x20 && type != 0x10)
 		{
 			InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount);
-			T4::engine::DB_FatalError(1,
+			T4::engine::Com_Error(T4::engine::ERR_DROP,
 				"Attempting to override asset '%s' from '%s' with '%s'",
 				name,
 				T4::g_zoneFileNames[existing->zoneIndex].name,

@@ -3994,5 +3994,23 @@ namespace T4
 		//   0x050 = ZONE_POST_LOAD | ZONE_UI
 		//   0x172 = ZONE_MAP_PATCH | ZONE_POST_LOAD | ZONE_MAP_LOAD | ZONE_UI | ZONE_LOCALIZED
 		//   0x3000 = ZONE_T4M_ALL  0x1000 | 0x2000
-	} 
+
+		// (MovieToPlayScriptOp — opcodes video/cin_levels.txt — déjà défini plus haut dans ce fichier.)
+
+		// playbackFlags des cinématiques (sub_6EBA90 R_Cinematic_StartPlayback,
+		// sub_6EB5C0 R_Cinematic_BinkOpen, sub_6EB3B0 R_Cinematic_BinkOpenPath).
+		// Pas d'enum nommé en CoD4 — bits décodés depuis les commandes WaW
+		// (cinematicingame*) + la logique BinkOpenPath. ✅=confirmé, ~=inféré.
+		enum CinematicPlaybackFlags : unsigned int
+		{
+			CINEMATIC_PLAYBACK_SYNC          = 0x01, // ✅ cinematicingamesync, loadscreen (saute le handshake thread)
+			CINEMATIC_PLAYBACK_LOOP          = 0x02, // ✅ cinematicingameloop*
+			CINEMATIC_PLAYBACK_UNK_0x04      = 0x04, // ~ toujours apparié à SYNC (sync=5, loadscreen=5)
+			CINEMATIC_PLAYBACK_FROM_MEMORY   = 0x08, // ✅ resident / fromfastfile (chemin mémoire de BinkOpenPath)
+			CINEMATIC_PLAYBACK_RESIDENT      = 0x10, // ~ resident & fromfastfile (hunk persistant)
+			CINEMATIC_PLAYBACK_FROM_FASTFILE = 0x20, // ✅ rawfile .ff (impose FROM_MEMORY)
+			CINEMATIC_PLAYBACK_UI            = 0x40, // ~ commandes console cinematic/uicinematic (non-ingame)
+			CINEMATIC_PLAYBACK_UNK_0x80      = 0x80, // ~ console 'cinematic <f> 3'
+		};
+	}
 } // namespace T4::engine

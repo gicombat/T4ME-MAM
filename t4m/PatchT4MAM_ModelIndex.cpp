@@ -35,14 +35,13 @@ namespace ModelIndexEngine
     typedef unsigned int (__cdecl* SL_FindLowercaseString_t)(const char* str, int inst);     // sub_68DD50
     typedef char*        (__cdecl* Com_FormatMsg_t)         (const char* fmt, ...);          // sub_5F6D80
     typedef void         (__cdecl* Strncpyz_t)              (char* dst, const char* src, int size); // sub_7AA9C0
-    typedef void         (__cdecl* Com_Error_t)             (int code, const char* fmt, ...);// sub_59AC50
+    // Com_Error (sub_59AC50) = central T4::engine::Com_Error symbol — not redeclared here.
     typedef void*        (__cdecl* XModelFinder_t)          (const char* name, void* cb1, void* cb2); // sub_618EB0/618E20
     typedef void         (__cdecl* SV_SetConfigstring_t)    (const void* pairs, int count);  // sub_6311E0
 
     static const SL_FindLowercaseString_t SL_FindLowercaseString = (SL_FindLowercaseString_t)0x0068DD50;
     static const Com_FormatMsg_t          Com_FormatMsg          = (Com_FormatMsg_t)         0x005F6D80;
     static const Strncpyz_t               Strncpyz               = (Strncpyz_t)              0x007AA9C0;
-    static const Com_Error_t              Com_Error              = (Com_Error_t)             0x0059AC50;
     static const XModelFinder_t           XModelFinder_Sync      = (XModelFinder_t)          0x00618EB0;
     static const XModelFinder_t           XModelFinder_Deferred  = (XModelFinder_t)          0x00618E20;
     static const SV_SetConfigstring_t     SV_SetConfigstring     = (SV_SetConfigstring_t)    0x006311E0;
@@ -129,7 +128,7 @@ extern "C" int __cdecl T4M_G_ModelIndex_recon(const char* name)
     {
         T4::engine::Com_Printf(0,
             "^1[T4M] G_ModelIndex OVERFLOW at %d models, requesting '%s'\n", esi, name);
-        Com_Error(1, kOverflowMsg);
+        T4::engine::Com_Error(T4::engine::ERR_DROP, kOverflowMsg);
     }
 
     XModelFinder_t finder = (g_dvar1F552FC[0][0x10] != 0) ? XModelFinder_Sync

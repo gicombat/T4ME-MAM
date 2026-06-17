@@ -176,7 +176,6 @@ extern "C"
 	{
 		static FARPROC function = 0;
 
-		//IsUsingVulkan = SDLLP::UseVulkan();
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -194,7 +193,7 @@ extern "C"
 		void D3DPERF_EndEvent()
 	{
 		static FARPROC function = 0;
-		//IsUsingVulkan = SDLLP::UseVulkan();
+
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");
@@ -212,7 +211,7 @@ extern "C"
 		IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion)
 	{
 		static FARPROC function = 0;
-		//IsUsingVulkan = SDLLP::UseVulkan();
+
 		if (IsUsingVulkan)
 		{
 			if (!SDLLP::IsLibraryLoaded("dxvk.dll"))  SDLLP::LoadLibraryLocal("dxvk.dll");

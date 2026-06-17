@@ -112,8 +112,6 @@ namespace T4
 		// Should be in db.hpp later
 		typedef void(__cdecl* DB_PrintError_t)(int, const char*, ...);
 		WEAK DB_PrintError_t DB_PrintError = nullptr;
-		typedef void(__cdecl* DB_FatalError_t)(int, const char*, ...);
-		WEAK DB_FatalError_t DB_FatalError = nullptr;
 
 	}
 } // namespace T4
@@ -152,9 +150,8 @@ namespace T4M
 	{
 		T4::engine::ConDrawInput_TextLimitChars_asm = (void*)T4M::GetAddress("ConDrawInput_TextLimitChars");
 
-		// DB error fn-pointers (variadic — called through the pointer with varargs)
+		// DB error fn-pointer (variadic — called through the pointer with varargs)
 		T4::engine::DB_PrintError = (T4::engine::DB_PrintError_t)T4M::GetAddress("DB_PrintError");
-		T4::engine::DB_FatalError = (T4::engine::DB_FatalError_t)T4M::GetAddress("DB_FatalError");
 		// resolve vanilla call targets for the naked shims (variant-aware)
 		T4::engine::p_IsWeaponInputBlocked = (void*)T4M::GetAddress("IsWeaponInputBlocked");
 		T4::engine::p_PM_Weapon_AnimCmdState_Resync = (void*)T4M::GetAddress("PM_Weapon_AnimCmdState_Resync");

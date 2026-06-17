@@ -51,7 +51,7 @@
 namespace Engine
 {
 	// ---- Com / Sys / Cbuf --------------------------------------------------
-	typedef void(__cdecl* Com_Error_t)         (int code, const char* fmt, ...);
+	// Com_Error is the central T4::engine::Com_Error symbol (sub_59AC50) — not redeclared here.
 	typedef void(__cdecl* Com_PrintError_t)    (int channel, const char* fmt, ...); // sub_59A440
 	typedef void(__cdecl* Com_Frame_EventLoop_t)(int run);                           // sub_59B0D0
 	typedef void(__cdecl* Com_Fatal_t)         (const char* msg);                   // sub_5FE8C0
@@ -120,7 +120,6 @@ namespace Engine
 	typedef void(__cdecl* Com_InitSessionFinalize_t)(void);                          // sub_46FA40
 
 	// ---- Resolved pointers -------------------------------------------------
-	static const Com_Error_t                   Com_Error = (Com_Error_t)0x0059AC50;
 	static const Com_PrintError_t              Com_PrintError = (Com_PrintError_t)0x0059A440;
 	static const Com_Frame_EventLoop_t         Com_EnqueueEvent = (Com_Frame_EventLoop_t)0x0059B0D0;
 	static const Com_Fatal_t                   Com_Fatal = (Com_Fatal_t)0x005FE8C0;
@@ -319,7 +318,7 @@ extern "C" void __cdecl Material_InitDefault()
 		*e->destPtr = mat;
 
 		if (*e->destPtr == nullptr)
-			Engine::Com_Error(0, "Could not find material '%s'", e->name);
+			T4::engine::Com_Error(T4::engine::ERR_FATAL, "Could not find material '%s'", e->name);
 	}
 }
 
@@ -753,7 +752,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 
 	T4::engine::Com_Printf(8, "Trying SMP acceleration...\n");
 	if (!Engine::Sys_SpawnRenderThread())
-		Engine::Com_Error(0, "Failed to create render thread");
+		T4::engine::Com_Error(T4::engine::ERR_FATAL, "Failed to create render thread");
 
 	Engine::UI_LoadCinematic();                           // sub_71EFC0
 	T4::engine::Com_Printf(8, "...succeeded.\n");

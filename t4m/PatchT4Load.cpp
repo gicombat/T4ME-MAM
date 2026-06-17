@@ -43,7 +43,7 @@ namespace T4M
 
 		if (found != newCount) 
 		{
-			T4::engine::Com_Error(0, "[T4M] - free does not match allocation");
+			T4::engine::Com_Error(T4::engine::ERR_FATAL, "[T4M] - free does not match allocation");
 			return;
 		}
 

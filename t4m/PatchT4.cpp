@@ -34,6 +34,7 @@ void PatchT4MAM_WeaponState();
 void PatchT4MAM_ModelIndex();
 void PatchT4MAM_ConfigStrings();
 void PatchT4MAM_Loopback();
+void PatchT4MAM_Cinematic();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -81,6 +82,7 @@ void PatchT4()
 	PatchT4MAM_ModelIndex(); // faithful G_ModelIndex recon + detour (instrumented)
 	PatchT4MAM_ConfigStrings(); // CS subsystem reconstruction (detours gated OFF until flip)
 	PatchT4MAM_Loopback(); // enlarge SP loopback packet queue (16 -> 128 slots) for >520-model gamestates
+	PatchT4MAM_Cinematic(); 
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

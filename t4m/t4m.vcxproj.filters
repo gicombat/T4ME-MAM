@@ -81,6 +81,9 @@
     <ClCompile Include="PatchT4MAM_Loopback.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_Cinematic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LAAPatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

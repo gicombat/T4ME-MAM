@@ -291,6 +291,10 @@ namespace T4_Reconstructed
 		void             DB_FlushCopyInfoQueue();
 		// @faithful — sub_48F260 (DB worker queue dispatch + "_patch → default" fallback)
 		void             DB_ProcessZoneQueue();
+
+		// @faithful — sub_6410F0 (VM video/cin_levels.txt : mapname → nom de .bik)
+		void             CL_MapLoading_CalcMovieToPlay(const char* buffer, const char* inMapName, char* outMovieName);
+		// @faithful — sub_6EB5C0 (construit le chemin du .bik ; bridge __usercall = T4M::R_Cinematic_BinkOpen_Wrapper)
 	} // extern "C"
 } // namespace T4_Reconstructed
 
@@ -348,6 +352,7 @@ namespace T4M
 		void DB_FindXAssetByName_Wrapper();      // → T4_Reconstructed::DB_FindXAssetByName
 		void DB_LinkXAssetEntry_Wrapper();       // → T4_Reconstructed::DB_LinkXAssetEntry
 		void Key_FormatIntroSeconds_Wrapper();   // → T4M::Key_FormatIntroSeconds
+		void R_Cinematic_BinkOpen_Wrapper();     // → T4_Reconstructed::R_Cinematic_BinkOpen (sub_6EB5C0, __usercall esi/edi)
 
 		// ── Project C++ helpers (unprefixed in the legacy convention) ──────────
 		int           __cdecl Scr_GetNumParam(scriptInstance_t inst);
@@ -357,6 +362,8 @@ namespace T4M
 		bool          Com_SessionMode_IsZombiesGame();
 		bool          IsReflectionMode();
 		void          DoReturn();
+
+		char          R_Cinematic_BinkOpen(const char* filename, char* errText, unsigned int playbackFlags);
 	} // extern "C"
 
 	// ─── Inline helpers (non extern-C; inline mangling OK) ─────────────────────

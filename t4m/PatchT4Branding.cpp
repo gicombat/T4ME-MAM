@@ -13,7 +13,6 @@
 
 const char* SetConsoleVersion()
 {
-	//IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
@@ -34,7 +33,6 @@ const char* SetConsoleVersion()
 
 const char* SetShortVersion()
 {
-//	IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
@@ -64,7 +62,6 @@ void PatchT4_Branding()
 
 	nop(T4M::GetAddress("pc_newversionavailable_check"), 5); // disable pc_newversionavailable check
 
-	//IsUsingVulkan = SDLLP::UseVulkan();
 	if (IsUsingVulkan == 1)
 	{
 		#ifdef IS_BETA
