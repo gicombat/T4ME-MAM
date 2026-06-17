@@ -9,6 +9,8 @@ Modders can view the full original release of T4M [here](https://www.ugx-mods.co
 
 ## New Features/Fixes
 
+- Prevent breaking sp_tool.exe and mp_tool.exe when compiling bsp maps (MAM-1.0)
+- Added support for .bik video in mods folder (MAM-1.0)
 - Added support for German Steam .exe (MAM-1.0)
 - Increased precached model limit (G_ModelCount) from 512 to 1024 (MAM-1.0)
 - Backported SetLowReady function from CoD BO (MAM-1.0)
