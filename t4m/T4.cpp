@@ -11,8 +11,10 @@
 #include "StdInc.h"
 #include "T4.h"
 // timeGetTime (used by T4_Reconstructed::DB_FindXAssetHeader, matches vanilla sub_48DA30).
-#include "Timeapi.h" 
+#include "Timeapi.h"
 #pragma comment(lib, "winmm.lib")
+#include <intrin.h>            // _ReturnAddress (garbage-xanim caller tracer)
+#pragma intrinsic(_ReturnAddress)
 
 bool IsUsingVulkan;
 dvar_t* censored_ver;
@@ -64,7 +66,7 @@ namespace Dvars
 dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = T4M::GetAddress("Dvar_RegisterBool");
-	dvar_t* ret;
+	dvar_t* retv;
 	__asm
 	{
 		push description
@@ -73,9 +75,9 @@ dvar_t* T4::dvar::Dvar_RegisterBool(bool value, const char* dvarName, int flags,
 		mov edi, dvarName
 		call func
 		add esp, 8
-		mov ret, eax
+		mov retv, eax
 	}
-	return ret;
+	return retv;
 }
 
 //typedef dvar_t* (__fastcall* DvarRegisterFloatFunc)(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description);
@@ -86,7 +88,7 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 {
 
 	DWORD func = T4M::GetAddress("Dvar_RegisterFloat");
-	dvar_t* ret;
+	dvar_t* retv;
 
 	__asm
 	{
@@ -101,17 +103,17 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 		mov edi, dvarName
 		call func
 		add esp, 0x10
-		mov ret, eax
+		mov retv, eax
 	}
 
-	return ret;
+	return retv;
 }
 
 // @wrapper — asm usercall to sub_5EF150
 dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description)
 {
 	DWORD func = T4M::GetAddress("Dvar_RegisterEnum");
-	dvar_t* ret;
+	dvar_t* retv;
 
 	__asm
 	{
@@ -122,10 +124,10 @@ dvar_t* T4::dvar::Dvar_RegisterEnum(const char** valueList, int defaultIndex, co
 		mov ecx, valueList;
 		call func;
 		add esp, 0xC;
-		mov ret, eax;
+		mov retv, eax;
 	}
 
-	return ret;
+	return retv;
 }
 
 // @wrapper — asm usercall to sub_6E8DA0
@@ -796,7 +798,7 @@ static void* DB_AllocAssetHeader(int type)
 
 	InterlockedDecrement((LONG*)(int*)T4::engine::g_dbWriterCount);
 
-	T4::engine::DB_PrintError(1, "Exceeded limit of %d '%s' assets.\n",
+	T4::engine::Com_PrintError(1, "Exceeded limit of %d '%s' assets.\n",
 		T4::g_poolSize[type], T4M::DB_GetXAssetTypeName(type));
 
 	{
@@ -970,6 +972,81 @@ static DWORD* DB_TlsCachedTidSlot()
 }
 
 // =====================================================================
+// T4M DEBUG (temporary) — garbage xanim name tracer.
+//
+// Symptom: "Could not load xanim \"<garbage bytes>\"" (DB_WarnMissingAsset /
+// vanilla PrintWaitedError). The garbage is the `name` arg flowing straight
+// through DB_FindXAssetHeader from its caller — i.e. some caller hands us a
+// pointer into non-string memory (corrupt WeaponDef anim slot, OOB array,
+// freed buffer, etc.). We can't see who from the message alone.
+//
+// This logs the immediate CALLER return address (via _ReturnAddress(), valid
+// through the USE_JUMP detour since no extra frame is pushed) the first time
+// a garbage xanim name is seen per caller. Look the printed VA up in
+// CoDWaW LanFixed.exe.asm to identify the requesting function.
+//
+// Observation only — does not alter DB_FindXAssetHeader behaviour.
+// Set to 0 to compile it out once the culprit is found.
+// =====================================================================
+#define T4M_TRACE_GARBAGE_XANIM 1
+#if T4M_TRACE_GARBAGE_XANIM
+static void T4M_TraceGarbageAssetName(int type, const char* name, void* caller)
+{
+	if (type != 4 /* ASSET_TYPE_XANIM */ || !name)
+		return;
+
+	// Scan the first 64 bytes: a valid xanim name is printable ASCII + NUL.
+	int  len = 0;
+	bool garbage = false;
+	for (; len < 64; ++len)
+	{
+		unsigned char c = (unsigned char)name[len];
+		if (c == 0) break;
+		if (c < 0x20 || c > 0x7E) { garbage = true; break; }
+	}
+	if (len == 0 || (len == 64 && name[63] != 0))
+		garbage = true;      // empty or unterminated/oversized → also suspicious
+	if (!garbage)
+		return;
+
+	// Dedupe by caller VA; cap total prints so a tight loop can't flood.
+	static void* seen[32] = { 0 };
+	static int   seenCount = 0;
+	static int   totalPrinted = 0;
+	if (totalPrinted >= 200)
+		return;
+	bool isNew = true;
+	for (int i = 0; i < seenCount; ++i)
+		if (seen[i] == caller) { isNew = false; break; }
+	if (!isNew && totalPrinted >= 60)
+		return;              // this caller already reported enough
+	if (isNew && seenCount < 32)
+		seen[seenCount++] = caller;
+	++totalPrinted;
+
+	// Hand-rolled hex/ascii dump (no CRT dependency).
+	static const char hexd[] = "0123456789ABCDEF";
+	char hex[3 * 32 + 1]; int hp = 0;
+	char asc[32 + 1];     int ap = 0;
+	int shown = (len < 32) ? len : 32;
+	for (int i = 0; i < shown; ++i)
+	{
+		unsigned char c = (unsigned char)name[i];
+		hex[hp++] = hexd[c >> 4];
+		hex[hp++] = hexd[c & 0xF];
+		hex[hp++] = ' ';
+		asc[ap++] = (c >= 0x20 && c <= 0x7E) ? (char)c : '.';
+	}
+	hex[hp] = 0;
+	asc[ap] = 0;
+
+	T4::engine::Com_Printf(0,
+		"[T4M xanim-trace] GARBAGE xanim name: caller=0x%08X namePtr=0x%08X len=%d ascii=\"%s\" hex=[%s]\n",
+		(unsigned)(uintptr_t)caller, (unsigned)(uintptr_t)name, len, asc, hex);
+}
+#endif // T4M_TRACE_GARBAGE_XANIM
+
+// =====================================================================
 // T4_Reconstructed::DB_FindXAssetHeader — sub_48DA30
 // @faithful (full reconstruction).
 //
@@ -1001,6 +1078,13 @@ void* T4_Reconstructed::DB_FindXAssetHeader(int type, const char* name, bool use
 	// /GS cookie is corrupted → STATUS_STACK_BUFFER_OVERRUN on return.
 	char  sub5FEC60Buf[32] = { 0 };
 	XAssetEntry* entry = nullptr;
+
+#if T4M_TRACE_GARBAGE_XANIM
+	// Capture the immediate caller BEFORE any other call clobbers nothing
+	// material; _ReturnAddress() reads the saved return slot (the real caller
+	// even through the USE_JUMP detour). Cheap no-op for non-xanim types.
+	T4M_TraceGarbageAssetName(type, name, _ReturnAddress());
+#endif
 
 loc_48DA44:
 	// Reader acquire: inc reader count, then spin while writer count != 0.

@@ -39,29 +39,33 @@ namespace ModelIndexEngine
     typedef void*        (__cdecl* XModelFinder_t)          (const char* name, void* cb1, void* cb2); // sub_618EB0/618E20
     typedef void         (__cdecl* SV_SetConfigstring_t)    (const void* pairs, int count);  // sub_6311E0
 
-    static const SL_FindLowercaseString_t SL_FindLowercaseString = (SL_FindLowercaseString_t)0x0068DD50;
-    static const Com_FormatMsg_t          Com_FormatMsg          = (Com_FormatMsg_t)         0x005F6D80;
-    static const Strncpyz_t               Strncpyz               = (Strncpyz_t)              0x007AA9C0;
-    static const XModelFinder_t           XModelFinder_Sync      = (XModelFinder_t)          0x00618EB0;
-    static const XModelFinder_t           XModelFinder_Deferred  = (XModelFinder_t)          0x00618E20;
-    static const SV_SetConfigstring_t     SV_SetConfigstring     = (SV_SetConfigstring_t)    0x006311E0;
+    // All resolved at runtime in PatchT4MAM_ModelIndex() (variant-aware; avoids static-init
+    // before the AddrMap is loaded). CSV keys noted per line.
+    static SL_FindLowercaseString_t SL_FindLowercaseString = nullptr; // SL_FindLowercaseString (sub_68DD50)
+    static Com_FormatMsg_t          Com_FormatMsg          = nullptr; // Com_FormatMsg (sub_5F6D80)
+    static Strncpyz_t               Strncpyz               = nullptr; // I_strncpyz (sub_7AA9C0)
+    static XModelFinder_t           XModelFinder_Sync      = nullptr; // sub_618EB0
+    static XModelFinder_t           XModelFinder_Deferred  = nullptr; // sub_618E20
+    static SV_SetConfigstring_t     SV_SetConfigstring     = nullptr; // SV_SetConfigstrings (sub_6311E0)
 
-    static unsigned short* const g_scrConst0    = (unsigned short*)0x01F33B90; // empty-string id marker
-    static int*            const g_precacheOpen = (int*)           0x018F6DB8; // precache window flag
-    static unsigned char** const g_dvar1F552FC  = (unsigned char**)0x01F552FC; // byte[+0x10] selects finder
-    static int*            const g_errBufInited  = (int*)          0x03882B7C;
-    static char*           const g_errBuf        = (char*)         0x03BE1E30;
-    static char*           const g_byte3BE222F   = (char*)         0x03BE222F;
-    static char*           const g_byte3BD4716   = (char*)         0x03BD4716;
-    static void* const kFinderCallback = (void*)0x006D9A30;
-    static const char* const kOverflowMsg = (const char*)0x0086874C; // "\x15G_ModelIndex: Overflow"
+    static unsigned short* g_scrConst0    = nullptr; // scr_const (word_1F33B90, empty-string id marker)
+    static int*            g_precacheOpen = nullptr; // dword_18F6DB8 (precache window flag)
+    static unsigned char** g_dvar1F552FC  = nullptr; // dvar_singlethreadRender (dword_1F552FC, byte[+0x10] selects finder)
+    static int*            g_errBufInited  = nullptr; // dword_3882B7C
+    static char*           g_errBuf        = nullptr; // error_message_buff (byte_3BE1E30)
+    static char*           g_byte3BE222F   = nullptr; // byte_3BE222F
+    static char*           g_byte3BD4716   = nullptr; // byte_3BD4716
+    static void*           kFinderCallback = nullptr; // sub_6D9A30
+    static const char*     kOverflowMsg    = nullptr; // unk_86874C ("\x15G_ModelIndex: Overflow")
 }
 
 // --- model-table state, all EXPORTED so the config-string flip (PatchT4MAM_ConfigStrings.cpp) owns
 // the 512->1024 expansion: it repoints g_modelHashTbl at the in-table model block, relocates
 // g_modelPtrTbl to a 1024 buffer (gate CSF_MODEL_1024) and raises g_maxModels. Defaults = vanilla 512.
-extern "C" unsigned short* g_modelHashTbl = (unsigned short*)0x02350F42; // word_2350F42 (-> in-table block by the flip)
-extern "C" void**          g_modelPtrTbl  = (void**)         0x0190E0A8; // dword_190E0A8 (-> 1024 buffer by the flip)
+// Defaults resolved variant-aware in PatchT4MAM_ModelIndex() (runs before the CS flip, which
+// overwrites these when CS_ENABLE). word_2350F42 / dword_190E0A8.
+extern "C" unsigned short* g_modelHashTbl = nullptr; // word_2350F42 (-> in-table block by the flip)
+extern "C" void**          g_modelPtrTbl  = nullptr; // dword_190E0A8 (-> 1024 buffer by the flip)
 extern "C" int             g_maxModels    = VANILLA_MAX_MODELS;
 
 extern "C" int __cdecl T4M_G_ModelIndex_recon(const char* name);
@@ -71,13 +75,13 @@ extern "C" int __cdecl T4M_G_ModelIndex_recon(const char* name);
 // pointer left eax = the function address -> edx = eax*0x18048 -> OOB byte_3882B78[edx] ->
 // access violation @0x693CF9 (observed: EAX=0x693CF0). This thunk passes eax=0 like vanilla;
 // with eax=0 it returns cleanly (no script error) and the model is lazily registered below.
+static void* p_Scr_ErrorInternal = nullptr;   // sub_693CF0 (resolved in PatchT4MAM_ModelIndex)
 static __declspec(naked) void Scr_ErrorInternal_scriptId0()
 {
     __asm
     {
         xor  eax, eax
-        mov  ecx, 0x00693CF0
-        call ecx
+        call p_Scr_ErrorInternal   // sub_693CF0, __usercall eax=scriptId(0)
         retn
     }
 }
@@ -183,7 +187,31 @@ static __declspec(naked) void T4M_G_ModelIndex_usercall()
 // ---------------------------------------------------------------------------
 void PatchT4MAM_ModelIndex()
 {
-    Detours::X86::DetourFunction((uintptr_t)0x0054A480,
+    using namespace ModelIndexEngine;
+
+    // Resolve all vanilla deps variant-aware (runs at PatchT4 time, AddrMap loaded).
+    SL_FindLowercaseString = (SL_FindLowercaseString_t)T4M::GetAddress("SL_FindLowercaseString");
+    Com_FormatMsg          = (Com_FormatMsg_t)         T4M::GetAddress("Com_FormatMsg");
+    Strncpyz               = (Strncpyz_t)              T4M::GetAddress("I_strncpyz");
+    XModelFinder_Sync      = (XModelFinder_t)          T4M::GetAddress("sub_618EB0");
+    XModelFinder_Deferred  = (XModelFinder_t)          T4M::GetAddress("sub_618E20");
+    SV_SetConfigstring     = (SV_SetConfigstring_t)    T4M::GetAddress("SV_SetConfigstrings");
+    g_scrConst0    = (unsigned short*)T4M::GetAddress("scr_const");
+    g_precacheOpen = (int*)           T4M::GetAddress("dword_18F6DB8");
+    g_dvar1F552FC  = (unsigned char**)T4M::GetAddress("dvar_singlethreadRender");
+    g_errBufInited = (int*)           T4M::GetAddress("dword_3882B7C");
+    g_errBuf       = (char*)          T4M::GetAddress("error_message_buff");
+    g_byte3BE222F  = (char*)          T4M::GetAddress("byte_3BE222F");
+    g_byte3BD4716  = (char*)          T4M::GetAddress("byte_3BD4716");
+    kFinderCallback = (void*)         T4M::GetAddress("sub_6D9A30");
+    kOverflowMsg    = (const char*)   T4M::GetAddress("unk_86874C");
+    p_Scr_ErrorInternal = (void*)     T4M::GetAddress("Scr_ErrorInternal");
+
+    // Flip-shared model-table defaults (the CS flip overwrites these later, see file head).
+    g_modelHashTbl = (unsigned short*)T4M::GetAddress("word_2350F42");
+    g_modelPtrTbl  = (void**)         T4M::GetAddress("dword_190E0A8");
+
+    Detours::X86::DetourFunction((uintptr_t)T4M::GetAddress("G_ModelIndex"),
                                  (uintptr_t)&T4M_G_ModelIndex_usercall,
                                  Detours::X86Option::USE_JUMP);
 }

@@ -29,6 +29,132 @@
 #include <cstring>   // strlen / strcmp / memcpy / memset
 #include <cstdio>    // sprintf (flip status string)
 
+// === T4M variant-aware address cache (resolved at runtime in ResolveCsAddrs) ===
+static DWORD a_401000 = 0;
+static DWORD a_45CE1E = 0;
+static DWORD a_474620 = 0;
+static DWORD a_48E560 = 0;
+static DWORD a_496050 = 0;
+static DWORD a_4962F0 = 0;
+static DWORD a_5720F0 = 0;
+static DWORD a_572210 = 0;
+static DWORD a_59A310 = 0;
+static DWORD a_59A380 = 0;
+static DWORD a_59AC50 = 0;
+static DWORD a_59E970 = 0;
+static DWORD a_5A3320 = 0;
+static DWORD a_5DE720 = 0;
+static DWORD a_5E5100 = 0;
+static DWORD a_5EF390 = 0;
+static DWORD a_5F0210 = 0;
+static DWORD a_5F69E0 = 0;
+static DWORD a_5F6D80 = 0;
+static DWORD a_5F6DF0 = 0;
+static DWORD a_5FDBF0 = 0;
+static DWORD a_62F250 = 0;
+static DWORD a_62F500 = 0;
+static DWORD a_6311E0 = 0;
+static DWORD a_6315C0 = 0;
+static DWORD a_631DA0 = 0;
+static DWORD a_63248C = 0;
+static DWORD a_633FA0 = 0;
+static DWORD a_638520 = 0;
+static DWORD a_6393F0 = 0;
+static DWORD a_639910 = 0;
+static DWORD a_642A60 = 0;
+static DWORD a_64C890 = 0;
+static DWORD a_64CAE0 = 0;
+static DWORD a_674C70 = 0;
+static DWORD a_674D00 = 0;
+static DWORD a_674E00 = 0;
+static DWORD a_674F50 = 0;
+static DWORD a_675060 = 0;
+static DWORD a_675430 = 0;
+static DWORD a_675500 = 0;
+static DWORD a_675560 = 0;
+static DWORD a_6757A0 = 0;
+static DWORD a_676690 = 0;
+static DWORD a_676990 = 0;
+static DWORD a_6772E0 = 0;
+static DWORD a_678330 = 0;
+static DWORD a_67AB80 = 0;
+static DWORD a_68DE50 = 0;
+static DWORD a_68E390 = 0;
+static DWORD a_68E680 = 0;
+static DWORD a_6AF000 = 0;
+static DWORD a_6AF0F0 = 0;
+static DWORD a_6F6CE0 = 0;
+static DWORD a_6F6D60 = 0;
+static DWORD a_7AA926 = 0;
+static DWORD a_7AA9C0 = 0;
+static DWORD a_7AB559 = 0;
+static DWORD a_7AFF40 = 0;
+static DWORD a_7AFFC0 = 0;
+static DWORD a_7EB000 = 0;
+static DWORD a_84F750 = 0;
+static DWORD a_8875C8 = 0;
+static DWORD a_8875F0 = 0;
+static DWORD a_887664 = 0;
+static DWORD a_88951C = 0;
+static DWORD a_88C220 = 0;
+static DWORD a_88C244 = 0;
+static DWORD a_8D55F8 = 0;
+static DWORD a_18FABD0 = 0;
+static DWORD a_190E0A8 = 0;
+static DWORD a_1F552C4 = 0;
+static DWORD a_1F552DC = 0;
+static DWORD a_1F552FC = 0;
+static DWORD a_2122AFC = 0;
+static DWORD a_2122B00 = 0;
+static DWORD a_212B2F8 = 0;
+static DWORD a_234FC08 = 0;
+static DWORD a_234FC14 = 0;
+static DWORD a_234FC20 = 0;
+static DWORD a_2350424 = 0;
+static DWORD a_2350426 = 0;
+static DWORD a_2350F42 = 0;
+static DWORD a_2351C10 = 0;
+static DWORD a_23BCC08 = 0;
+static DWORD a_23BCC10 = 0;
+static DWORD a_23D4AE4 = 0;
+static DWORD a_23D5C30 = 0;
+static DWORD a_2547090 = 0;
+static DWORD a_26AA55C = 0;
+static DWORD a_26AA56C = 0;
+static DWORD a_2CAD98C = 0;
+static DWORD a_2CAD990 = 0;
+static DWORD a_2CAD994 = 0;
+static DWORD a_2CAD998 = 0;
+static DWORD a_2FACDF8 = 0;
+static DWORD a_2FCDA04 = 0;
+static DWORD a_300DC9C = 0;
+static DWORD a_300DCA0 = 0;
+static DWORD a_300DCA8 = 0;
+static DWORD a_300DCAC = 0;
+static DWORD a_300DCB0 = 0;
+static DWORD a_300FFEC = 0;
+static DWORD a_3010014 = 0;
+static DWORD a_301011C = 0;
+static DWORD a_302012C = 0;
+static DWORD a_3058528 = 0;
+static DWORD a_305A63C = 0;
+static DWORD a_305BC74 = 0;
+static DWORD a_305C474 = 0;
+static DWORD a_305D5FC = 0;
+static DWORD a_307D5FC = 0;
+static DWORD a_307D6E0 = 0;
+static DWORD a_3122688 = 0;
+static DWORD a_3168570 = 0;
+static DWORD a_34651D8 = 0;
+static DWORD a_3467010 = 0;
+static DWORD a_3702390 = 0;
+static DWORD a_46E5054 = 0;
+static DWORD a_48AE508 = 0;
+static DWORD a_48AE50C = 0;
+static DWORD a_48AE510 = 0;
+static DWORD a_4DA997C = 0;
+
+
 // ============================================================================
 // CS subsystem config — SINGLE master switch. Validated stack = CS_ENABLE 1.
 //   1 = ON  : 5 CS detours + flip stage 2a (relocated 0x1000 table, model block @0xBF0)
@@ -58,17 +184,17 @@
 // La bascule finale ne touchera QUE ces 3 variables + l'allocation des nouvelles
 // tables ; toutes les reconstructions ci-dessous les utilisent.
 // ============================================================================
-extern "C" unsigned short* g_csTable    = (unsigned short*)0x02350426; // word_2350426
-extern "C" unsigned short* g_csSentinel = (unsigned short*)0x02350424; // word_2350424
+extern "C" unsigned short* g_csTable    = nullptr; // word_2350426
+extern "C" unsigned short* g_csSentinel = nullptr; // word_2350424
 extern "C" int             g_maxCS      = 0xBF0;                        // MAX_CONFIGSTRINGS
 // (next to g_csTable / g_csSentinel / g_maxCS, OUTSIDE the namespace)
 // Client-side CS byte-offset store base (dword_305A63C): per-CS offset into the
 // 0x20000 CS blob byte_305D5FC. Made shared so the eventual flip can retarget it.
-extern "C" int* g_clientCsOffsets = (int*)0x0305A63C;          // dword_305A63C
+extern "C" int* g_clientCsOffsets = nullptr;          // dword_305A63C
 // Companion CS-text side-table bases — ALSO relocated by the flip stage 2, so the detoured
 // CL_ParseGamestate must read them at runtime (never hardcode), like g_csTable (B3 fix).
-extern "C" char* g_csData   = (char*)0x0305D5FC;               // byte_305D5FC (0x20000 blob)
-extern "C" int*  g_csCursor = (int*) 0x0307D5FC;               // dword_307D5FC write cursor
+extern "C" char* g_csData   = nullptr;               // byte_305D5FC (0x20000 blob)
+extern "C" int*  g_csCursor = nullptr;               // dword_307D5FC write cursor
 
 // Repointé par le flip Stage 1 vers le bloc modèle in-table relogé (= g_csTable + 0x58E).
 // Défini dans PatchT4MAM_ModelIndex.cpp ; lu par la reconstruction G_ModelIndex (son scan).
@@ -89,34 +215,34 @@ namespace T4_Reconstructed
 {
     // dword_3702390 : POINTEUR runtime vers la base du pool de strings internées
     // (stride 0xC ; texte d'un CS = (*ptr) + handle*0xC + 4). On lit la VALEUR.
-    static unsigned char** const cs_stringPoolPtr = (unsigned char**)0x03702390;
+    #define cs_stringPoolPtr ((unsigned char**)a_3702390)
 
-    static const char* const cs_assertToken = (const char*)0x00887664; // unk_887664 (length-prefixed)
+    #define cs_assertToken ((const char*)a_887664)// unk_887664 (length-prefixed)
     static const char  cs_empty[1] = { 0 };                            // chaîne vide locale
 
     // --- helpers vanilla (par VA) -------------------------------------------
     typedef void (__cdecl* CsErr_t)(int level, const void* msg, ...);  // sub_59AC50
-    static const CsErr_t   cs_error    = (CsErr_t)0x0059AC50;
+    #define cs_error ((CsErr_t)a_59AC50)
     typedef void (__cdecl* StrncpyZ_t)(char* dst, const char* src, int count); // sub_7AA9C0
-    static const StrncpyZ_t cs_strncpyz = (StrncpyZ_t)0x007AA9C0;
+    #define cs_strncpyz ((StrncpyZ_t)a_7AA9C0)
     typedef void (__cdecl* ComMemset_t)(void* dst, int fill, int dwordCount);  // sub_5E5100
-    static const ComMemset_t cs_memsetDwords = (ComMemset_t)0x005E5100;
+    #define cs_memsetDwords ((ComMemset_t)a_5E5100)
     typedef int  (__cdecl* SL_Intern_t)(int a, const char* str, int c, int len);
-    static const SL_Intern_t SL_Intern_Low  = (SL_Intern_t)0x0068DE50; // idx < 0x585
-    static const SL_Intern_t SL_Intern_High = (SL_Intern_t)0x0068E390; // idx >= 0x585
+    #define SL_Intern_Low ((SL_Intern_t)a_68DE50)// idx < 0x585
+    #define SL_Intern_High ((SL_Intern_t)a_68E390)// idx >= 0x585
     typedef int  (__cdecl* ComSprintf_t)(char* dst, const char* fmt, ...);     // sub_7AA926
-    static const ComSprintf_t cs_sprintf = (ComSprintf_t)0x007AA926;
+    #define cs_sprintf ((ComSprintf_t)a_7AA926)
     typedef char* (__cdecl* Va_t)(const char* fmt, ...);                       // sub_5F6D80
-    static const Va_t cs_va = (Va_t)0x005F6D80;
+    #define cs_va ((Va_t)a_5F6D80)
 
-    static int* const p_sv_state    = (int*)0x00234FC08;  // ==2 => SV actif
-    static int* const p_sv_running  = (int*)0x00234FC14;
-    static unsigned char* const g_clientsBase = (unsigned char*)0x02547090; // dword_2547090
+    #define p_sv_state ((int*)a_234FC08)// ==2 => SV actif
+    #define p_sv_running ((int*)a_234FC14)
+    #define g_clientsBase ((unsigned char*)a_2547090)// dword_2547090
     static const int CLIENT_STRIDE  = 0x58D30;
-    static const void* const ERR_BAD_INDEX  = (const void*)0x008875C8;  // "SV_SetConfigstring: bad index %i"
-    static const void* const ERR_BIG_BUNDLE = (const void*)0x008875F0;  // "…big config string…"
-    #define CS_STRPOOL (*(unsigned char**)0x03702390)
-    #define CS_SVS_PTR (*(unsigned char**)0x023D5C30)
+    #define ERR_BAD_INDEX ((const void*)a_8875C8)// "SV_SetConfigstring: bad index %i"
+    #define ERR_BIG_BUNDLE ((const void*)a_8875F0)// "…big config string…"
+    #define CS_STRPOOL (*(unsigned char**)a_3702390)
+    #define CS_SVS_PTR (*(unsigned char**)a_23D5C30)
 
     // ========================================================================
     // @faithful  SV_GetConfigstring (sub_6315C0). __usercall esi=idx/edi=dstSize/dst@stack.
@@ -157,7 +283,7 @@ namespace T4_Reconstructed
             push    esi
             movzx   edx, word ptr [esp+8]     // handle (+4 pour push esi)
             mov     esi, [esp+0Ch]            // poolSel
-            mov     eax, 0x0068E680
+            mov     eax, a_68E680
             call    eax
             pop     esi
             retn
@@ -181,12 +307,12 @@ namespace T4_Reconstructed
         unsigned short sentinel = *g_csSentinel;
         if (sentinel != 0) SL_RemoveRefToString_thunk(sentinel, 0);
 
-        cs_memsetDwords((void*)0x00234FC08, 0, 0x21806); // 0x86018 octets (gameState)
-        *(int*)0x02FCDA04 = 0;
+        cs_memsetDwords((void*)a_234FC08, 0, 0x21806); // 0x86018 octets (gameState)
+        *(int*)a_2FCDA04 = 0;
 
         // Flip : la table CS vit hors gameState → le memset ci-dessus ne la couvre plus.
         // Zéroter le buffer relogé (sentinelle + g_maxCS slots) comme le faisait le memset vanilla.
-        if ((void*)g_csSentinel != (void*)0x02350424)
+        if ((void*)g_csSentinel != (void*)a_2350424)
             memset(g_csSentinel, 0, 2 + g_maxCS * 2);
     }
 
@@ -208,7 +334,7 @@ namespace T4_Reconstructed
             push    [esp+18h]   // fmt
             push    [esp+18h]   // one
             xor     eax, eax              // flag = 0 (broadcast)
-            mov     ecx, 0x00633FA0
+            mov     ecx, a_633FA0
             call    ecx
             add     esp, 18h
             retn
@@ -222,7 +348,7 @@ namespace T4_Reconstructed
             push    [esp+10h]   // fmt
             push    [esp+10h]   // one
             xor     eax, eax              // flag = 0 (broadcast)
-            mov     ecx, 0x00633FA0
+            mov     ecx, a_633FA0
             call    ecx
             add     esp, 10h
             retn
@@ -236,7 +362,7 @@ namespace T4_Reconstructed
             push    [esp+14h]   // fmt
             push    [esp+14h]   // one
             mov     eax, [esp+14h]        // flag = target (envoi ciblé)
-            mov     ecx, 0x00633FA0
+            mov     ecx, a_633FA0
             call    ecx
             add     esp, 10h
             retn
@@ -248,7 +374,7 @@ namespace T4_Reconstructed
         __asm {
             mov     ecx, [esp+4]          // info -> this
             push    [esp+8]               // key
-            mov     edx, 0x005F6DF0
+            mov     edx, a_5F6DF0
             call    edx
             add     esp, 4
             retn
@@ -371,17 +497,17 @@ namespace T4_Reconstructed
     using T4::engine::msg_s;
 
     // ---- send-side absolutes (NOT relocated) -------------------------------
-    #define CS_HUNK_OFF   (*(unsigned int*)0x046E5054)                  // dword_46E5054 (temp Hunk offset)
-    static unsigned char* const cs_hunkBase        = (unsigned char*)0x0212B2F8; // dword_212B2F8
-    static unsigned char* const cs_boundsNodes     = (unsigned char*)0x02351C10; // unk_2351C10
-    static unsigned char* const cs_boundsNodesEnd  = (unsigned char*)0x023BCC10; // unk_23BCC10
-    static unsigned char* const cs_entBaselines    = (unsigned char*)0x023BCC08; // unk_23BCC08
-    static int* const           cs_entBaselineCount = (int*)0x023D4AE4;          // dword_23D4AE4
-    static int* const           cs_dword_234FC20    = (int*)0x0234FC20;
+    #define CS_HUNK_OFF   (*(unsigned int*)a_46E5054)                  // dword_46E5054 (temp Hunk offset)
+    #define cs_hunkBase ((unsigned char*)a_212B2F8)// dword_212B2F8
+    #define cs_boundsNodes ((unsigned char*)a_2351C10)// unk_2351C10
+    #define cs_boundsNodesEnd ((unsigned char*)a_23BCC10)// unk_23BCC10
+    #define cs_entBaselines ((unsigned char*)a_23BCC08)// unk_23BCC08
+    #define cs_entBaselineCount ((int*)a_23D4AE4)// dword_23D4AE4
+    #define cs_dword_234FC20 ((int*)a_234FC20)
     static const int CS_BOUNDS_STRIDE   = 0x1AC;
     static const int CS_BASELINE_STRIDE = 0x118;
     // Built-in CS static table base (dword_8D55F8): stride 0x10, [+0]/[+0xC]=csNum, [+4]=defaultStr.
-    static unsigned char* const cs_staticTable = (unsigned char*)0x008D55F8;     // dword_8D55F8
+    #define cs_staticTable ((unsigned char*)a_8D55F8)// dword_8D55F8
 
     // Com_DPrintf format strings. Content matched to vanilla data segment
     // (aSvSendclientga / aGoingFromCsCon / aSendingIBytesI). Literals used instead
@@ -394,9 +520,9 @@ namespace T4_Reconstructed
 
     // ---- send-side cdecl helper VAs ----------------------------------------
     typedef void (__cdecl* GsDPrintf_t)(int channel, const char* fmt, ...);      // sub_59A310
-    static const GsDPrintf_t gs_dprintf  = (GsDPrintf_t)0x0059A310;
+    #define gs_dprintf ((GsDPrintf_t)a_59A310)
     typedef void (__cdecl* GsSnapshot_t)(void);                                  // sub_639910
-    static const GsSnapshot_t gs_snapshot = (GsSnapshot_t)0x00639910;
+    #define gs_snapshot ((GsSnapshot_t)a_639910)
 
     // ---- send-side naked thunks (NEW; distinct from existing cs_memsetDwords) ----
 
@@ -405,13 +531,13 @@ namespace T4_Reconstructed
     // dst STACK arg. NOT __usercall esi=dst — the send verify misread that pushed esi as a
     // register input. Cross-checked vs the parse-side pg_memset + call sites @0x1448/@0x4058D6.
     typedef void* (__cdecl* GsMemset_t)(void* dst, int fill, unsigned int count);
-    static const GsMemset_t gs_memset = (GsMemset_t)0x007AFF40;
+    #define gs_memset ((GsMemset_t)a_7AFF40)
     // sub_678330  ResetReliableFragBuffers. edi=netchan(client+0x14). bool al (ignored). retn.
     __declspec(naked) void __cdecl gs_resetFrag(void* /*netchan*/) {
         __asm {
             push edi
             mov  edi, [esp+8]            // netchan
-            mov  eax, 0x00678330
+            mov  eax, a_678330
             call eax
             pop  edi
             retn
@@ -422,7 +548,7 @@ namespace T4_Reconstructed
         __asm {
             mov  eax, [esp+4]            // client
             push dword ptr [esp+8]       // reason
-            mov  ecx, 0x0062F250
+            mov  ecx, a_62F250
             call ecx
             add  esp, 4
             retn
@@ -435,7 +561,7 @@ namespace T4_Reconstructed
             mov  esi, [esp+8]            // msg
             push dword ptr [esp+10h]     // maxsize (arg_4)
             push dword ptr [esp+10h]     // data    (arg_0)
-            mov  eax, 0x00674C70
+            mov  eax, a_674C70
             call eax
             add  esp, 8
             pop  esi
@@ -448,7 +574,7 @@ namespace T4_Reconstructed
             push esi
             mov  eax, [esp+8]            // msg
             mov  esi, [esp+0Ch]          // client
-            mov  ecx, 0x00638520
+            mov  ecx, a_638520
             call ecx
             pop  esi
             retn
@@ -460,7 +586,7 @@ namespace T4_Reconstructed
             mov  eax, [esp+4]            // count
             mov  edx, [esp+8]            // s1
             push dword ptr [esp+0Ch]     // s2
-            mov  ecx, 0x005F69E0
+            mov  ecx, a_5F69E0
             call ecx
             add  esp, 4
             retn
@@ -472,7 +598,7 @@ namespace T4_Reconstructed
             mov  edx, [esp+4]            // msg
             push dword ptr [esp+0Ch]     // bits  (pushed first in vanilla: push 0Ch then push esi)
             push dword ptr [esp+0Ch]     // value
-            mov  ecx, 0x00674D00
+            mov  ecx, a_674D00
             call ecx
             add  esp, 8
             retn
@@ -482,7 +608,7 @@ namespace T4_Reconstructed
     __declspec(naked) void __cdecl gs_writeBit0(msg_s* /*msg*/) {
         __asm {
             mov  eax, [esp+4]
-            mov  ecx, 0x00674E00
+            mov  ecx, a_674E00
             call ecx
             retn
         }
@@ -493,7 +619,7 @@ namespace T4_Reconstructed
             push edi
             mov  edi, [esp+8]            // msg
             mov  edx, [esp+0Ch]          // str
-            mov  eax, 0x00675430
+            mov  eax, a_675430
             call eax
             pop  edi
             retn
@@ -508,7 +634,7 @@ namespace T4_Reconstructed
             push dword ptr [esp+14h]     // arg8 (0x1000)
             push dword ptr [esp+14h]     // arg4 (0)
             push dword ptr [esp+14h]     // msg
-            mov  edx, 0x0067AB80
+            mov  edx, a_67AB80
             call edx
             add  esp, 0Ch
             retn
@@ -518,7 +644,7 @@ namespace T4_Reconstructed
     __declspec(naked) void __cdecl gs_writeBlock_496050(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
-                mov  eax, 0x00496050
+                mov  eax, a_496050
                 call eax
                 pop  esi
                 retn }
@@ -526,7 +652,7 @@ namespace T4_Reconstructed
     __declspec(naked) void __cdecl gs_writeBlock_5720F0(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
-                mov  eax, 0x005720F0
+                mov  eax, a_5720F0
                 call eax
                 pop  esi
                 retn }
@@ -534,7 +660,7 @@ namespace T4_Reconstructed
     __declspec(naked) void __cdecl gs_writeBlock_6AF000(msg_s* /*msg*/) {
         __asm { push esi
                 mov  esi, [esp+8]
-                mov  eax, 0x006AF000
+                mov  eax, a_6AF000
                 call eax
                 pop  esi
                 retn }
@@ -546,7 +672,7 @@ namespace T4_Reconstructed
             mov  esi, [esp+8]            // client
             push 0                       // arg_4 = 0
             push dword ptr [esp+10h]     // arg_0 = msg
-            mov  eax, 0x006393F0
+            mov  eax, a_6393F0
             call eax
             add  esp, 8
             pop  esi
@@ -557,7 +683,7 @@ namespace T4_Reconstructed
     // ---- helpers: vanilla clientNum + inlined MSG byte/short/long writes -----
     static const int CS_CLIENT_STRIDE = 0x58D30;
     static inline int gs_clientNum(void* client) {
-        return (int)(((unsigned char*)client - (unsigned char*)0x02547090) / CS_CLIENT_STRIDE);
+        return (int)(((unsigned char*)client - (unsigned char*)a_2547090) / CS_CLIENT_STRIDE);
     }
     static inline void gs_rawByte(msg_s* m, unsigned char v) {
         if (m->cursize < m->maxsize) { m->data[m->cursize] = (char)v; m->cursize += 1; }
@@ -619,8 +745,8 @@ namespace T4_Reconstructed
                     unsigned char* frag = cl + 0x11624 + sub * 0x20DC;
                     gs_memset(frag, 0, 0x20DC);
                     int cn = gs_clientNum(cl);
-                    *(int*)(frag + 0x20B8) = *(int*)(0x026AA55C + cn * 4);
-                    *(int*)(frag + 0x20BC) = *(int*)(0x026AA56C + cn * 4);
+                    *(int*)(frag + 0x20B8) = *(int*)(a_26AA55C + cn * 4);
+                    *(int*)(frag + 0x20BC) = *(int*)(a_26AA56C + cn * 4);
                 }
                 if (*(int*)cl == 0) break;                   // [ebx]!=0 -> loc_62F536
             }
@@ -764,11 +890,11 @@ namespace T4_Reconstructed
         gs_dprintf(0x0F, cs_fmt_sending, msg.cursize, gs_clientNum(cl));
         gs_transmit(cl, &msg);                               // sub_6393F0
 
-        *(int*)0x02CAD998 = *(int*)0x0300DCA0;
-        *(int*)0x02CAD98C = *(int*)0x0300DCA8;
-        *(int*)0x02CAD990 = *(int*)0x0300DCAC;
-        *(int*)0x0300DCB0 = *(int*)0x02CAD994;
-        *(int*)0x0300DC9C = *(int*)0x02FACDF8;
+        *(int*)a_2CAD998 = *(int*)a_300DCA0;
+        *(int*)a_2CAD98C = *(int*)a_300DCA8;
+        *(int*)a_2CAD990 = *(int*)a_300DCAC;
+        *(int*)a_300DCB0 = *(int*)a_2CAD994;
+        *(int*)a_300DC9C = *(int*)a_2FACDF8;
 
         CS_HUNK_OFF = savedHunkOff;                          // restore temp
     }
@@ -782,67 +908,67 @@ namespace T4_Reconstructed
     //   splitSize (+0x18) = size of the post-split `splitData` region
     //   readcount (+0x1C) = current read cursor ; lastEntityRef (+0x24) = entity-number delta base.
     struct rec_csAuto_t { int index; const char* name; int unk; int pad; }; // stride 0x10
-    static rec_csAuto_t* const g_csAuto = (rec_csAuto_t*)0x008D55F8;         // dword_8D55F8
+    #define g_csAuto ((rec_csAuto_t*)a_8D55F8)// dword_8D55F8
 
     // g_csData (blob base) is now a file-scope relocatable global (see top, B3 fix).
     #define G_CSCURSOR (*g_csCursor)                                        // dword_307D5FC write cursor (relocatable)
 
-    #define BASELINE_ENTITY_TABLE ((char*)0x03122688)                       // unk_3122688 stride 0x118 (absolute)
-    #define BASELINE_CLIENT_TABLE ((char*)0x03168570)                       // unk_3168570 stride 0x118 (absolute)
+    #define BASELINE_ENTITY_TABLE ((char*)a_3122688)                       // unk_3122688 stride 0x118 (absolute)
+    #define BASELINE_CLIENT_TABLE ((char*)a_3168570)                       // unk_3168570 stride 0x118 (absolute)
 
-    #define G_1F552DC (*(char**)0x01F552DC)
-    #define G_1F552FC (*(char**)0x01F552FC)
-    #define G_1F552C4 (*(int*)0x01F552C4)
-    #define G_307D6E0 (*(int*)0x0307D6E0)
-    #define G_3010014 (*(int*)0x03010014)
-    #define G_302012C (*(int*)0x0302012C)
-    #define G_300FFEC (*(int*)0x0300FFEC)
-    #define G_301011C (*(int*)0x0301011C)
-    #define G_2122B00 (*(char**)0x02122B00)
-    #define G_2122AFC (*(int*)0x02122AFC)
-    #define G_4DA997C (*(int*)0x04DA997C)
-    static void* const G_3058528 = (void*)0x03058528;                       // byte_3058528 (0x301654)
-    static void* const G_48AE508 = (void*)0x048AE508;                       // qword_48AE508
-    static void* const G_48AE50C = (void*)0x048AE50C;
-    static void* const G_48AE510 = (void*)0x048AE510;
+    #define G_1F552DC (*(char**)a_1F552DC)
+    #define G_1F552FC (*(char**)a_1F552FC)
+    #define G_1F552C4 (*(int*)a_1F552C4)
+    #define G_307D6E0 (*(int*)a_307D6E0)
+    #define G_3010014 (*(int*)a_3010014)
+    #define G_302012C (*(int*)a_302012C)
+    #define G_300FFEC (*(int*)a_300FFEC)
+    #define G_301011C (*(int*)a_301011C)
+    #define G_2122B00 (*(char**)a_2122B00)
+    #define G_2122AFC (*(int*)a_2122AFC)
+    #define G_4DA997C (*(int*)a_4DA997C)
+    #define G_3058528 ((void*)a_3058528)// byte_3058528 (0x301654)
+    #define G_48AE508 ((void*)a_48AE508)// qword_48AE508
+    #define G_48AE50C ((void*)a_48AE50C)
+    #define G_48AE510 ((void*)a_48AE510)
 
     // unk_* are LENGTH-PREFIXED error tokens consumed by cs_error (sub_59AC50):
     // pass by VA (the IDA `unk_<VA>` name IS the address). Do NOT convert to C literals.
-    static const char* const STR_TOO_MANY_CS = (const char*)0x0084F750;     // unk_84F750 (db 15h,"configstring > M...")
-    static const char* const STR_CS_OVERFLOW = (const char*)0x0088951C;     // unk_88951C (length-prefixed)
-    static const char* const STR_BAD_ENT     = (const char*)0x0088C220;     // unk_88C220 (length-prefixed)
-    static const char* const STR_BAD_CLI     = (const char*)0x0088C244;     // unk_88C244 (length-prefixed)
+    #define STR_TOO_MANY_CS ((const char*)a_84F750)// unk_84F750 (db 15h,"configstring > M...")
+    #define STR_CS_OVERFLOW ((const char*)a_88951C)// unk_88951C (length-prefixed)
+    #define STR_BAD_ENT ((const char*)a_88C220)// unk_88C220 (length-prefixed)
+    #define STR_BAD_CLI ((const char*)a_88C244)// unk_88C244 (length-prefixed)
     // aClParsegamesta / aFFF are PLAIN printf/scanf strings -> C literals (content faithful).
     static const char* const STR_BAD_CMD     = "CL_ParseGamestate: bad command byte %d\n"; // aClParsegamesta
     static const char* const STR_FMT_3F      = "%f %f %f";                  // aFFF
 
     // ---- parse cdecl helper VAs --------------------------------------------
     typedef void* (__cdecl* pg_memset_t)(void*, int, unsigned int);
-    static const pg_memset_t pg_memset = (pg_memset_t)0x007AFF40;            // sub_7AFF40
+    #define pg_memset ((pg_memset_t)a_7AFF40)// sub_7AFF40
     typedef void* (__cdecl* pg_memcpy_t)(void*, const void*, unsigned int);
-    static const pg_memcpy_t pg_memcpy = (pg_memcpy_t)0x007AFFC0;            // sub_7AFFC0
+    #define pg_memcpy ((pg_memcpy_t)a_7AFFC0)// sub_7AFFC0
     typedef int   (__cdecl* pg_sscanf_t)(const char*, const char*, ...);
-    static const pg_sscanf_t pg_sscanf = (pg_sscanf_t)0x007AB559;           // sub_7AB559
+    #define pg_sscanf ((pg_sscanf_t)a_7AB559)// sub_7AB559
     typedef void  (__cdecl* pg_preload_t)(int, int);
-    static const pg_preload_t pg_5F0210 = (pg_preload_t)0x005F0210;         // sub_5F0210
+    #define pg_5F0210 ((pg_preload_t)a_5F0210)// sub_5F0210
     typedef void  (__cdecl* pg_void0_t)(void);
     // sub_474620: __usercall (index in ESI, vanilla `xor esi,esi` -> 0). NOT void(void).
     // Modeled as the CL_PG_ResetSnapshotSlot0 naked thunk (file scope) so ESI is set.
-    static const pg_void0_t pg_59E970 = (pg_void0_t)0x0059E970;
-    static const pg_void0_t pg_64C890 = (pg_void0_t)0x0064C890;
-    static const pg_void0_t pg_642A60 = (pg_void0_t)0x00642A60;
-    static const pg_void0_t pg_6F6CE0 = (pg_void0_t)0x006F6CE0;
-    static const pg_void0_t pg_5A3320 = (pg_void0_t)0x005A3320;
-    static const pg_void0_t pg_6F6D60 = (pg_void0_t)0x006F6D60;
-    static const pg_void0_t pg_5FDBF0 = (pg_void0_t)0x005FDBF0;
-    static const pg_void0_t pg_48E560 = (pg_void0_t)0x0048E560;
+    #define pg_59E970 ((pg_void0_t)a_59E970)
+    #define pg_64C890 ((pg_void0_t)a_64C890)
+    #define pg_642A60 ((pg_void0_t)a_642A60)
+    #define pg_6F6CE0 ((pg_void0_t)a_6F6CE0)
+    #define pg_5A3320 ((pg_void0_t)a_5A3320)
+    #define pg_6F6D60 ((pg_void0_t)a_6F6D60)
+    #define pg_5FDBF0 ((pg_void0_t)a_5FDBF0)
+    #define pg_48E560 ((pg_void0_t)a_48E560)
     typedef void  (__cdecl* pg_arg1_t)(void*);
-    static const pg_arg1_t pg_4962F0 = (pg_arg1_t)0x004962F0;
-    static const pg_arg1_t pg_6AF0F0 = (pg_arg1_t)0x006AF0F0;
+    #define pg_4962F0 ((pg_arg1_t)a_4962F0)
+    #define pg_6AF0F0 ((pg_arg1_t)a_6AF0F0)
     typedef void  (__cdecl* pg_err_t)(int, const char*, ...);
-    static const pg_err_t pg_59A380 = (pg_err_t)0x0059A380;                 // Com_Error (bad cmd / drop)
+    #define pg_59A380 ((pg_err_t)a_59A380)// Com_Error (bad cmd / drop)
     typedef void  (__cdecl* pg_clreset_t)(int, int);
-    static const pg_clreset_t pg_5DE720 = (pg_clreset_t)0x005DE720;
+    #define pg_5DE720 ((pg_clreset_t)a_5DE720)
     // (cs_error == sub_59AC50 reused for configstring/baseline range errors.)
 
     // ---- parse __usercall thunks (forward declarations; bodies defined at file
@@ -888,7 +1014,7 @@ namespace T4_Reconstructed
             // reads offset!=0 -> precache treats it as "set", reads mid-blob (truncated name) and
             // routes it by its index range (e.g. vehicle block 0x88E..0x951 -> "Could not load
             // vehicle file"). Mirror the vanilla coverage for the relocated tables (offsets+blob+cursor).
-            if ((void*)g_clientCsOffsets != (void*)0x0305A63C)
+            if ((void*)g_clientCsOffsets != (void*)a_305A63C)
                 memset(g_clientCsOffsets, 0, 0x4000 + 0x20000 + 4);   // side buffer: offsets+blob+cursor
         }
 
@@ -1058,26 +1184,26 @@ extern "C" {
 // sub_675560  MSG_ReadLong : msg in ECX -> EAX
 __declspec(naked) int CL_PG_ReadLong(void* /*msg*/) {
     __asm { mov ecx, [esp+4]
-            mov eax, 0x00675560
+            mov eax, a_675560
             jmp eax }                       // tail-call: callee retn, no args -> safe
 }
 // sub_675500  MSG_ReadShort : msg in EAX -> EAX (signed short)
 __declspec(naked) int CL_PG_ReadShort(void* /*msg*/) {
     __asm { mov eax, [esp+4]
-            mov edx, 0x00675500
+            mov edx, a_675500
             jmp edx }
 }
 // sub_675060  MSG_ReadBit : msg in EDX -> EAX
 __declspec(naked) int CL_PG_ReadBit(void* /*msg*/) {
     __asm { mov edx, [esp+4]
-            mov eax, 0x00675060
+            mov eax, a_675060
             jmp eax }
 }
 // sub_674F50  MSG_ReadBits(numBits) : msg in EDX, numBits pushed -> EAX (caller add esp,4)
 __declspec(naked) int CL_PG_ReadBits(void* /*msg*/, int /*nb*/) {
     __asm { mov edx, [esp+4]                // msg
             push dword ptr [esp+8]          // nb
-            mov eax, 0x00674F50
+            mov eax, a_674F50
             call eax
             add esp, 4
             retn }
@@ -1085,13 +1211,13 @@ __declspec(naked) int CL_PG_ReadBits(void* /*msg*/, int /*nb*/) {
 // sub_6757A0  MSG_ReadString : msg in EDX -> char* (static buffer)
 __declspec(naked) char* CL_PG_ReadString(void* /*msg*/) {
     __asm { mov edx, [esp+4]
-            mov eax, 0x006757A0
+            mov eax, a_6757A0
             jmp eax }
 }
 // sub_676690  MSG_ReadByte : msg in ECX -> EAX
 __declspec(naked) int CL_PG_ReadByte(void* /*msg*/) {
     __asm { mov ecx, [esp+4]
-            mov eax, 0x00676690
+            mov eax, a_676690
             jmp eax }
 }
 // sub_676990  MSG_ReadEntityIndex(nb, msg) : edi=nb, esi=msg (esi ambient R/W [esi+24h]) -> EAX
@@ -1100,7 +1226,7 @@ __declspec(naked) int CL_PG_ReadEntityIdx(int /*nb*/, void* /*msg*/) {
             push edi
             mov  edi, [esp+0Ch]             // nb  (after 2 pushes)
             mov  esi, [esp+10h]             // msg
-            mov  eax, 0x00676990
+            mov  eax, a_676990
             call eax
             pop  edi
             pop  esi
@@ -1115,7 +1241,7 @@ __declspec(naked) void CL_PG_ReadDeltaBaseline(int /*idx*/, void* /*msg*/, int /
             push dword ptr [esp+14h]        // table (orig +0x14)          -> arg_8 (pushed first)
             push dword ptr [esp+14h]        // buf   (orig +0x10, now +0x14)-> arg_4
             push dword ptr [esp+14h]        // z     (orig +0x0C, now +0x14)-> arg_0
-            mov  edx, 0x006772E0
+            mov  edx, a_6772E0
             call edx
             add  esp, 0Ch
             retn }
@@ -1125,7 +1251,7 @@ __declspec(naked) void CL_PG_5EF390(int /*a*/, int /*b*/) {
     __asm { xor  ecx, ecx
             push dword ptr [esp+8]          // b (arg_4) pushed first
             push dword ptr [esp+8]          // a (arg_0)
-            mov  eax, 0x005EF390
+            mov  eax, a_5EF390
             call eax
             add  esp, 8
             retn }
@@ -1134,7 +1260,7 @@ __declspec(naked) void CL_PG_5EF390(int /*a*/, int /*b*/) {
 __declspec(naked) void CL_PG_ReadInit576(void* /*msg*/) {
     __asm { push esi
             mov  esi, [esp+8]
-            mov  eax, 0x00572210
+            mov  eax, a_572210
             call eax
             pop  esi
             retn }
@@ -1145,7 +1271,7 @@ __declspec(naked) void CL_PG_ReadInit576(void* /*msg*/) {
 __declspec(naked) void CL_PG_ResetSnapshotSlot0(void) {
     __asm { push esi
             xor  esi, esi
-            mov  eax, 0x00474620
+            mov  eax, a_474620
             call eax
             pop  esi
             retn }
@@ -1172,10 +1298,10 @@ __declspec(naked) void CL_PG_ResetSnapshotSlot0(void) {
 // ===========================================================================
 #if CS_FLIP_STAGE >= 1
 
-static const DWORD CSF_TEXT_LO          = 0x00401000U;
-static const DWORD CSF_TEXT_HI          = 0x007EB000U;   // .text end (VSize 0x3EA000)
-static const DWORD CSF_VANILLA_BASE     = 0x02350426U;
-static const DWORD CSF_VANILLA_MODELBLK = 0x02350F42U;   // = base + 0x58E*2
+#define CSF_TEXT_LO ((DWORD)a_401000)
+#define CSF_TEXT_HI ((DWORD)a_7EB000)// .text end (VSize 0x3EA000)
+#define CSF_VANILLA_BASE ((DWORD)a_2350426)
+#define CSF_VANILLA_MODELBLK ((DWORD)a_2350F42)// = base + 0x58E*2
 static const int   CSF_MODELBLK_REFS    = 21;            // word_2350F42 .text refs
 
 #if CS_FLIP_STAGE >= 2
@@ -1195,81 +1321,82 @@ static const DWORD CSF_MODEL_COUNT = 0x200;
 #endif
 
 // Table base/sentinel/sub-block immediates -> g_csTable + (sym - base). 27 sites, both stages.
-struct CsfSite { DWORD immVA; DWORD sym; };
+#define RA(n) ((DWORD)T4M::GetAddress(n))   // resolve a flip table name -> variant VA
+struct CsfSite { const char* immVA; const char* sym; };
 static const CsfSite kCsfSites[] = {
-    { 0x0054A9E7, 0x02351342 }, { 0x0054AAC4, 0x02351342 }, { 0x0054A868, 0x02351542 },
-    { 0x00525DC7, 0x023516CA }, { 0x004EFF84, 0x023518CA }, { 0x0054A934, 0x023518CA },
-    { 0x0054A3E4, 0x0235192A }, { 0x0054A7C4, 0x02351A6A },
-    { 0x004F3B28, 0x02350438 }, { 0x00525752, 0x02350F32 }, { 0x00527579, 0x02350F36 },
-    { 0x005276F7, 0x02350F36 }, { 0x005278B8, 0x02350F36 }, { 0x00527ABB, 0x02350F38 },
-    { 0x00527C28, 0x02351B8C }, { 0x00527DAB, 0x02351B8C }, { 0x00527EF8, 0x02351B8E },
-    { 0x0052807B, 0x02351B8E }, { 0x005281C8, 0x02351B90 }, { 0x0052835B, 0x02351B90 },
-    { 0x0063246A, 0x02350424 }, { 0x0063246F, 0x02350426 }, { 0x0063248C, 0x02351C06 },
-    { 0x00631702, 0x02350426 }, { 0x00631726, 0x02350424 }, { 0x0063172D, 0x02350426 },
-    { 0x0054A20C, 0x02350428 },
+    { "csf_imm_54A9E7", "word_2351342" }, { "csf_imm_54AAC4", "word_2351342" }, { "csf_imm_54A868", "word_2351542" },
+    { "csf_imm_525DC7", "word_23516CA" }, { "csf_imm_4EFF84", "word_23518CA" }, { "csf_imm_54A934", "word_23518CA" },
+    { "csf_imm_54A3E4", "word_235192A" }, { "csf_imm_54A7C4", "word_2351A6A" },
+    { "csf_imm_4F3B28", "word_2350438" }, { "csf_imm_525752", "word_2350F32" }, { "csf_imm_527579", "word_2350F36" },
+    { "csf_imm_5276F7", "word_2350F36" }, { "csf_imm_5278B8", "word_2350F36" }, { "csf_imm_527ABB", "word_2350F38" },
+    { "csf_imm_527C28", "word_2351B8C" }, { "csf_imm_527DAB", "word_2351B8C" }, { "csf_imm_527EF8", "word_2351B8E" },
+    { "csf_imm_52807B", "word_2351B8E" }, { "csf_imm_5281C8", "word_2351B90" }, { "csf_imm_52835B", "word_2351B90" },
+    { "csf_imm_63246A", "word_2350424" }, { "csf_imm_63246F", "word_2350426" }, { "csf_imm_63248C", "word_2351C06" },
+    { "csf_imm_631702", "word_2350426" }, { "csf_imm_631726", "word_2350424" }, { "csf_imm_63172D", "word_2350426" },
+    { "strTable_base_54A20C", "word_2350428" },
 };
 
 #if CS_FLIP_STAGE >= 2
 // Stage-2 fixed-immediate patches (verify old, write new). exe-verified.
-struct CsfImm { DWORD immVA; DWORD oldv; DWORD neu; };
+struct CsfImm { const char* immVA; DWORD oldv; DWORD neu; };
 static const CsfImm kCsfStage2Imm[] = {
     // A.1 — CS index bounds 0xBF0 -> 0x1000
-    { 0x004596D9, 0x00000BF0, 0x00001000 }, { 0x0063A926, 0x00000BF0, 0x00001000 },
-    { 0x0063A9A8, 0x00000BF0, 0x00001000 },
+    { "csf_imm_4596D9", 0x00000BF0, 0x00001000 }, { "csf_imm_63A926", 0x00000BF0, 0x00001000 },
+    { "csf_imm_63A9A8", 0x00000BF0, 0x00001000 },
     // C — model offset 0x58E -> 0xBF0 (classifier disp is negative two's-complement)
-    { 0x0045947C, 0xFFFFFA72, 0xFFFFF410 }, // sub_459410 lea [esi-0x58E] -> [esi-0xBF0]
-    { 0x00510507, 0x0000058E, 0x00000BF0 }, // sub_5104F0 savegame restore offset
-    { 0x00510838, 0x0000058E, 0x00000BF0 }, // sub_510830 savegame table offset
-    { 0x00510992, 0x0000058E, 0x00000BF0 }, // sub_510990 savegame table offset
+    { "csf_imm_45947C", 0xFFFFFA72, 0xFFFFF410 }, // sub_459410 lea [esi-0x58E] -> [esi-0xBF0]
+    { "csf_imm_510507", 0x0000058E, 0x00000BF0 }, // sub_5104F0 savegame restore offset
+    { "csf_imm_510838", 0x0000058E, 0x00000BF0 }, // sub_510830 savegame table offset
+    { "csf_imm_510992", 0x0000058E, 0x00000BF0 }, // sub_510990 savegame table offset
     // client side-table struct: offsets array grows 0x2FC0 -> 0x4000, total 0x22FC4 -> 0x24004.
     // VAs are in the serializer sub_63A7F0 / clear sub_641730 — exe-verified .text matches (B1 fix).
-    { 0x0063A8A8, 0x00002FC0, 0x00004000 }, // blob displacement (lea edi,[ebx+edx+2FC0h])
-    { 0x0063A807, 0x00022FC4, 0x00024004 }, { 0x0063A84E, 0x00022FC4, 0x00024004 },
-    { 0x0063A861, 0x00022FC4, 0x00024004 }, { 0x006417B1, 0x00022FC4, 0x00024004 },
+    { "csf_imm_63A8A8", 0x00002FC0, 0x00004000 }, // blob displacement (lea edi,[ebx+edx+2FC0h])
+    { "csf_imm_63A807", 0x00022FC4, 0x00024004 }, { "csf_imm_63A84E", 0x00022FC4, 0x00024004 },
+    { "csf_imm_63A861", 0x00022FC4, 0x00024004 }, { "csf_imm_6417B1", 0x00022FC4, 0x00024004 },
 };
 // Companion symbol relocations (scan-replace, count-asserted).
-struct CsfReloc { DWORD sym; int count; };
-static const CsfReloc kCsfModelMap[] = { { 0x034651D8, 1 } };          // model-map WRITE base only
-static const CsfReloc kCsfSideTbl[]  = { { 0x0305A63C, 20 }, { 0x0305D5FC, 89 }, { 0x0307D5FC, 21 } };
+struct CsfReloc { const char* sym; int count; };
+static const CsfReloc kCsfModelMap[] = { { "dword_34651D8", 1 } };          // model-map WRITE base only
+static const CsfReloc kCsfSideTbl[]  = { { "dword_305A63C", 20 }, { "byte_305D5FC", 89 }, { "dword_307D5FC", 21 } };
 
 // --- ALIAS GAP FIX (root cause of the stage-2a "Client/Server game mismatch" + downstream desync) ---
 // The flip relocates each table by its BASE, but vanilla hardcodes many SUB-BLOCK alias addresses
 // (base + idx*stride) as separate immediates. A base-only scan-replace misses them, so once the base
 // is relocated they keep reading the STALE old table. The 2026-06-03 audit counted base refs only.
 // Counts are exe-verified (symbol-prefixed grep of CoDWaW LanFixed.exe.asm).
-struct CsfAlias { DWORD addr; int count; };
+struct CsfAlias { const char* addr; int count; };
 // (1) Client CS offsets array (base 0x0305A63C, stride 4 = blob byte-offset per CS index):
 //     gamename idx 2 (the mismatch trigger @sub_664570), mapCenter idx 12, VisionSet/category blocks,
 //     and the MODEL block [0x58E,0x78E) which re-bases to CSF_MODEL_OFF like the server CS table.
 static const CsfAlias kCsfOffAliases[] = {
-    {0x0305A640,1},{0x0305A644,1},{0x0305A654,2},{0x0305A658,1},{0x0305A65C,1},
-    {0x0305A660,1},{0x0305A66C,3},{0x0305A870,1},{0x0305AA70,2},{0x0305AA74,1},
-    {0x0305AB70,1},{0x0305AC30,2},{0x0305BC2C,1},{0x0305BC54,1},{0x0305BC58,1},
-    {0x0305BC5C,1},{0x0305BC60,1},{0x0305BC64,1},{0x0305BC74,5},{0x0305BC78,1},
-    {0x0305C474,10},{0x0305C870,1},{0x0305C874,1},{0x0305C878,1},{0x0305CB84,2},
-    {0x0305CF88,1},{0x0305CFC4,6},{0x0305D044,5},{0x0305D048,1},{0x0305D244,1},
-    {0x0305D264,2},{0x0305D268,1},{0x0305D284,1},{0x0305D288,2},{0x0305D2C4,7},
-    {0x0305D344,2},{0x0305D348,1},{0x0305D3C4,1},{0x0305D3C8,1},{0x0305D4C8,1},
-    {0x0305D508,2},{0x0305D50C,1},{0x0305D510,1},
+    {"dword_305A640",1},{"dword_305A644",1},{"dword_305A654",2},{"dword_305A658",1},{"dword_305A65C",1},
+    {"dword_305A660",1},{"dword_305A66C",3},{"dword_305A870",1},{"dword_305AA70",2},{"dword_305AA74",1},
+    {"dword_305AB70",1},{"dword_305AC30",2},{"dword_305BC2C",1},{"dword_305BC54",1},{"dword_305BC58",1},
+    {"dword_305BC5C",1},{"dword_305BC60",1},{"dword_305BC64",1},{"dword_305BC74",5},{"dword_305BC78",1},
+    {"dword_305C474",10},{"dword_305C870",1},{"dword_305C874",1},{"dword_305C878",1},{"dword_305CB84",2},
+    {"dword_305CF88",1},{"dword_305CFC4",6},{"dword_305D044",5},{"dword_305D048",1},{"dword_305D244",1},
+    {"dword_305D264",2},{"dword_305D268",1},{"dword_305D284",1},{"dword_305D288",2},{"dword_305D2C4",7},
+    {"dword_305D344",2},{"dword_305D348",1},{"dword_305D3C4",1},{"dword_305D3C8",1},{"dword_305D4C8",1},
+    {"dword_305D508",2},{"dword_305D50C",1},{"dword_305D510",1},
 };
-static const DWORD CSF_OFF_BASE  = 0x0305A63C;   // = dword_305A63C (offsets array base)
-static const DWORD CSF_OFF_MODLO = 0x0305BC74;   // = offsets[0x58E] (model block start; re-base)
-static const DWORD CSF_OFF_MODHI = 0x0305C474;   // = offsets[0x78E] (model block end, exclusive)
+#define CSF_OFF_BASE ((DWORD)a_305A63C)// = dword_305A63C (offsets array base)
+#define CSF_OFF_MODLO ((DWORD)a_305BC74)// = offsets[0x58E] (model block start; re-base)
+#define CSF_OFF_MODHI ((DWORD)a_305C474)// = offsets[0x78E] (model block end, exclusive)
 // (2) Model-map (base 0x034651D8, stride 4) READ-window aliases inside the model block. The audit
 //     handled only 0x3466810; all re-base to mmap + (CSF_MODEL_OFF + idx - 0x58E)*4.
 static const CsfAlias kCsfMmapAliases[] = {
-    {0x03466810,15},  // base + 0x58E*4 (model read-window start)
-    {0x03466814, 1},  // base + 0x58F*4 (sub_6621B0 "server models" registration loop)
-    {0x0346685C, 1},  // base + 0x5A1*4
-    {0x034669BC, 1},  // base + 0x5F9*4
+    {"dword_3466810",15},  // base + 0x58E*4 (model read-window start)
+    {"dword_3466814", 1},  // base + 0x58F*4 (sub_6621B0 "server models" registration loop)
+    {"dword_346685C", 1},  // base + 0x5A1*4
+    {"dword_34669BC", 1},  // base + 0x5F9*4
 };
-static const DWORD CSF_MMAP_BASE = 0x034651D8;   // = dword_34651D8 (model-map base)
+#define CSF_MMAP_BASE ((DWORD)a_34651D8)// = dword_34651D8 (model-map base)
 
 #if CSF_MODEL_1024
 // Stage 2b model-table relocations (base scan-replace, count-asserted) + END pointer.
 // NB: the render path (model-map dword_3466810, mmap) is already 0x1000 from 2a; the destructibles
 // pool unk_47E87F0 is a SEPARATE limit and is intentionally NOT relocated here.
-static const CsfReloc kCsfModelTbl[] = { { 0x0190E0A8, 9 }, { 0x018FABD0, 3 } };  // XModel* + remap bases
+static const CsfReloc kCsfModelTbl[] = { { "dword_190E0A8", 9 }, { "dword_18FABD0", 3 } };  // XModel* + remap bases
 // NB: 0x0190E8A8 (= base+512*4) is NOT the table END — it is a SEPARATE dummy "overflow" entity
 // struct (fields at 190E9C8/CC...) that sub_54F1E0 returns when out of entity slots (coop path).
 // It must STAY at its vanilla address (the relocated XModel* table no longer overlaps it). An
@@ -1278,11 +1405,11 @@ static const CsfReloc kCsfModelTbl[] = { { 0x0190E0A8, 9 }, { 0x018FABD0, 3 } };
 // Model count caps (verify old → write new). VAs exe-verified (patch-doc 2a §C) except 0x662A3E
 // (sub_6621B0 server-models loop) byte-verified by the Phase-1 old-value check.
 static const CsfImm kCsfModel1024Imm[] = {
-    { 0x00459481, 0x000001FF, 0x000003FF }, // sub_459410 classifier model range  (cmp eax,1FFh)
-    { 0x00662A3E, 0x000007FC, 0x00000FFC }, // sub_6621B0 server-models loop       (cmp edi,7FCh=0x1FF*4)
-    { 0x0051056A, 0x00000200, 0x00000400 }, // sub_5104F0 savegame restore cap     (cmp ebx,200h)
-    { 0x00510833, 0x00000200, 0x00000400 }, // sub_510830 savegame table count     (push 200h)
-    { 0x00510999, 0x00000200, 0x00000400 }, // sub_510990 savegame table count     (mov ecx,200h)
+    { "csf_imm_459481", 0x000001FF, 0x000003FF }, // sub_459410 classifier model range  (cmp eax,1FFh)
+    { "csf_imm_662A3E", 0x000007FC, 0x00000FFC }, // sub_6621B0 server-models loop       (cmp edi,7FCh=0x1FF*4)
+    { "csf_imm_51056A", 0x00000200, 0x00000400 }, // sub_5104F0 savegame restore cap     (cmp ebx,200h)
+    { "csf_imm_510833", 0x00000200, 0x00000400 }, // sub_510830 savegame table count     (push 200h)
+    { "csf_imm_510999", 0x00000200, 0x00000400 }, // sub_510990 savegame table count     (mov ecx,200h)
 };
 #endif
 #endif
@@ -1304,9 +1431,9 @@ static void SetupCsFlip()
 {
     // ---- Phase 1: all-or-nothing read-only verify (no writes if anything is off) ----
     for (const CsfSite& s : kCsfSites)
-        if (!CsfTextOk(s.immVA) || *(DWORD*)s.immVA != s.sym) {
-            sprintf(g_csFlipStatus, "flip ABORT: %08X has %08X != %08X", (unsigned)s.immVA,
-                    (unsigned)(CsfTextOk(s.immVA) ? *(DWORD*)s.immVA : 0), (unsigned)s.sym);
+        if (!CsfTextOk(RA(s.immVA)) || *(DWORD*)RA(s.immVA) != RA(s.sym)) {
+            sprintf(g_csFlipStatus, "flip ABORT: %08X has %08X != %08X", (unsigned)RA(s.immVA),
+                    (unsigned)(CsfTextOk(RA(s.immVA)) ? *(DWORD*)RA(s.immVA) : 0), (unsigned)RA(s.sym));
             return;
         }
     if (CsfCountDword(CSF_VANILLA_MODELBLK) != CSF_MODELBLK_REFS) {
@@ -1316,52 +1443,52 @@ static void SetupCsFlip()
     }
 #if CS_FLIP_STAGE >= 2
     for (const CsfImm& s : kCsfStage2Imm)
-        if (!CsfTextOk(s.immVA) || *(DWORD*)s.immVA != s.oldv) {
-            sprintf(g_csFlipStatus, "flip ABORT: imm %08X has %08X != %08X", (unsigned)s.immVA,
-                    (unsigned)(CsfTextOk(s.immVA) ? *(DWORD*)s.immVA : 0), (unsigned)s.oldv);
+        if (!CsfTextOk(RA(s.immVA)) || *(DWORD*)RA(s.immVA) != s.oldv) {
+            sprintf(g_csFlipStatus, "flip ABORT: imm %08X has %08X != %08X", (unsigned)RA(s.immVA),
+                    (unsigned)(CsfTextOk(RA(s.immVA)) ? *(DWORD*)RA(s.immVA) : 0), (unsigned)s.oldv);
             return;
         }
     // B2: model-map read-window END operand (sub_45CDF0 loop @0x45CE1E). Relocated separately to a
     //     RUNTIME value below; the OTHER 8 refs of 0x03467010 are effects reads -> stay vanilla.
-    if (*(DWORD*)0x0045CE1E != 0x03467010) {
-        sprintf(g_csFlipStatus, "flip ABORT: mmap-end %08X != 03467010", (unsigned)*(DWORD*)0x0045CE1E);
+    if (*(DWORD*)a_45CE1E != a_3467010) {
+        sprintf(g_csFlipStatus, "flip ABORT: mmap-end %08X != 03467010", (unsigned)*(DWORD*)a_45CE1E);
         return;
     }
     for (const CsfReloc& r : kCsfModelMap)
-        if (CsfCountDword(r.sym) != r.count) {
+        if (CsfCountDword(RA(r.sym)) != r.count) {
             sprintf(g_csFlipStatus, "flip ABORT: mmap %08X count %d != %d",
-                    (unsigned)r.sym, CsfCountDword(r.sym), r.count);
+                    (unsigned)RA(r.sym), CsfCountDword(RA(r.sym)), r.count);
             return;
         }
     for (const CsfReloc& r : kCsfSideTbl)
-        if (CsfCountDword(r.sym) != r.count) {
+        if (CsfCountDword(RA(r.sym)) != r.count) {
             sprintf(g_csFlipStatus, "flip ABORT: side %08X count %d != %d",
-                    (unsigned)r.sym, CsfCountDword(r.sym), r.count);
+                    (unsigned)RA(r.sym), CsfCountDword(RA(r.sym)), r.count);
             return;
         }
     for (const CsfAlias& a : kCsfOffAliases)
-        if (CsfCountDword(a.addr) != a.count) {
+        if (CsfCountDword(RA(a.addr)) != a.count) {
             sprintf(g_csFlipStatus, "flip ABORT: off-alias %08X count %d != %d",
-                    (unsigned)a.addr, CsfCountDword(a.addr), a.count);
+                    (unsigned)RA(a.addr), CsfCountDword(RA(a.addr)), a.count);
             return;
         }
     for (const CsfAlias& a : kCsfMmapAliases)
-        if (CsfCountDword(a.addr) != a.count) {
+        if (CsfCountDword(RA(a.addr)) != a.count) {
             sprintf(g_csFlipStatus, "flip ABORT: mmap-alias %08X count %d != %d",
-                    (unsigned)a.addr, CsfCountDword(a.addr), a.count);
+                    (unsigned)RA(a.addr), CsfCountDword(RA(a.addr)), a.count);
             return;
         }
 #if CSF_MODEL_1024
     for (const CsfReloc& r : kCsfModelTbl)
-        if (CsfCountDword(r.sym) != r.count) {
+        if (CsfCountDword(RA(r.sym)) != r.count) {
             sprintf(g_csFlipStatus, "flip ABORT: modeltbl %08X count %d != %d",
-                    (unsigned)r.sym, CsfCountDword(r.sym), r.count);
+                    (unsigned)RA(r.sym), CsfCountDword(RA(r.sym)), r.count);
             return;
         }
     for (const CsfImm& s : kCsfModel1024Imm)
-        if (!CsfTextOk(s.immVA) || *(DWORD*)s.immVA != s.oldv) {
-            sprintf(g_csFlipStatus, "flip ABORT: modelcap %08X has %08X != %08X", (unsigned)s.immVA,
-                    (unsigned)(CsfTextOk(s.immVA) ? *(DWORD*)s.immVA : 0), (unsigned)s.oldv);
+        if (!CsfTextOk(RA(s.immVA)) || *(DWORD*)RA(s.immVA) != s.oldv) {
+            sprintf(g_csFlipStatus, "flip ABORT: modelcap %08X has %08X != %08X", (unsigned)RA(s.immVA),
+                    (unsigned)(CsfTextOk(RA(s.immVA)) ? *(DWORD*)RA(s.immVA) : 0), (unsigned)s.oldv);
             return;
         }
 #endif
@@ -1382,7 +1509,7 @@ static void SetupCsFlip()
 #else
     if (!buf) { strcpy(g_csFlipStatus, "flip ABORT: VirtualAlloc failed"); return; }
 #endif
-    memcpy(buf, (void*)0x02350424, 2 + 0xBF0 * 2); // preserve current table at the flip moment
+    memcpy(buf, (void*)a_2350424, 2 + 0xBF0 * 2); // preserve current table at the flip moment
 
     g_csSentinel = (unsigned short*)buf;
     g_csTable    = (unsigned short*)(buf + 2);
@@ -1392,36 +1519,36 @@ static void SetupCsFlip()
     DWORD oldProt;
     VirtualProtect((LPVOID)CSF_TEXT_LO, CSF_TEXT_HI - CSF_TEXT_LO, PAGE_EXECUTE_READWRITE, &oldProt);
     for (const CsfSite& s : kCsfSites)
-        *(DWORD*)s.immVA = CsfRebase(s.sym);
+        *(DWORD*)RA(s.immVA) = CsfRebase(RA(s.sym));
     CsfReplaceDword(CSF_VANILLA_MODELBLK, (DWORD)g_csTable + CSF_MODEL_OFF * 2); // 21 model-block refs
     // ROOT-CAUSE FIX (stage-2a crash): kCsfSites re-based the SV_SpawnServer fill-loop END
     // (sub_631F20 @0x63248C) to g_csTable+0xBF0*2 (the OLD bound), so the loop never sentinel-
     // fills the re-based model block [0xBF0,0xDF0). Unfilled slots stay 0 -> SV_SetConfigstring
     // skips them (oldHandle==0) -> model names never written -> field_1A8 NULL -> Q_stricmpn crash.
     // Override to the FULL table so every slot (incl. the model block) gets the empty sentinel.
-    *(DWORD*)0x0063248C = (DWORD)g_csTable + CSF_MAXCS * 2;
+    *(DWORD*)a_63248C = (DWORD)g_csTable + CSF_MAXCS * 2;
 #if CS_FLIP_STAGE >= 2
     for (const CsfImm& s : kCsfStage2Imm)
-        *(DWORD*)s.immVA = s.neu;
-    CsfReplaceDword(0x034651D8, (DWORD)mmap);                          // model-map base (WRITE)
+        *(DWORD*)RA(s.immVA) = s.neu;
+    CsfReplaceDword(a_34651D8, (DWORD)mmap);                          // model-map base (WRITE)
     for (const CsfAlias& a : kCsfMmapAliases)                          // model-map READ-window aliases (re-based)
-        CsfReplaceDword(a.addr, (DWORD)mmap + (CSF_MODEL_OFF + (a.addr - CSF_MMAP_BASE) / 4 - 0x58E) * 4);
-    *(DWORD*)0x0045CE1E = (DWORD)mmap + (CSF_MODEL_OFF + CSF_MODEL_COUNT) * 4; // model-map read-window END (B2; 512 or 2b:1024)
-    CsfReplaceDword(0x0305A63C, (DWORD)side);                          // side-table offsets base
+        CsfReplaceDword(RA(a.addr), (DWORD)mmap + (CSF_MODEL_OFF + (RA(a.addr) - CSF_MMAP_BASE) / 4 - 0x58E) * 4);
+    *(DWORD*)a_45CE1E = (DWORD)mmap + (CSF_MODEL_OFF + CSF_MODEL_COUNT) * 4; // model-map read-window END (B2; 512 or 2b:1024)
+    CsfReplaceDword(a_305A63C, (DWORD)side);                          // side-table offsets base
     for (const CsfAlias& a : kCsfOffAliases) {                         // offsets-array sub-block aliases
-        DWORD idx = (a.addr - CSF_OFF_BASE) / 4;
-        DWORD ni  = (a.addr >= CSF_OFF_MODLO && a.addr < CSF_OFF_MODHI)
+        DWORD idx = (RA(a.addr) - CSF_OFF_BASE) / 4;
+        DWORD ni  = (RA(a.addr) >= CSF_OFF_MODLO && RA(a.addr) < CSF_OFF_MODHI)
                       ? (DWORD)(CSF_MODEL_OFF + idx - 0x58E) : idx;    // model block re-bases to CSF_MODEL_OFF
-        CsfReplaceDword(a.addr, (DWORD)side + ni * 4);
+        CsfReplaceDword(RA(a.addr), (DWORD)side + ni * 4);
     }
-    CsfReplaceDword(0x0305D5FC, (DWORD)side + 0x4000);                 // side-table blob (shifted)
-    CsfReplaceDword(0x0307D5FC, (DWORD)side + 0x24000);                // side-table cursor
+    CsfReplaceDword(a_305D5FC, (DWORD)side + 0x4000);                 // side-table blob (shifted)
+    CsfReplaceDword(a_307D5FC, (DWORD)side + 0x24000);                // side-table cursor
 #if CSF_MODEL_1024
-    CsfReplaceDword(0x0190E0A8, (DWORD)modelPtrBuf);                   // model XModel* table base (9)
+    CsfReplaceDword(a_190E0A8, (DWORD)modelPtrBuf);                   // model XModel* table base (9)
     // 0x0190E8A8 is the dummy overflow entity (see kCsfModelTbl note) — intentionally NOT relocated.
-    CsfReplaceDword(0x018FABD0, (DWORD)remapBuf);                      // model remap table base (3)
+    CsfReplaceDword(a_18FABD0, (DWORD)remapBuf);                      // model remap table base (3)
     for (const CsfImm& s : kCsfModel1024Imm)
-        *(DWORD*)s.immVA = s.neu;                                       // model count caps 512->1024
+        *(DWORD*)RA(s.immVA) = s.neu;                                       // model count caps 512->1024
 #endif
 #endif
     // .text intentionally left RWX (feedback_dont_restore_text_protection)
@@ -1460,7 +1587,7 @@ extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end)
 {
     if (start < 0)                start = 0;
     if (end < 0 || end > g_maxCS) end   = g_maxCS;
-    unsigned char* pool = *(unsigned char**)0x03702390;   // dword_3702390 (interned string pool)
+    unsigned char* pool = *(unsigned char**)a_3702390;   // dword_3702390 (interned string pool)
     int count = 0, totalLen = 0, models = 0;
     for (int i = start; i < end; ++i) {
         unsigned short handle = g_csTable[i];
@@ -1480,18 +1607,152 @@ extern "C" void __cdecl T4M_DumpConfigStrings(int start, int end)
 // ---------------------------------------------------------------------------
 // Install. Gated by the master CS_ENABLE switch. NO Com_Printf (init-time).
 // ---------------------------------------------------------------------------
+
+static void ResolveCsAddrs()
+{
+	a_401000 = (DWORD)T4M::GetAddress("text_start");
+	a_45CE1E = (DWORD)T4M::GetAddress("csf_imm_45CE1E");
+	a_474620 = (DWORD)T4M::GetAddress("ResetClientSnapshotSlot");
+	a_48E560 = (DWORD)T4M::GetAddress("DB_CheckPendingComplete");
+	a_496050 = (DWORD)T4M::GetAddress("sub_496050");
+	a_4962F0 = (DWORD)T4M::GetAddress("sub_4962F0");
+	a_5720F0 = (DWORD)T4M::GetAddress("sub_5720F0");
+	a_572210 = (DWORD)T4M::GetAddress("sub_572210");
+	a_59A310 = (DWORD)T4M::GetAddress("Com_DPrintf");
+	a_59A380 = (DWORD)T4M::GetAddress("DB_PrintError");
+	a_59AC50 = (DWORD)T4M::GetAddress("DB_FatalError");
+	a_59E970 = (DWORD)T4M::GetAddress("sub_59E970");
+	a_5A3320 = (DWORD)T4M::GetAddress("DB_PostLoadXZone");
+	a_5DE720 = (DWORD)T4M::GetAddress("sub_5DE720");
+	a_5E5100 = (DWORD)T4M::GetAddress("sub_5E5100");
+	a_5EF390 = (DWORD)T4M::GetAddress("sub_5EF390");
+	a_5F0210 = (DWORD)T4M::GetAddress("sub_5F0210");
+	a_5F69E0 = (DWORD)T4M::GetAddress("Q_stricmpn");
+	a_5F6D80 = (DWORD)T4M::GetAddress("Com_FormatMsg");
+	a_5F6DF0 = (DWORD)T4M::GetAddress("Info_ValueForKey");
+	a_5FDBF0 = (DWORD)T4M::GetAddress("DB_WaitForPendingLoads");
+	a_62F250 = (DWORD)T4M::GetAddress("SV_DropClient");
+	a_62F500 = (DWORD)T4M::GetAddress("csf_imm_62F500");
+	a_6311E0 = (DWORD)T4M::GetAddress("SV_SetConfigstrings");
+	a_6315C0 = (DWORD)T4M::GetAddress("csf_imm_6315C0");
+	a_631DA0 = (DWORD)T4M::GetAddress("csf_imm_631DA0");
+	a_63248C = (DWORD)T4M::GetAddress("csf_imm_63248C");
+	a_633FA0 = (DWORD)T4M::GetAddress("SV_SendServerCommand");
+	a_638520 = (DWORD)T4M::GetAddress("SV_WritePendingReliable");
+	a_6393F0 = (DWORD)T4M::GetAddress("SV_Netchan_Transmit");
+	a_639910 = (DWORD)T4M::GetAddress("sub_639910");
+	a_642A60 = (DWORD)T4M::GetAddress("sub_642A60");
+	a_64C890 = (DWORD)T4M::GetAddress("sub_64C890");
+	a_64CAE0 = (DWORD)T4M::GetAddress("csf_imm_64CAE0");
+	a_674C70 = (DWORD)T4M::GetAddress("MSG_Init");
+	a_674D00 = (DWORD)T4M::GetAddress("MSG_WriteBits");
+	a_674E00 = (DWORD)T4M::GetAddress("MSG_WriteBit0");
+	a_674F50 = (DWORD)T4M::GetAddress("MSG_ReadBits");
+	a_675060 = (DWORD)T4M::GetAddress("MSG_ReadBit");
+	a_675430 = (DWORD)T4M::GetAddress("MSG_WriteString");
+	a_675500 = (DWORD)T4M::GetAddress("MSG_ReadShort");
+	a_675560 = (DWORD)T4M::GetAddress("MSG_ReadLong");
+	a_6757A0 = (DWORD)T4M::GetAddress("MSG_ReadString");
+	a_676690 = (DWORD)T4M::GetAddress("MSG_ReadByte");
+	a_676990 = (DWORD)T4M::GetAddress("MSG_ReadEntityIndex");
+	a_6772E0 = (DWORD)T4M::GetAddress("ReadDeltaBaseline");
+	a_678330 = (DWORD)T4M::GetAddress("ResetReliableFragBuffers");
+	a_67AB80 = (DWORD)T4M::GetAddress("MSG_WriteDeltaStruct");
+	a_68DE50 = (DWORD)T4M::GetAddress("SL_GetStringOfSize");
+	a_68E390 = (DWORD)T4M::GetAddress("SL_GetLowercaseStringOfLen");
+	a_68E680 = (DWORD)T4M::GetAddress("SL_RemoveRefToString");
+	a_6AF000 = (DWORD)T4M::GetAddress("sub_6AF000");
+	a_6AF0F0 = (DWORD)T4M::GetAddress("sub_6AF0F0");
+	a_6F6CE0 = (DWORD)T4M::GetAddress("Sys_SyncDatabase");
+	a_6F6D60 = (DWORD)T4M::GetAddress("Sys_WakeDatabase");
+	a_7AA926 = (DWORD)T4M::GetAddress("Com_InitBuildStr");
+	a_7AA9C0 = (DWORD)T4M::GetAddress("I_strncpyz");
+	a_7AB559 = (DWORD)T4M::GetAddress("Com_sscanf");
+	a_7AFF40 = (DWORD)T4M::GetAddress("Mem_Memset");
+	a_7AFFC0 = (DWORD)T4M::GetAddress("Sys_MemCpy");
+	a_7EB000 = (DWORD)T4M::GetAddress("dword_7EB000");
+	a_84F750 = (DWORD)T4M::GetAddress("unk_84F750");
+	a_8875C8 = (DWORD)T4M::GetAddress("dword_8875C8");
+	a_8875F0 = (DWORD)T4M::GetAddress("dword_8875F0");
+	a_887664 = (DWORD)T4M::GetAddress("unk_887664");
+	a_88951C = (DWORD)T4M::GetAddress("unk_88951C");
+	a_88C220 = (DWORD)T4M::GetAddress("unk_88C220");
+	a_88C244 = (DWORD)T4M::GetAddress("unk_88C244");
+	a_8D55F8 = (DWORD)T4M::GetAddress("dword_8D55F8");
+	a_18FABD0 = (DWORD)T4M::GetAddress("dword_18FABD0");
+	a_190E0A8 = (DWORD)T4M::GetAddress("dword_190E0A8");
+	a_1F552C4 = (DWORD)T4M::GetAddress("cl_paused");
+	a_1F552DC = (DWORD)T4M::GetAddress("sv_running");
+	a_1F552FC = (DWORD)T4M::GetAddress("dvar_singlethreadRender");
+	a_2122AFC = (DWORD)T4M::GetAddress("dword_2122AFC");
+	a_2122B00 = (DWORD)T4M::GetAddress("fs_game");
+	a_212B2F8 = (DWORD)T4M::GetAddress("dword_212B2F8");
+	a_234FC08 = (DWORD)T4M::GetAddress("dword_234FC08");
+	a_234FC14 = (DWORD)T4M::GetAddress("dword_234FC14");
+	a_234FC20 = (DWORD)T4M::GetAddress("dword_234FC20");
+	a_2350424 = (DWORD)T4M::GetAddress("word_2350424");
+	a_2350426 = (DWORD)T4M::GetAddress("word_2350426");
+	a_2350F42 = (DWORD)T4M::GetAddress("word_2350F42");
+	a_2351C10 = (DWORD)T4M::GetAddress("unk_2351C10");
+	a_23BCC08 = (DWORD)T4M::GetAddress("unk_23BCC08");
+	a_23BCC10 = (DWORD)T4M::GetAddress("unk_23BCC10");
+	a_23D4AE4 = (DWORD)T4M::GetAddress("dword_23D4AE4");
+	a_23D5C30 = (DWORD)T4M::GetAddress("dword_23D5C30");
+	a_2547090 = (DWORD)T4M::GetAddress("dword_2547090");
+	a_26AA55C = (DWORD)T4M::GetAddress("dword_26AA55C");
+	a_26AA56C = (DWORD)T4M::GetAddress("dword_26AA56C");
+	a_2CAD98C = (DWORD)T4M::GetAddress("dword_2CAD98C");
+	a_2CAD990 = (DWORD)T4M::GetAddress("dword_2CAD990");
+	a_2CAD994 = (DWORD)T4M::GetAddress("dword_2CAD994");
+	a_2CAD998 = (DWORD)T4M::GetAddress("dword_2CAD998");
+	a_2FACDF8 = (DWORD)T4M::GetAddress("dword_2FACDF8");
+	a_2FCDA04 = (DWORD)T4M::GetAddress("dword_2FCDA04");
+	a_300DC9C = (DWORD)T4M::GetAddress("dword_300DC9C");
+	a_300DCA0 = (DWORD)T4M::GetAddress("dword_300DCA0");
+	a_300DCA8 = (DWORD)T4M::GetAddress("dword_300DCA8");
+	a_300DCAC = (DWORD)T4M::GetAddress("dword_300DCAC");
+	a_300DCB0 = (DWORD)T4M::GetAddress("dword_300DCB0");
+	a_300FFEC = (DWORD)T4M::GetAddress("dword_300FFEC");
+	a_3010014 = (DWORD)T4M::GetAddress("dword_3010014");
+	a_301011C = (DWORD)T4M::GetAddress("dword_301011C");
+	a_302012C = (DWORD)T4M::GetAddress("dword_302012C");
+	a_3058528 = (DWORD)T4M::GetAddress("byte_3058528");
+	a_305A63C = (DWORD)T4M::GetAddress("dword_305A63C");
+	a_305BC74 = (DWORD)T4M::GetAddress("dword_305BC74");
+	a_305C474 = (DWORD)T4M::GetAddress("dword_305C474");
+	a_305D5FC = (DWORD)T4M::GetAddress("byte_305D5FC");
+	a_307D5FC = (DWORD)T4M::GetAddress("dword_307D5FC");
+	a_307D6E0 = (DWORD)T4M::GetAddress("dword_307D6E0");
+	a_3122688 = (DWORD)T4M::GetAddress("unk_3122688");
+	a_3168570 = (DWORD)T4M::GetAddress("unk_3168570");
+	a_34651D8 = (DWORD)T4M::GetAddress("dword_34651D8");
+	a_3467010 = (DWORD)T4M::GetAddress("dword_3467010");
+	a_3702390 = (DWORD)T4M::GetAddress("gScrMemTreePub");
+	a_46E5054 = (DWORD)T4M::GetAddress("dword_46E5054");
+	a_48AE508 = (DWORD)T4M::GetAddress("dword_48AE508");
+	a_48AE50C = (DWORD)T4M::GetAddress("dword_48AE50C");
+	a_48AE510 = (DWORD)T4M::GetAddress("dword_48AE510");
+	a_4DA997C = (DWORD)T4M::GetAddress("dword_4DA997C");
+	g_csTable = (unsigned short*)a_2350426;
+	g_csSentinel = (unsigned short*)a_2350424;
+	g_clientCsOffsets = (int*)a_305A63C;
+	g_csData = (char*)a_305D5FC;
+	g_csCursor = (int*)a_307D5FC;
+}
+
 void PatchT4MAM_ConfigStrings()
 {
+	ResolveCsAddrs();   // variant-aware: must run before detours/flip read a_* / g_*
 #if CS_DETOURS
     // All 5 CS reconstructions. SEND + PARSE are coop-verified faithful (the trType:13 / wrong-position
     // desync was our SV_SendClientGameState omitting the two `lastEntityRef = -1` resets — after MSG_Init
     // and before the cmd4 loop — that the baseline entity-number delta-compression needs; the PARSE resets
     // it on cmd4, so the SEND must match). GET/SET/CLEAR re-enabled (full subsystem for the flip).
-    Detours::X86::DetourFunction((uintptr_t)0x006315C0, (uintptr_t)&T4_Reconstructed::SV_GetConfigstring_Naked, Detours::X86Option::USE_JUMP);
-    Detours::X86::DetourFunction((uintptr_t)0x00631DA0, (uintptr_t)&T4_Reconstructed::SV_ClearConfigstrings, Detours::X86Option::USE_JUMP);
-    Detours::X86::DetourFunction((uintptr_t)0x006311E0, (uintptr_t)&T4_Reconstructed::SV_SetConfigstrings, Detours::X86Option::USE_JUMP);
-    Detours::X86::DetourFunction((uintptr_t)0x0062F500, (uintptr_t)&T4_Reconstructed::SV_SendClientGameState, Detours::X86Option::USE_JUMP);
-    Detours::X86::DetourFunction((uintptr_t)0x0064CAE0, (uintptr_t)&T4_Reconstructed::CL_ParseGamestate, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)a_6315C0, (uintptr_t)&T4_Reconstructed::SV_GetConfigstring_Naked, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)a_631DA0, (uintptr_t)&T4_Reconstructed::SV_ClearConfigstrings, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)a_6311E0, (uintptr_t)&T4_Reconstructed::SV_SetConfigstrings, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)a_62F500, (uintptr_t)&T4_Reconstructed::SV_SendClientGameState, Detours::X86Option::USE_JUMP);
+    Detours::X86::DetourFunction((uintptr_t)a_64CAE0, (uintptr_t)&T4_Reconstructed::CL_ParseGamestate, Detours::X86Option::USE_JUMP);
 #endif
 
 #if CS_FLIP_STAGE >= 1
