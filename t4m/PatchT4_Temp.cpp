@@ -51,8 +51,7 @@
 namespace Engine
 {
 	// ---- Com / Sys / Cbuf --------------------------------------------------
-	// Com_Error is the central T4::engine::Com_Error symbol (sub_59AC50) — not redeclared here.
-	typedef void(__cdecl* Com_PrintError_t)    (int channel, const char* fmt, ...); // sub_59A440
+	// Com_Error / Com_PrintWarning use the central T4::engine symbols (sub_59AC50 / sub_59A440) — not redeclared here.
 	typedef void(__cdecl* Com_Frame_EventLoop_t)(int run);                           // sub_59B0D0
 	typedef void(__cdecl* Com_Fatal_t)         (const char* msg);                   // sub_5FE8C0
 	typedef char* (__cdecl* Com_FormatMsg_t)     (const char* fmt, ...);              // sub_5F6D80
@@ -97,7 +96,7 @@ namespace Engine
 	typedef void(__cdecl* Cinema_SetInitialized_t)(int v);                           // sub_600ED0
 	typedef void(__cdecl* Com_InitSessionWork_t)(void);                              // sub_645860
 	typedef void(__cdecl* Com_InitSessionClient_t)(void);                            // sub_647710
-	typedef void(__cdecl* Com_InitBuildStr_t)  (void* out, const char* fmt, ...);    // sub_7AA926 — sprintf-like
+	typedef void(__cdecl* crt_sprintf_t)      (void* out, const char* fmt, ...);    // sub_7AA926 — CRT sprintf (unbounded)
 	typedef void(__cdecl* Com_PrintBanner_t)   (void* ebx0, int one);                // sub_6B47C0 — console banner
 	typedef void* (__cdecl* Mem_Memset_t)        (void* dst, int c, int n);            // sub_7AFF40
 	typedef void(__cdecl* SetBranding_t)       (int mode);                           // sub_59AFA0
@@ -120,7 +119,6 @@ namespace Engine
 	typedef void(__cdecl* Com_InitSessionFinalize_t)(void);                          // sub_46FA40
 
 	// ---- Resolved pointers -------------------------------------------------
-	static const Com_PrintError_t              Com_PrintError = (Com_PrintError_t)0x0059A440;
 	static const Com_Frame_EventLoop_t         Com_EnqueueEvent = (Com_Frame_EventLoop_t)0x0059B0D0;
 	static const Com_Fatal_t                   Com_Fatal = (Com_Fatal_t)0x005FE8C0;
 	static const Com_FormatMsg_t               Com_FormatMsg = (Com_FormatMsg_t)0x005F6D80;
@@ -164,7 +162,7 @@ namespace Engine
 	static const Cinema_SetInitialized_t       Cinema_SetInitialized = (Cinema_SetInitialized_t)0x00600ED0;
 	static const Com_InitSessionWork_t         Com_InitSessionWork = (Com_InitSessionWork_t)0x00645860;
 	static const Com_InitSessionClient_t       Com_InitSessionClient = (Com_InitSessionClient_t)0x00647710;
-	static const Com_InitBuildStr_t            Com_InitBuildStr = (Com_InitBuildStr_t)0x007AA926;
+	static const crt_sprintf_t                 crt_sprintf = (crt_sprintf_t)0x007AA926;
 	static const Com_PrintBanner_t             Com_PrintBanner = (Com_PrintBanner_t)0x006B47C0;
 	static const Mem_Memset_t                  Mem_Memset = (Mem_Memset_t)0x007AFF40;
 	static const SetBranding_t                 SetBranding = (SetBranding_t)0x0059AFA0;
@@ -509,7 +507,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 {
 	// ---- Build banner (10h = channel "init" to Com_Printf) ----------------
 	char banner[256];
-	Engine::Com_InitBuildStr(
+	Engine::crt_sprintf(
 		/*out*/ (void*)0x04E55B20,
 		"%s.%s.%d CL(%s) %s %s",
 		"1", "7", 0x4EF, "350073", "JADAMS2", "Thu Oct 29 15:43:55 2009");
@@ -688,7 +686,7 @@ extern "C" void __cdecl Com_Init_Inner(void* cmdLineTail)
 	WSADATA wsa;
 	int wsaRc = WSAStartup(0x0101, &wsa);
 	if (wsaRc != 0)
-		Engine::Com_PrintError(0x10, "WARNING: Winsock initialization failed, returned %d\n", wsaRc);
+		T4::engine::Com_PrintWarning(0x10, "WARNING: Winsock initialization failed, returned %d\n", wsaRc);
 	else
 	{
 		T4::engine::Com_Printf(0x10, "Winsock Initialized\n");

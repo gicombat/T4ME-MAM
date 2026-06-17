@@ -29,6 +29,7 @@
 #include <cstring>   // strlen / strcmp / memcpy / memset
 #include <cstdio>    // sprintf (flip status string)
 
+
 // === T4M variant-aware address cache (resolved at runtime in ResolveCsAddrs) ===
 static DWORD a_401000 = 0;
 static DWORD a_45CE1E = 0;
@@ -40,7 +41,6 @@ static DWORD a_5720F0 = 0;
 static DWORD a_572210 = 0;
 static DWORD a_59A310 = 0;
 static DWORD a_59A380 = 0;
-static DWORD a_59AC50 = 0;
 static DWORD a_59E970 = 0;
 static DWORD a_5A3320 = 0;
 static DWORD a_5DE720 = 0;
@@ -209,6 +209,7 @@ extern "C" int    g_maxModels;
 static char g_csFlipStatus[96] = "CS flip stage1: disabled";
 
 
+using namespace T4::engine;
 
 
 namespace T4_Reconstructed
@@ -221,8 +222,6 @@ namespace T4_Reconstructed
     static const char  cs_empty[1] = { 0 };                            // chaîne vide locale
 
     // --- helpers vanilla (par VA) -------------------------------------------
-    typedef void (__cdecl* CsErr_t)(int level, const void* msg, ...);  // sub_59AC50
-    #define cs_error ((CsErr_t)a_59AC50)
     typedef void (__cdecl* StrncpyZ_t)(char* dst, const char* src, int count); // sub_7AA9C0
     #define cs_strncpyz ((StrncpyZ_t)a_7AA9C0)
     typedef void (__cdecl* ComMemset_t)(void* dst, int fill, int dwordCount);  // sub_5E5100
@@ -239,8 +238,8 @@ namespace T4_Reconstructed
     #define p_sv_running ((int*)a_234FC14)
     #define g_clientsBase ((unsigned char*)a_2547090)// dword_2547090
     static const int CLIENT_STRIDE  = 0x58D30;
-    #define ERR_BAD_INDEX ((const void*)a_8875C8)// "SV_SetConfigstring: bad index %i"
-    #define ERR_BIG_BUNDLE ((const void*)a_8875F0)// "…big config string…"
+    #define ERR_BAD_INDEX ((const char*)a_8875C8)// "SV_SetConfigstring: bad index %i"
+    #define ERR_BIG_BUNDLE ((const char*)a_8875F0)// "…big config string…"
     #define CS_STRPOOL (*(unsigned char**)a_3702390)
     #define CS_SVS_PTR (*(unsigned char**)a_23D5C30)
 
@@ -250,8 +249,8 @@ namespace T4_Reconstructed
     extern "C" void __cdecl SV_GetConfigstring(int idx, char* dst, int dstSize)
     {
         if (idx < 0 || idx >= g_maxCS)
-            cs_error(1, cs_assertToken, idx);            // puis fall-through (fidèle)
-
+            T4::engine::Com_Error(ERR_DROP, cs_assertToken, idx);            // puis fall-through (fidèle)
+        
         unsigned int handle = (unsigned int)g_csTable[idx];
         if ((handle & 0xFFFF) == 0) { cs_strncpyz(dst, cs_empty, dstSize - 1); dst[dstSize - 1] = 0; return; }
         if (handle == 0)            { cs_strncpyz(dst, (const char*)0, dstSize - 1); dst[dstSize - 1] = 0; return; }
@@ -403,7 +402,7 @@ namespace T4_Reconstructed
             lastIndex = idx;
 
             if (idx < 0 || idx >= g_maxCS)
-                cs_error(1, ERR_BAD_INDEX, idx);
+                T4::engine::Com_Error(ERR_DROP, ERR_BAD_INDEX, idx);
 
             unsigned int oldHandle = g_csTable[idx];
             if (oldHandle == 0) continue;                 // slot jamais alloué → skip
@@ -445,7 +444,8 @@ namespace T4_Reconstructed
                         const char* pb = str + offset;
                         do {
                             --chunk;
-                            if (chunk == 0) cs_error(1, ERR_BIG_BUNDLE, 0x1EF);
+                            if (chunk == 0) 
+                                T4::engine::Com_Error(ERR_DROP, ERR_BIG_BUNDLE, 0x1EF);
                         } while (pb[chunk] == ' ');
                     }
                     cs_strncpyz(fragbuf, str + offset, chunk);
@@ -966,10 +966,9 @@ namespace T4_Reconstructed
     #define pg_4962F0 ((pg_arg1_t)a_4962F0)
     #define pg_6AF0F0 ((pg_arg1_t)a_6AF0F0)
     typedef void  (__cdecl* pg_err_t)(int, const char*, ...);
-    #define pg_59A380 ((pg_err_t)a_59A380)// Com_Error (bad cmd / drop)
+    #define pg_59A380 ((pg_err_t)a_59A380)// Com_PrintError (bad cmd / drop)
     typedef void  (__cdecl* pg_clreset_t)(int, int);
     #define pg_5DE720 ((pg_clreset_t)a_5DE720)
-    // (cs_error == sub_59AC50 reused for configstring/baseline range errors.)
 
     // ---- parse __usercall thunks (forward declarations; bodies defined at file
     //      scope after the namespace). extern "C" -> flat names; these declarations
@@ -1064,7 +1063,7 @@ namespace T4_Reconstructed
                         csIndex = CL_PG_ReadBits(msg, 0xC);  // sub_674F50, 12 bits on the wire
 
                     if (csIndex < 0 || csIndex >= g_maxCS) { // was cmp esi,0BF0h
-                        cs_error(1, STR_TOO_MANY_CS);        // sub_59AC50
+                        T4::engine::Com_Error(ERR_DROP, STR_TOO_MANY_CS);        // sub_59AC50
                         /* edi reloaded from dword_307D5FC; cursor unchanged */
                     }
 
@@ -1086,7 +1085,7 @@ namespace T4_Reconstructed
                     char* str = CL_PG_ReadString(msg);       // sub_6757A0
                     int slen = (int)strlen(str);
                     if (G_CSCURSOR + slen + 1 > 0x20000) {   // cmp ecx,20000h; jle
-                        cs_error(1, STR_CS_OVERFLOW);        // sub_59AC50
+                        T4::engine::Com_Error(ERR_DROP, STR_CS_OVERFLOW);        // sub_59AC50
                         /* edi reloaded */
                     }
                     g_clientCsOffsets[csIndex] = G_CSCURSOR;
@@ -1114,7 +1113,7 @@ namespace T4_Reconstructed
                 int nb  = cmd + 7;                           // lea edi,[ecx+7] = 0xA
                 int idx = CL_PG_ReadEntityIdx(nb, msg);      // sub_676990
                 if (idx < 0 || idx >= 0x400)                 // absolute bound (NOT relocated)
-                    cs_error(1, STR_BAD_ENT, idx);
+                    T4::engine::Com_Error(ERR_DROP, STR_BAD_ENT, idx);
                 char* table = BASELINE_ENTITY_TABLE + idx * 0x118;
                 CL_PG_ReadDeltaBaseline(idx, msg, 0, readBuf, table); // sub_6772E0
                 continue;
@@ -1124,7 +1123,7 @@ namespace T4_Reconstructed
                     msg->lastEntityRef = -1;                 // [ebx+24h] = -1
                 int idx = CL_PG_ReadEntityIdx(0xA, msg);
                 if (idx < 0 || idx > 0x15E)                  // jle -> bound is <= 0x15E
-                    cs_error(1, STR_BAD_CLI, idx);
+                    T4::engine::Com_Error(ERR_DROP, STR_BAD_CLI, idx);
                 char* table = BASELINE_CLIENT_TABLE + idx * 0x118;
                 CL_PG_ReadDeltaBaseline(idx, msg, 0, readBuf, table);
                 continue;
@@ -1619,8 +1618,7 @@ static void ResolveCsAddrs()
 	a_5720F0 = (DWORD)T4M::GetAddress("sub_5720F0");
 	a_572210 = (DWORD)T4M::GetAddress("sub_572210");
 	a_59A310 = (DWORD)T4M::GetAddress("Com_DPrintf");
-	a_59A380 = (DWORD)T4M::GetAddress("DB_PrintError");
-	a_59AC50 = (DWORD)T4M::GetAddress("DB_FatalError");
+	a_59A380 = (DWORD)T4M::GetAddress("Com_PrintError");
 	a_59E970 = (DWORD)T4M::GetAddress("sub_59E970");
 	a_5A3320 = (DWORD)T4M::GetAddress("DB_PostLoadXZone");
 	a_5DE720 = (DWORD)T4M::GetAddress("sub_5DE720");
@@ -1632,10 +1630,10 @@ static void ResolveCsAddrs()
 	a_5F6DF0 = (DWORD)T4M::GetAddress("Info_ValueForKey");
 	a_5FDBF0 = (DWORD)T4M::GetAddress("DB_WaitForPendingLoads");
 	a_62F250 = (DWORD)T4M::GetAddress("SV_DropClient");
-	a_62F500 = (DWORD)T4M::GetAddress("csf_imm_62F500");
+	a_62F500 = (DWORD)T4M::GetAddress("SV_SendClientGameState");
 	a_6311E0 = (DWORD)T4M::GetAddress("SV_SetConfigstrings");
-	a_6315C0 = (DWORD)T4M::GetAddress("csf_imm_6315C0");
-	a_631DA0 = (DWORD)T4M::GetAddress("csf_imm_631DA0");
+	a_6315C0 = (DWORD)T4M::GetAddress("SV_GetConfigstring");
+	a_631DA0 = (DWORD)T4M::GetAddress("SV_ClearConfigstrings");
 	a_63248C = (DWORD)T4M::GetAddress("csf_imm_63248C");
 	a_633FA0 = (DWORD)T4M::GetAddress("SV_SendServerCommand");
 	a_638520 = (DWORD)T4M::GetAddress("SV_WritePendingReliable");
@@ -1643,7 +1641,7 @@ static void ResolveCsAddrs()
 	a_639910 = (DWORD)T4M::GetAddress("sub_639910");
 	a_642A60 = (DWORD)T4M::GetAddress("sub_642A60");
 	a_64C890 = (DWORD)T4M::GetAddress("sub_64C890");
-	a_64CAE0 = (DWORD)T4M::GetAddress("csf_imm_64CAE0");
+	a_64CAE0 = (DWORD)T4M::GetAddress("CL_ParseGamestate");
 	a_674C70 = (DWORD)T4M::GetAddress("MSG_Init");
 	a_674D00 = (DWORD)T4M::GetAddress("MSG_WriteBits");
 	a_674E00 = (DWORD)T4M::GetAddress("MSG_WriteBit0");
@@ -1665,7 +1663,7 @@ static void ResolveCsAddrs()
 	a_6AF0F0 = (DWORD)T4M::GetAddress("sub_6AF0F0");
 	a_6F6CE0 = (DWORD)T4M::GetAddress("Sys_SyncDatabase");
 	a_6F6D60 = (DWORD)T4M::GetAddress("Sys_WakeDatabase");
-	a_7AA926 = (DWORD)T4M::GetAddress("Com_InitBuildStr");
+	a_7AA926 = (DWORD)T4M::GetAddress("sprintf");
 	a_7AA9C0 = (DWORD)T4M::GetAddress("I_strncpyz");
 	a_7AB559 = (DWORD)T4M::GetAddress("Com_sscanf");
 	a_7AFF40 = (DWORD)T4M::GetAddress("Mem_Memset");

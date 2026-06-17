@@ -157,7 +157,6 @@ namespace T4
 	typedef int(__cdecl * Helicopter_GetMethod_t)(const char **pName);
 	typedef int(__cdecl * Actor_GetMethod_t)(const char **pName);
 	typedef int(__cdecl * BuiltIn_GetMethod_t)(const char **pName, int *type);
-	typedef void(*RemoveRefToValue_t)(scriptInstance_t inst, int type, T4::engine::VariableUnion u);
 
 	// dvar
 	typedef dvar_t* (__cdecl*Dvar_FindMalleableVarT)(const char* name);
@@ -228,9 +227,6 @@ namespace T4
 	{
 		extern "C"
 		{
-			// ── Vanilla function pointers (script/game) ─────────────────────────────
-			extern RemoveRefToValue_t RemoveRefToValue;
-
 			// ── Asm/naked wrappers ──────────────────────────────────────────────────
 			extern double CG_CornerDebugPrint(const char* text, float x, float y, float label_width, char* label, float* color);
 

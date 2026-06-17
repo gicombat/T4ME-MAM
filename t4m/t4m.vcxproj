@@ -159,7 +159,6 @@ popd</Command>
     <ClInclude Include="resource.h" />
     <ClInclude Include="Resource\Detours.h" />
     <ClInclude Include="Resource\Typedef.h" />
-    <ClInclude Include="Script.h" />
     <ClInclude Include="SDLLP.h" />
     <ClInclude Include="StdInc.h" />
     <ClInclude Include="t4m_version.h" />

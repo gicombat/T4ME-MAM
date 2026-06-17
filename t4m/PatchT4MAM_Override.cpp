@@ -115,7 +115,7 @@ void T4M::Key_FormatIntroSeconds(const char* argStr, char* outBuf)
 
 	if (value < 0 || value > 40)
 	{
-		T4::engine::Com_PrintError(1,
+		T4::engine::Com_PrintWarning(1,
 			"Argument \"%s\" given for FAKE_INTRO_SECONDS is outside the acceptable range of (%d,%d).",
 			argStr, 0, 40);
 		value = 0;
@@ -142,7 +142,7 @@ void T4M::Key_FormatIntroHourMinSec(const char* argStr, char* outBuf)
 
 	if (splittedString.size() != 3)
 	{
-		T4::engine::Com_PrintError(1, "Incorrect number of argument FAKE_INTRO_FULL_TIME was given, it should be 3 value with '_' delemiter");
+		T4::engine::Com_PrintWarning(1, "Incorrect number of argument FAKE_INTRO_FULL_TIME was given, it should be 3 value with '_' delemiter");
 	}
 
 	if (T4M::resetFakeIntroSecondValue)
