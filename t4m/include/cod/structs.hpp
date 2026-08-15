@@ -13633,6 +13633,8 @@ namespace T4
 #include "animation.hpp"
 #include "db.hpp"
 #include "com.hpp"
+#include "server.hpp"
+#include "bgame.hpp"
 #include "globals.hpp"
 
 #pragma pack(pop)

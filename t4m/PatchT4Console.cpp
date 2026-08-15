@@ -295,6 +295,13 @@ void PatchT4_Console()
 	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	censored_ver = T4::dvar::Dvar_RegisterBool(0, "censored_ver", T4::dvar::DVAR_FLAG_ARCHIVE, "Indicate if we want to play as a censored version (aka german) or uncensored version");
+	friendlyNameHealthColorAll = T4::dvar::Dvar_RegisterBool(0, "friendlyNameHealthColorAll", T4::dvar::DVAR_FLAG_ARCHIVE, "Color every displayed friendly name by the target's health.");
+	friendlyNameHealthColorPow = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorPow", 1.0f, 0.1f, 8.0f, T4::dvar::DVAR_FLAG_ARCHIVE, "Curve applied to the health->color ramp (>1 keeps the healthy color longer).");
+	// Ramp stops below the 100% one, which is friendlyNameFontColor itself.
+	friendlyNameHealthColor75 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor75", 0.95f, 1.00f, 0.78f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 75% health.");
+	friendlyNameHealthColor50 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor50", 1.00f, 1.00f, 0.55f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 50% health.");
+	friendlyNameHealthColor25 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor25", 1.00f, 0.80f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 25% health.");
+	friendlyNameHealthColor0  = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor0",  1.00f, 0.45f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 0% health.");
 
 	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	FilterConsoleSpam();

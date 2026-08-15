@@ -68,5 +68,14 @@ namespace T4
 		WEAK symbol<DWORD> db_streamReadBlocksDone{ "db_streamReadBlocksDone" };
 		WEAK symbol<DWORD> db_streamDecompBytesTotal{ "db_streamDecompBytesTotal" };
 		WEAK symbol<DWORD> db_streamDecompBytesDone{ "db_streamDecompBytesDone" };
+
+		// cgame / script globals
+		WEAK symbol<cg_s> cgArray{ "cgArray" };                      // cgArray[0].clientNum picks the rendered overlay
+		WEAK symbol<int> g_precacheOpen{ "dword_18F6DB8" };          // non-zero while precaching is still allowed
+		// SL string pool: gScrMemTreePub->mt_buffer (clientscript_public.hpp) — do NOT redeclare here.
+
+		// friendly-name overlay style dvars (read by CG_DrawFriendOverlay)
+		WEAK symbol<dvar_t*> friendlyNameFontColor{ "dvar_friendlyNameFontColor" };
+		WEAK symbol<dvar_t*> hostileNameFontColor{ "dvar_hostileNameFontColor" };
 	}
 }

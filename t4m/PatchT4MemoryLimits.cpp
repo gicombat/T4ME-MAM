@@ -13,7 +13,7 @@
 #include <safetyhook.hpp>
 
 #define NEW_ASSET_ENTRY_POOL_SIZE 65535
-#define NEW_IMAGE_SORT_BUFFER_SIZE 8192
+#define NEW_SORTED_MATERIALS_SIZE 8192   // >= ASSET_TYPE_MATERIAL pool size (4096)
 #define NEW_MAX_GENTITIES   2048
 #define ENTITY_SIZE         0x378        // 888 bytes per gentity_s
 #define OLD_ENTITY_BASE     T4M::GetAddress("g_entities")
@@ -267,102 +267,93 @@ namespace T4M
 		*(DWORD*)T4M::GetAddress("assetPool_reloc_48FA28") = newPoolAddr;
 
 		// =====================================================================
-		// Fix renderer image sort array overflow
+		// Fix rgp.sortedMaterials overflow
 		//
-		// R_LoadWorld and sub_719F40 call sub_48DF60 (DB_EnumXAssets_FastFile_Array)
-		// to fill dword_3BF1880[] with image asset headers, then sort them.
-		// The array is hardcoded for 0x800 (2048) entries, but T4M increases the
-		// image pool to 8192. sub_48DF60 has NO bounds check — it writes ALL
-		// matching assets, overflowing the buffer and corrupting:
-		//   - dword_3BF3884 (image count, at array + 0x2004)
-		//   - dword_3BF392C (scene structure pointer, at array + 0x20AC)
-		// This causes both observed crashes:
+		// dword_3BF1880 is the base of rgp (r_global_permanent_t, 0x2280 bytes),
+		// whose first member is Material* sortedMaterials[2048]. Related globals:
+		//   dword_3BF3884 = rgp + 0x2004 = rgp.materialCount
+		//   dword_3BF392C = rgp + 0x20AC = rgp.world
+		//
+		// R_LoadWorld (sub_705070) and sub_719F40 call sub_48DF60
+		// (DB_EnumXAssets_FastFile_Array) with ASSET_TYPE_MATERIAL to fill
+		// sortedMaterials[], then sort it. sub_48DF60 ignores its third argument
+		// (the 800h "max" push is never read) and writes ALL matching assets, so
+		// with the material pool raised to 4096 it overruns the array and
+		// clobbers materialCount / needSortMaterials / world. Observed crashes:
 		//   0x719A2E: sort comparator gets garbage → access violation
-		//   0x491500: corrupted scene pointer → bitfield access violation
+		//   0x491500: corrupted rgp.world → bitfield access violation
 		//
-		// Fix: allocate a larger buffer (8192 entries) and patch all 21 references.
+		// Fix: move sortedMaterials[] out of rgp into a larger buffer and patch
+		// the 11 instructions that reference the array base.
+		//
+		// NOT patched on purpose:
+		//   0x6D69EB — "push offset dword_3BF1880" in sub_6D69D0 is the dest of
+		//              memset(rgp, 0, 0x2280), i.e. the whole-struct clear, not
+		//              an array access. Redirecting it leaves the real rgp
+		//              (default materials, images, world, saved screens) dirty.
+		//   dword_3BF3884 — materialCount never overflowed, it was corrupted by
+		//              the array overrun. Leaving it inside rgp keeps it in sync
+		//              with both vanilla reset paths (the memset above and
+		//              "mov dword_3BF3884, 0" in sub_6E9D10).
+		//
+		// KNOWN LIMIT: Material_SetSortedIndex (sub_6E9900) packs the sorted
+		// index into an 11-bit field of material->info.drawSurf ("and eax, 7FFh",
+		// mask 0FFFFF001h), so only 2048 distinct indices are addressable. Past
+		// 2048 materials the index wraps silently and the "Too many unique
+		// materials" Com_Error does not fire (it tests equality with 800h, and
+		// the R_LoadWorld enum writes materialCount directly). Going beyond 2048
+		// requires widening that bitfield, not a bigger array.
 		// =====================================================================
 
 
-		// Allocate new image sort buffer + count variable (contiguous)
-		static DWORD* newImageBuffer = (DWORD*)VirtualAlloc(
+		static DWORD* newSortedMaterials = (DWORD*)VirtualAlloc(
 			NULL,
-			NEW_IMAGE_SORT_BUFFER_SIZE * sizeof(DWORD) + sizeof(DWORD), // array + count
+			NEW_SORTED_MATERIALS_SIZE * sizeof(DWORD),
 			MEM_COMMIT | MEM_RESERVE,
 			PAGE_READWRITE);
 
-		if (!newImageBuffer) {
-			T4::engine::Com_Printf(0, "^1ERROR: Failed to allocate expanded image sort buffer\n");
+		if (!newSortedMaterials) {
+			T4::engine::Com_Printf(0, "^1ERROR: Failed to allocate expanded sortedMaterials array\n");
 			return;
 		}
 
-		DWORD newImgBufAddr = (DWORD)newImageBuffer;
-		// Place the count variable right after the array, mirroring original layout
-		// Original: array at 0x3BF1880, count at 0x3BF3884 (offset +0x2004 from array, but
-		// we just need a separate DWORD for the count — any stable address works)
-		DWORD* newImageCount = &newImageBuffer[NEW_IMAGE_SORT_BUFFER_SIZE];
-		DWORD newImgCntAddr = (DWORD)newImageCount;
+		DWORD newMaterialsAddr = (DWORD)newSortedMaterials;
 
 		// Unprotect renderer .text pages covering patch addresses
-		// Range: 0x6D69EB to 0x74200E+4
+		// Lowest patched site is 0x6DC964; range start covers the whole span.
 		DWORD oldProtect2;
 		VirtualProtect((LPVOID)T4M::GetAddress("imgBuf_patch_rangeStart"), T4M::GetAddress("imgBuf_patch_rangeEnd") - T4M::GetAddress("imgBuf_patch_rangeStart"), PAGE_EXECUTE_READWRITE, &oldProtect2);
 
-		// --- Patch 12 references to dword_3BF1880 (image sort array) ---
+		// --- Patch 11 references to rgp.sortedMaterials ---
 		// Binary scan found pattern 80 18 BF 03 at the exact VA of the immediate.
 		// Patch address = VA directly (no offset needed).
 
-		// 68 [80 18 BF 03] → push offset dword_3BF1880
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6D69EB") = newImgBufAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DC964") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DC964") = newMaterialsAddr;
 		// 8B 14 95 [80 18 BF 03] → mov edx, dword_3BF1880[edx*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DCA8C") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6DCA8C") = newMaterialsAddr;
 		// 89 0C 85 [80 18 BF 03] → mov dword_3BF1880[eax*4], ecx
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6E993D") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_6E993D") = newMaterialsAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (R_LoadWorld)
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_705784") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_705784") = newMaterialsAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (R_LoadWorld sort call)
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_70579F") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_70579F") = newMaterialsAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (sub_719F40)
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F52") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F52") = newMaterialsAddr;
 		// 68 [80 18 BF 03] → push offset dword_3BF1880  (sub_719F40 sort call)
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F6D") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_719F6D") = newMaterialsAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C11") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C11") = newMaterialsAddr;
 		// 8B 1C 85 [80 18 BF 03] → mov ebx, dword_3BF1880[eax*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C98") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741C98") = newMaterialsAddr;
 		// 8B 04 85 [80 18 BF 03] → mov eax, dword_3BF1880[eax*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741EB7") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_741EB7") = newMaterialsAddr;
 		// 8B 2C 85 [80 18 BF 03] → mov ebp, dword_3BF1880[eax*4]
-		*(DWORD*)T4M::GetAddress("imgBuf_reloc_74200E") = newImgBufAddr;
+		*(DWORD*)T4M::GetAddress("imgBuf_reloc_74200E") = newMaterialsAddr;
 
-		// --- Patch 9 references to dword_3BF3884 (image count) ---
-		// Binary scan found pattern 84 38 BF 03 at the exact VA of the immediate.
-
-		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E990F") = newImgCntAddr;
-		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9936") = newImgCntAddr;
-		// A1 [84 38 BF 03] → mov eax, dword_3BF3884
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9942") = newImgCntAddr;
-		// A3 [84 38 BF 03] → mov dword_3BF3884, eax
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E995A") = newImgCntAddr;
-		// C7 05 [84 38 BF 03] 00000000 → mov dword_3BF3884, 0
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_6E9D3C") = newImgCntAddr;
-		// A3 [84 38 BF 03] → mov dword_3BF3884, eax  (R_LoadWorld)
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_705793") = newImgCntAddr;
-		// 8B 0D [84 38 BF 03] → mov ecx, dword_3BF3884
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_705799") = newImgCntAddr;
-		// A3 [84 38 BF 03] → mov dword_3BF3884, eax  (sub_719F40)
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_719F61") = newImgCntAddr;
-		// 8B 0D [84 38 BF 03] → mov ecx, dword_3BF3884
-		*(DWORD*)T4M::GetAddress("imgCnt_reloc_719F67") = newImgCntAddr;
-
-		// Also patch the max count passed to sub_48DF60 (0x800 → 0x2000)
-		// At 0x70577F: push 800h → change immediate to 8192
-		// At 0x719F4D: push 800h → change immediate to 8192
-		// These are ignored by the function, but patch them for correctness
+		// rgp.materialCount (dword_3BF3884) is deliberately left in place — see
+		// the "NOT patched on purpose" note above. The 800h pushed at 0x70577F
+		// and 0x719F4D is dead: sub_48DF60 never reads its third argument.
 
 		// =====================================================================
 		// G_Spawn entity limit increase

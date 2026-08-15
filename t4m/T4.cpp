@@ -25,6 +25,13 @@ dvar_t* vulkan;
 // Tweak switch Mode
 dvar_t* is_watching_for_switch_mode_input;
 dvar_t* switch_mode_input_pressed;
+// Friendly-name overlay — health-based coloring
+dvar_t* friendlyNameHealthColorAll;
+dvar_t* friendlyNameHealthColorPow;
+dvar_t* friendlyNameHealthColor75;
+dvar_t* friendlyNameHealthColor50;
+dvar_t* friendlyNameHealthColor25;
+dvar_t* friendlyNameHealthColor0;
 
 
 namespace T4
@@ -101,6 +108,36 @@ dvar_t* T4::dvar::Dvar_RegisterFloat(const char* dvarName, float defaultValue, f
 		mov edi, dvarName
 		call func
 		add esp, 0x10
+		mov retv, eax
+	}
+
+	return retv;
+}
+
+// @wrapper — asm usercall to sub_5EF040. Vanilla is usercall(x@<xmm0>, name@<edi>,
+// y, z, w, flags, description) with caller cleanup of 0x14. Registers a DVAR_TYPE_VEC4
+// (type tag 4) with domain [0.0, 1.0] — same entry point the engine uses for
+// friendlyNameFontColor / hostileNameFontColor.
+dvar_t* T4::dvar::Dvar_RegisterVec4(const char* dvarName, float x, float y, float z, float w, int flags, const char* description)
+{
+	DWORD func = T4M::GetAddress("Dvar_RegisterVec4");
+	dvar_t* retv;
+
+	__asm
+	{
+		movss xmm0, x
+		push description
+		push flags
+		sub esp, 0Ch
+		fld w
+		fstp dword ptr[esp + 8]
+		fld z
+		fstp dword ptr[esp + 4]
+		fld y
+		fstp dword ptr[esp]
+		mov edi, dvarName
+		call func
+		add esp, 0x14
 		mov retv, eax
 	}
 

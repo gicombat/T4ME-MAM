@@ -248,6 +248,7 @@ namespace T4
 			extern dvar_t* Dvar_RegisterFloat(const char* dvarName, float defaultValue, float min, float max, int flags, const char* description = "");
 			extern dvar_t* Dvar_RegisterInt(int default_value, const char* name, int min, int max, int flags, const char* description = "");
 			extern dvar_t* Dvar_RegisterEnum(const char** valueList, int defaultIndex, const char* dvarName, int flags, const char* description);
+			extern dvar_t* Dvar_RegisterVec4(const char* dvarName, float x, float y, float z, float w, int flags, const char* description = "");
 		} // extern "C"
 	} // namespace dvar
 } // namespace T4
@@ -423,6 +424,14 @@ extern dvar_t* vulkan;
 // Tweak switch Mode
 extern dvar_t* is_watching_for_switch_mode_input;
 extern dvar_t* switch_mode_input_pressed;
+// Friendly-name overlay — health-based coloring (PatchT4MAM_FriendOverlay.cpp)
+extern dvar_t* friendlyNameHealthColorAll;
+extern dvar_t* friendlyNameHealthColorPow;
+// Ramp stops. 100% is the snapshot of friendlyNameFontColor, not a dvar.
+extern dvar_t* friendlyNameHealthColor75;
+extern dvar_t* friendlyNameHealthColor50;
+extern dvar_t* friendlyNameHealthColor25;
+extern dvar_t* friendlyNameHealthColor0;
 
 #define CONFIG_FILE_LOCATION ".\\T4M-MAM.conf"
 #define IS_BETA

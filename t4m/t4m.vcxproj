@@ -125,6 +125,8 @@ popd</Command>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
     <ClInclude Include="include\cod\animation.hpp" />
+    <ClInclude Include="include\cod\bgame.hpp" />
+    <ClInclude Include="include\cod\server.hpp" />
     <ClInclude Include="include\cod\clientscript\clientscript_public.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_animtree.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_compiler.hpp" />
@@ -200,6 +202,7 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_ConfigStrings.cpp" />
     <ClCompile Include="PatchT4MAM_Loopback.cpp" />
     <ClCompile Include="PatchT4MAM_Cinematic.cpp" />
+    <ClCompile Include="PatchT4MAM_FriendOverlay.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
     <ClCompile Include="PatchT4NoBorder.cpp" />
     <ClCompile Include="PatchT4Script.cpp" />

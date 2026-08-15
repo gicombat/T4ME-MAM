@@ -21,5 +21,8 @@ namespace T4
 
 		// non-variadic — symbol<> (moved from T4.cpp extern "C")
 		WEAK symbol<void(int channel, int arg)> Com_DvarDump{ "Com_DvarDump" };
+
+		// sub_5F6D80 — the engine's va(): formats into a rotating static buffer.
+		WEAK symbol<const char*(const char* fmt, ...)>Com_FormatMsg{ "Com_FormatMsg" };
 	}
 }
