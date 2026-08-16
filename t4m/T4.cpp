@@ -28,6 +28,7 @@ dvar_t* switch_mode_input_pressed;
 // Friendly-name overlay — health-based coloring
 dvar_t* friendlyNameHealthColorAll;
 dvar_t* friendlyNameHealthColorPow;
+dvar_t* friendlyNameHealthColorRedAt;
 dvar_t* friendlyNameHealthColor75;
 dvar_t* friendlyNameHealthColor50;
 dvar_t* friendlyNameHealthColor25;

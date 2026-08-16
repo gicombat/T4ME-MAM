@@ -16,7 +16,10 @@
 //
 // The ramp has five stops — 100% is friendlyNameFontColor itself (snapshotted,
 // so full health is bit-identical to vanilla), then friendlyNameHealthColor75 /
-// 50 / 25 / 0, registered as DVAR_TYPE_VEC4 in PatchT4_Console.
+// 50 / 25 / 0, registered as DVAR_TYPE_VEC4 in PatchT4_Console. Those four are
+// evenly spaced over [friendlyNameHealthColorRedAt, 100%] health, so their names
+// are ramp quarters, not health percentages: with the default redAt of 0.20 they
+// land at 80 / 60 / 40 / 20% and anything below 20% stays on the last stop.
 //
 // Vanilla symbols come from the cod/ headers, the T4M dvars from T4.h
 // (registered in PatchT4_Console). Nothing is resolved with T4M::GetAddress
@@ -105,9 +108,12 @@ namespace
 	// Ramp stops below 100%, in descending health order. The 100% stop is the
 	// snapshot of friendlyNameFontColor itself, so full health stays bit-identical
 	// to vanilla and honours a player-side "set friendlyNameFontColor".
-	const int RAMP_SEGMENTS = 4;   // 100->75->50->25->0, evenly spaced by 0.25
+	const int RAMP_SEGMENTS = 4;   // quarters of the ramp span, evenly spaced by 0.25
 
-	// Piecewise-linear ramp: snapshot -> 75% -> 50% -> 25% -> 0%.
+	// Highest value friendlyNameHealthColorRedAt may take; keeps the span non-zero.
+	const float RED_AT_MAX = 0.9f;
+
+	// Piecewise-linear ramp over [redAt, 100%] health, pinned to the last stop below redAt.
 	void ApplyColor(float frac)
 	{
 		dvar_t* full = *friendlyNameFontColor;
@@ -132,8 +138,21 @@ namespace
 			colorOverridden = true;
 		}
 
-		// t = 0 at full health, 1 at dead. The curve warps the ramp position only.
-		float t = 1.0f - frac;
+		// The ramp spans [redAt, 100%] instead of [0, 100%]: reaching the last stop
+		// only at 0 HP means the red is never actually seen in play.
+		float redAt = friendlyNameHealthColorRedAt ? friendlyNameHealthColorRedAt->current.value : 0.0f;
+		if (redAt < 0.0f)
+			redAt = 0.0f;
+		else if (redAt > RED_AT_MAX)
+			redAt = RED_AT_MAX;
+
+		// t = 0 at full health, 1 at redAt and below. The curve warps the ramp position only.
+		float t = (1.0f - frac) / (1.0f - redAt);
+		if (t < 0.0f)
+			t = 0.0f;
+		else if (t > 1.0f)
+			t = 1.0f;
+
 		const float curve = friendlyNameHealthColorPow ? friendlyNameHealthColorPow->current.value : 1.0f;
 		if (curve != 1.0f && t > 0.0f)
 			t = powf(t, curve);

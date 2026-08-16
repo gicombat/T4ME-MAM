@@ -297,11 +297,14 @@ void PatchT4_Console()
 	censored_ver = T4::dvar::Dvar_RegisterBool(0, "censored_ver", T4::dvar::DVAR_FLAG_ARCHIVE, "Indicate if we want to play as a censored version (aka german) or uncensored version");
 	friendlyNameHealthColorAll = T4::dvar::Dvar_RegisterBool(0, "friendlyNameHealthColorAll", T4::dvar::DVAR_FLAG_ARCHIVE, "Color every displayed friendly name by the target's health.");
 	friendlyNameHealthColorPow = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorPow", 1.0f, 0.1f, 8.0f, T4::dvar::DVAR_FLAG_ARCHIVE, "Curve applied to the health->color ramp (>1 keeps the healthy color longer).");
-	// Ramp stops below the 100% one, which is friendlyNameFontColor itself.
-	friendlyNameHealthColor75 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor75", 0.95f, 1.00f, 0.78f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 75% health.");
-	friendlyNameHealthColor50 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor50", 1.00f, 1.00f, 0.55f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 50% health.");
-	friendlyNameHealthColor25 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor25", 1.00f, 0.80f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 25% health.");
-	friendlyNameHealthColor0  = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor0",  1.00f, 0.45f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at 0% health.");
+	friendlyNameHealthColorRedAt = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorRedAt", 0.20f, 0.0f, 0.9f, T4::dvar::DVAR_FLAG_ARCHIVE, "Health fraction at which the last ramp stop is fully reached; below it the color stays pinned there.");
+	// Ramp stops below the 100% one, which is friendlyNameFontColor itself. The
+	// 75/50/25/0 names are ramp quarters, not health percentages: they land at
+	// 80/60/40/20% health with the default friendlyNameHealthColorRedAt of 0.20.
+	friendlyNameHealthColor75 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor75", 0.95f, 1.00f, 0.78f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the first ramp quarter.");
+	friendlyNameHealthColor50 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor50", 1.00f, 1.00f, 0.55f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the ramp midpoint.");
+	friendlyNameHealthColor25 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor25", 1.00f, 0.80f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the third ramp quarter.");
+	friendlyNameHealthColor0  = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor0",  1.00f, 0.45f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the ramp end (friendlyNameHealthColorRedAt health and below).");
 
 	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	FilterConsoleSpam();

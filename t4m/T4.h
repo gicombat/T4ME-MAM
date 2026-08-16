@@ -427,7 +427,10 @@ extern dvar_t* switch_mode_input_pressed;
 // Friendly-name overlay — health-based coloring (PatchT4MAM_FriendOverlay.cpp)
 extern dvar_t* friendlyNameHealthColorAll;
 extern dvar_t* friendlyNameHealthColorPow;
-// Ramp stops. 100% is the snapshot of friendlyNameFontColor, not a dvar.
+extern dvar_t* friendlyNameHealthColorRedAt;
+// Ramp stops, evenly spaced over [friendlyNameHealthColorRedAt, 100%] — NOT the
+// health percentages the names suggest. 100% is the snapshot of
+// friendlyNameFontColor, not a dvar.
 extern dvar_t* friendlyNameHealthColor75;
 extern dvar_t* friendlyNameHealthColor50;
 extern dvar_t* friendlyNameHealthColor25;
