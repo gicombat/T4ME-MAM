@@ -292,6 +292,10 @@ namespace T4_Reconstructed
 		// @faithful — sub_6410F0 (VM video/cin_levels.txt : mapname → nom de .bik)
 		void             CL_MapLoading_CalcMovieToPlay(const char* buffer, const char* inMapName, char* outMovieName);
 		// @faithful — sub_6EB5C0 (construit le chemin du .bik ; bridge __usercall = T4M::R_Cinematic_BinkOpen_Wrapper)
+
+		// @modified — sub_6D69D0 (R_InitGlobalStructs). 1:1 with vanilla except
+		//   it also clears the relocated rgp.sortedMaterials (PatchT4MemoryLimits.cpp).
+		void             R_InitGlobalStructs();
 	} // extern "C"
 } // namespace T4_Reconstructed
 
@@ -342,6 +346,11 @@ namespace T4M
 		void DB_DumpOverrideChain(int type, const char* name);
 		void DB_DumpHashBucket(unsigned int bucket);
 		int  DB_CountActiveEntries();
+
+		// ── Debug utilities (PatchT4MemoryLimits.cpp) — all @new ──────────────
+		void VerifyRelocations();       // `verifyrelocs`      — did every claimed .text site move?
+		void ValidateAssetEntryPool();  // `validateassetpool` — walk the XAssetEntry free list
+		void ListAssetCaps();           // `listassetcaps`     — requested pool size vs reachable cap
 
 		// ── __usercall → __cdecl wrappers (PatchT4MAM_Override.cpp) — @wrapper ─
 		// (naked qualifier only on the definition, not on the declaration)

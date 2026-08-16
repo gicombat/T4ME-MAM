@@ -1,4 +1,4 @@
-// ==========================================================
+﻿// ==========================================================
 // T4M project
 //
 // Component: clientdll
@@ -106,7 +106,7 @@ namespace Engine
 	typedef void* (__cdecl* R_LoadFont_MP_t)     (const char* name, int param);        // sub_6E8D80
 	typedef void(__cdecl* R_RegisterDvars_t)   (void);                               // sub_707A20
 	typedef void(__cdecl* R_InitShaderSys_t)   (void);                               // sub_725170
-	typedef void(__cdecl* R_CopyPresentConsts_t)(void);                              // sub_6D69D0
+	typedef void(__cdecl* R_InitGlobalStructs_t)(void);                              // sub_6D69D0
 	typedef void(__cdecl* R_InitImageSys_t)    (void);                               // sub_724AC0
 	typedef void(__cdecl* R_InitDeviceAndWindow_t)(void);                            // sub_6D6880
 	typedef void(__cdecl* R_InitRTPool_t)      (void);                               // sub_70E8F0
@@ -172,7 +172,7 @@ namespace Engine
 	static const R_LoadFont_MP_t               R_LoadFont_MP = (R_LoadFont_MP_t)0x006E8D80;
 	static const R_RegisterDvars_t             R_RegisterDvars = (R_RegisterDvars_t)0x00707A20;
 	static const R_InitShaderSys_t             R_InitShaderSys = (R_InitShaderSys_t)0x00725170;
-	static const R_CopyPresentConsts_t         R_CopyPresentConsts = (R_CopyPresentConsts_t)0x006D69D0;
+	static const R_InitGlobalStructs_t         R_InitGlobalStructs = (R_InitGlobalStructs_t)0x006D69D0;
 	static const R_InitImageSys_t              R_InitImageSys = (R_InitImageSys_t)0x00724AC0;
 	static const R_InitDeviceAndWindow_t       R_InitDeviceAndWindow = (R_InitDeviceAndWindow_t)0x006D6880;
 	static const R_InitRTPool_t                R_InitRTPool = (R_InitRTPool_t)0x0070E8F0;
@@ -342,7 +342,7 @@ extern "C" void __cdecl R_Init()
 
 	Engine::R_RegisterDvars();            // sub_707A20
 	Engine::R_InitShaderSys();            // sub_725170
-	Engine::R_CopyPresentConsts();        // sub_6D69D0
+	Engine::R_InitGlobalStructs();        // sub_6D69D0
 	Engine::R_InitImageSys();             // sub_724AC0
 	Engine::R_InitDeviceAndWindow();      // sub_6D6880
 

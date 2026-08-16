@@ -70,4 +70,19 @@ namespace T4M
 	size_t      AddrMap_Count();
 	size_t      AddrMap_UnresolvedGerCount(); // rows with an empty 'ger' (matters on ger)
 	const char* AddrMap_LoadedPath();         // source actually loaded ("" if none / not yet loaded)
+
+	// One CSV row, as seen by AddrMap_ForEach. `used` is true once GetAddress has
+	// resolved the key at least once this run — a row that is never used is a dead
+	// key, a used row with a missing column is a portability hole.
+	struct AddrMapRow
+	{
+		const char* name;
+		bool used;
+		bool hasDef, hasDefMP, hasGer, hasGerMP;
+	};
+	typedef void (*AddrMapRowFn)(const AddrMapRow& row, void* ctx);
+
+	// Walks every row. Does not print — callers own the output, because this
+	// file is also used during DLL init where the console does not exist yet.
+	void AddrMap_ForEach(AddrMapRowFn cb, void* ctx);
 }

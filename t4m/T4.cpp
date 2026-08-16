@@ -403,6 +403,7 @@ void __cdecl T4M::DB_ListAssetPool(XAssetType type, bool count_only)
 	unsigned int overrideAssetEntryIndex;
 	assetPoolCount = 0;
 	assetPoolSize = 0;
+	unsigned int overrideCount = 0;   // entries that are extra versions of a name already counted
 	v1 = T4M::DB_GetXAssetTypeName(type);
 
 	if (!count_only)
@@ -428,6 +429,7 @@ void __cdecl T4M::DB_ListAssetPool(XAssetType type, bool count_only)
 				{
 					overrideAssetEntry = &T4::g_assetEntryPool[overrideAssetEntryIndex].entry;
 					++assetPoolCount;
+					++overrideCount;   // same asset name, extra pool entry
 					v5 = &T4::g_zoneFileNames[T4::g_assetEntryPool[overrideAssetEntryIndex].entry.zoneIndex];
 					v6 = T4M::DB_GetXAssetName(&T4::g_assetEntryPool[overrideAssetEntryIndex].entry.asset);
 					if (!count_only)
@@ -438,7 +440,12 @@ void __cdecl T4M::DB_ListAssetPool(XAssetType type, bool count_only)
 		}
 	}
 	v7 = T4M::DB_GetXAssetTypeName(type);
-	T4::engine::Com_Printf(16, "[T4M] Total of %d assets in %s pool, max %d, size %d\n", assetPoolCount, v7, T4::g_poolSize[type], assetPoolSize);
+	// assetPoolCount counts pool ENTRIES: a name overridden by a mod zone is
+	// counted once per version. Split the two out — otherwise the total looks
+	// like a unique-asset count and contradicts renderer-side counters such as
+	// rgp.materialCount (see `listassetcaps`).
+	T4::engine::Com_Printf(16, "[T4M] Total of %d entries in %s pool (%d unique + %d overrides), max %d, size %d\n",
+		assetPoolCount, v7, assetPoolCount - overrideCount, overrideCount, T4::g_poolSize[type], assetPoolSize);
 }
 
 char* __cdecl T4M::DB_GetXAssetTypeName(int type)
@@ -751,35 +758,34 @@ static void __cdecl DB_PoolDumpAsset_cb(void* assetData, int* pType)
 //   Type-specific enumerator for types 5–8 only; all other types: no-op.
 //   Does NOT use the global hash table — each case has its own storage:
 //
-//   type 5 — walks a 1024-slot pointer array at 0x21AB318 (dword_21AB318).
-//             Each slot heads a singly-linked list; nodes have the layout:
+//   The switch is on XAssetType: 5=XMODEL, 6=MATERIAL, 7=TECHSET, 8=IMAGE.
+//
+//   type 5 (XMODEL) — walks com_fileDataHashTable, a 1024-slot pointer array
+//             at 0x21AB318. Each slot heads a singly-linked list; nodes:
 //               [+0] void*   data     → passed to callback as arg0
 //               [+4] node*   next     → next node in list
 //               [+8] uint8_t nodeType → only nodes where nodeType==5 are emitted
 //
-//   type 6 — delegates to sub_6E9C80(callback)
-//   type 7 — delegates to sub_6E9C50(callback)
-//   type 8 — delegates to sub_70FCC0(callback)
+//   type 6 (MATERIAL) — delegates to R_EnumMaterials      (sub_6E9C80)
+//   type 7 (TECHSET)  — delegates to R_EnumTechniqueSets  (sub_6E9C50)
+//   type 8 (IMAGE)    — delegates to R_EnumImages         (sub_70FCC0)
 //   default — no-op (return immediately)
 //
 //   arg_C (followOverrides) is accepted for DB_EnumPoolForDump_t compat
 //   but is not used (vanilla ignores it too).
 // =====================================================================
-struct DB_Type5PoolNode
+struct FileDataHashNode
 {
 	void* data;     // [+0] — passed to callback
-	DB_Type5PoolNode* next;     // [+4] — next in linked list
-	uint8_t            nodeType; // [+8] — must equal 5 to emit
+	FileDataHashNode* next;     // [+4] — next in linked list
+	uint8_t            nodeType; // [+8] — must equal 5 (XMODEL) to emit
 };
-// lazy symbol<> (was static-init reinterpret_cast); resolves db_assetPool_type5 at runtime
-static T4::engine::symbol<DB_Type5PoolNode*> s_type5Pool{ "db_assetPool_type5" };
+// lazy symbol<> (was static-init reinterpret_cast); resolved at runtime
+static T4::engine::symbol<FileDataHashNode*> com_fileDataHashTable{ "com_fileDataHashTable" };
 
-typedef void(__cdecl* R_EnumImagePool_t)       (void(__cdecl*)(void*, int*));  // type 6 = IMAGE,      2048 entries @ 0x3BF6984
-typedef void(__cdecl* Snd_EnumSoundPool_t)     (void(__cdecl*)(void*, int*));  // type 7 = SOUND,      4096 entries @ 0x3BED87C
-typedef void(__cdecl* Snd_EnumSoundCurvePool_t)(void(__cdecl*)(void*, int*));  // type 8 = SOUND_CURVE, 2048 entries @ 0x45C22D0 (range-filtered)
-static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> R_EnumImagePool{ "R_EnumImagePool" };
-static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> Snd_EnumSoundPool{ "Snd_EnumSoundPool" };
-static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> Snd_EnumSoundCurvePool{ "Snd_EnumSoundCurvePool" };
+static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> R_EnumMaterials{ "R_EnumMaterials" };         // rg.materialHashTable[2048]   @ 0x3BF6984
+static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> R_EnumTechniqueSets{ "R_EnumTechniqueSets" }; // techniqueSetHashTable        @ 0x3BED87C
+static T4::engine::symbol<void(void(__cdecl*)(void*, int*))> R_EnumImages{ "R_EnumImages" };               // imageGlobals.imageHashTable  @ 0x45C22D0, skips Image_IsProg
 
 __declspec(noinline)
 void T4M::DB_EnumAssetPoolB(int type,
@@ -792,7 +798,7 @@ void T4M::DB_EnumAssetPoolB(int type,
 	case 5:
 		for (int i = 0; i < 1024; ++i)
 		{
-			DB_Type5PoolNode* node = s_type5Pool[i];
+			FileDataHashNode* node = com_fileDataHashTable[i];
 			while (node)
 			{
 				if (node->nodeType == 5)
@@ -801,9 +807,9 @@ void T4M::DB_EnumAssetPoolB(int type,
 			}
 		}
 		break;
-	case 6: R_EnumImagePool(callback);        break;
-	case 7: Snd_EnumSoundPool(callback);      break;
-	case 8: Snd_EnumSoundCurvePool(callback); break;
+	case 6: R_EnumMaterials(callback);     break;
+	case 7: R_EnumTechniqueSets(callback); break;
+	case 8: R_EnumImages(callback);        break;
 	default: break;
 	}
 }

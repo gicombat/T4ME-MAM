@@ -39,6 +39,7 @@ namespace T4M
 		bool      hasDefMP = false;
 		bool      hasGer   = false;
 		bool      hasGerMP = false;
+		bool      used     = false;   // set by GetAddress — see AddrMap_ForEach (P3)
 	};
 
 	// Function-local static: constructed on first use. Avoids the static-init-order
@@ -282,7 +283,8 @@ namespace T4M
 			return 0;
 		}
 
-		const AddrEntry& e = it->second;
+		AddrEntry& e = it->second;
+		e.used = true;   // P3: distinguishes live keys from dead CSV rows
 
 		// Pick the column for the running exe variant. Fallbacks never silently
 		// return a cross-layout VA: an MP variant never falls back to an SP column.
@@ -355,8 +357,29 @@ namespace T4M
 		return g_unresolvedGer; 
 	}
 
-	const char* AddrMap_LoadedPath()         
+	const char* AddrMap_LoadedPath()
 	{
-		return g_loaded ? "embedded:IDR_ADDR_CSV" : ""; 
+		return g_loaded ? "embedded:IDR_ADDR_CSV" : "";
+	}
+
+	// P3 — walk every row so a caller can report dead keys and live keys whose
+	// variant column is still a placeholder. Printing stays out of here: this
+	// file must remain callable during DLL init, where the console does not exist.
+	void AddrMap_ForEach(AddrMapRowFn cb, void* ctx)
+	{
+		if (!g_loaded)
+			AddrMap_Load();
+
+		for (const auto& kv : Map())
+		{
+			AddrMapRow row;
+			row.name     = kv.first.c_str();
+			row.used     = kv.second.used;
+			row.hasDef   = kv.second.hasDef;
+			row.hasDefMP = kv.second.hasDefMP;
+			row.hasGer   = kv.second.hasGer;
+			row.hasGerMP = kv.second.hasGerMP;
+			cb(row, ctx);
+		}
 	}
 }

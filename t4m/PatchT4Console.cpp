@@ -216,6 +216,52 @@ void SwitchModes()
 
 void CL_ResetViewport();
 
+// P3 — `addrmapcheck`: dead CSV keys, and live keys missing a variant column.
+namespace
+{
+	struct AddrMapAudit
+	{
+		int rows, unused, usedNoGer, usedNoDef;
+		bool listNames;
+	};
+
+	void AddrMapAudit_Row(const T4M::AddrMapRow& row, void* ctx)
+	{
+		AddrMapAudit* a = (AddrMapAudit*)ctx;
+		++a->rows;
+
+		if (!row.used) {
+			++a->unused;
+			if (a->listNames)
+				T4::engine::Com_Printf(0, "  ^3unused^7   %s\n", row.name);
+			return;
+		}
+		if (!row.hasDef) {
+			++a->usedNoDef;
+			T4::engine::Com_Printf(0, "  ^1no default^7 %s\n", row.name);
+		}
+		if (!row.hasGer) {
+			++a->usedNoGer;
+			T4::engine::Com_Printf(0, "  ^1no ger^7     %s\n", row.name);
+		}
+	}
+}
+
+void AddrMapCheck_f()
+{
+	AddrMapAudit audit = { 0, 0, 0, 0, false };
+	// "addrmapcheck all" also lists the dead keys by name; they are noisy.
+	if (T4::engine::Cmd_Argc() >= 2)
+		audit.listNames = true;
+
+	T4::engine::Com_Printf(0, "[T4M] addr_mapping audit (variant=%s)\n",
+		T4M::ExeVariantName(T4M::CurrentExeVariant()));
+	T4M::AddrMap_ForEach(AddrMapAudit_Row, &audit);
+	T4::engine::Com_Printf(0,
+		"  %d rows, %d never resolved, %d resolved without a 'ger' value, %d without a 'default'\n",
+		audit.rows, audit.unused, audit.usedNoGer, audit.usedNoDef);
+}
+
 void Cmd_Init_T4()
 {
 	DWORD Cmd_Init_T4 = T4M::GetAddress("Com_StartupVariables");
@@ -239,6 +285,14 @@ void Cmd_Init_T4()
 	T4M::Cmd_AddCommand("switch_modes", SwitchModes);
 	//Cmd_AddCommand("load_t4m", LoadConfig);
 	T4M::Cmd_AddCommand("resetviewport", CL_ResetViewport);
+	// Memory / relocation diagnostics — see PatchT4MemoryLimits.cpp
+	// TODO: gate these three behind a debug mode (form still to be decided:
+	// vanilla `developer` dvar, a dedicated t4m_debug dvar, or #ifdef _DEBUG).
+	// Left ungated for now so they can be run against a Release build.
+	T4M::Cmd_AddCommand("verifyrelocs", T4M::VerifyRelocations);
+	T4M::Cmd_AddCommand("validateassetpool", T4M::ValidateAssetEntryPool);
+	T4M::Cmd_AddCommand("listassetcaps", T4M::ListAssetCaps);
+	T4M::Cmd_AddCommand("addrmapcheck", AddrMapCheck_f);
 }
 
 void ShitTest()

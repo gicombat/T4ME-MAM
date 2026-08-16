@@ -24,5 +24,9 @@ namespace T4
 
 		// sub_5F6D80 — the engine's va(): formats into a rotating static buffer.
 		WEAK symbol<const char*(const char* fmt, ...)>Com_FormatMsg{ "Com_FormatMsg" };
+
+		// sub_7AFF40 — CRT memset. Used by reconstructions that must reproduce
+		// the vanilla call sequence rather than emit their own inlined clear.
+		WEAK symbol<void*(void* dst, int c, size_t n)>Mem_Memset{ "Mem_Memset" };
 	}
 }
