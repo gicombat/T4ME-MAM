@@ -38,19 +38,20 @@ namespace T4M
 		if (found == -1) 
 			return;
 
+		// Mark the slot free. Out-of-order frees are ALLOWED: the slot's PMem space is
+		// reclaimed only once every slot above it is also freed (a temporary hole).
+		// This matches vanilla PMem_FreeIndex, which merely asserts on a hole — and that
+		// assert is disabled in release. The old ERR_FATAL here (a T4M addition) fired
+		// under the DB writer lock during unload, longjmp'd out before DB_WriterRelease,
+		// leaked the writer lock, and every later DB reader then span forever: the silent
+		// map-load freeze on any map that has a localization file (see t4m_fsdiag.log
+		// LIFOVIOLATION captures, e.g. localized_french_surv_ger_seelow under surv_ger_seelow).
 		pool->entries[found].name = NULL;
-		int newCount = count - 1;
 
-		if (found != newCount) 
-		{
-			T4::engine::Com_Error(T4::engine::ERR_FATAL, "[T4M] - free does not match allocation");
-			return;
-		}
-
-		pool->freePtr = pool->entries[found].next;
-		pool->count = newCount;
-
-		for (;;) 
+		// Pop every trailing free slot from the top (reclaims this free, plus any holes
+		// below it that are now exposed). If `found` was not the top, nothing is popped
+		// yet — the hole waits until the slots above it free.
+		for (;;)
 		{
 			int top = pool->count;
 			if (top == 0 || pool->entries[top - 1].name != NULL) break;
@@ -382,6 +383,11 @@ namespace T4M
 	void __cdecl DB_LoadMapZones(const char* mapName)
 	{
 		T4::engine::Com_Printf(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
+		// Also to t4m_fsdiag.log: when a load freezes, this is the last thing
+		// written, and it names the map the next lines belong to.
+		T4M::FsDiag_Note("MAP load '%s' (lang '%s', fs_game '%s')\n", mapName,
+			*T4::engine::language_system, (*T4::engine::fs_game)->current.string);
+
 		// Reset the fastfile streaming progress counters
 		T4::engine::db_streamReadBlocksTotal = 0;  // 0x957400
 		T4::engine::db_streamReadBlocksDone = 0;  // 0x957408
@@ -400,20 +406,20 @@ namespace T4M
 		char localBuf[0x40];
 		_snprintf(localBuf, sizeof(localBuf) - 1, "%s%s", "localized_", mapName);
 		localBuf[sizeof(localBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(localBuf, T4::engine::XZoneFlags::ZONE_LOCALIZED, 
-			T4::engine::XZoneFlags::ZONE_MAP_PATCH | 
-			T4::engine::XZoneFlags::ZONE_UI | 
-			T4::engine::XZoneFlags::ZONE_LOCALIZED | 
+		DB_LoadZoneGeneric(localBuf, T4::engine::XZoneFlags::ZONE_LOCALIZED,
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH |
+			T4::engine::XZoneFlags::ZONE_UI |
+			T4::engine::XZoneFlags::ZONE_LOCALIZED |
 			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX |
 			T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA);
 
 		char locaXlBuf[0x40];
 		_snprintf(locaXlBuf, sizeof(locaXlBuf) - 1, "%s_%s_%s", "localized", *T4::engine::language_system, mapName);
 		locaXlBuf[sizeof(locaXlBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(locaXlBuf, T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA, 
-			T4::engine::XZoneFlags::ZONE_MAP_PATCH | 
-			T4::engine::XZoneFlags::ZONE_UI | 
-			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX | 
+		DB_LoadZoneGeneric(locaXlBuf, T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA,
+			T4::engine::XZoneFlags::ZONE_MAP_PATCH |
+			T4::engine::XZoneFlags::ZONE_UI |
+			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX |
 			T4::engine::XZoneFlags::ZONE_T4M_MAP_LOCA);
 
 		char patchNameBuf[0x40];
@@ -428,13 +434,13 @@ namespace T4M
 		char patchNameExBuf[0x40];
 		_snprintf(patchNameExBuf, sizeof(patchNameExBuf) - 1, "%s_patch_ex", mapName);
 		patchNameExBuf[sizeof(patchNameExBuf) - 1] = '\0';
-		DB_LoadZoneGeneric(patchNameExBuf, T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX, 
-			T4::engine::XZoneFlags::ZONE_POST_LOAD | 
-			T4::engine::XZoneFlags::ZONE_UI | 
+		DB_LoadZoneGeneric(patchNameExBuf, T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX,
+			T4::engine::XZoneFlags::ZONE_POST_LOAD |
+			T4::engine::XZoneFlags::ZONE_UI |
 			T4::engine::XZoneFlags::ZONE_T4M_PATCH_EX);
 
-		DB_LoadZoneGeneric(mapName, T4::engine::XZoneFlags::ZONE_UI, 
-			T4::engine::XZoneFlags::ZONE_POST_LOAD | 
+		DB_LoadZoneGeneric(mapName, T4::engine::XZoneFlags::ZONE_UI,
+			T4::engine::XZoneFlags::ZONE_POST_LOAD |
 			T4::engine::XZoneFlags::ZONE_UI);
 	}
 
@@ -479,6 +485,13 @@ namespace T4M
 					}
 					else*/
 					{
+						// Dropping a zone is silent in vanilla too: DB_OpenZoneFile only warns on
+						// channel 10 for _load / _patch / default / localized_ names. Every asset it
+						// carried later freezes its first requester in DB_FindXAssetHeader.
+						T4::engine::Com_PrintWarning(0, "[T4M] - zone dropped, could not open '%s' (allocFlags 0x%X)\n",
+							entry->name, entry->allocFlags);
+						T4M::FsDiag_Note("ZONE dropped '%s' (allocFlags 0x%X)\n",
+							entry->name, entry->allocFlags);
 						*T4::engine::g_pendingZoneCount -= 1;
 					}
 				}

@@ -144,6 +144,7 @@ popd</Command>
     <ClInclude Include="include\cod\console.hpp" />
     <ClInclude Include="include\cod\db.hpp" />
     <ClInclude Include="include\cod\dvars.hpp" />
+    <ClInclude Include="include\cod\fs.hpp" />
     <ClInclude Include="include\cod\enums.hpp" />
     <ClInclude Include="include\cod\game.hpp" />
     <ClInclude Include="include\cod\animation.hpp" />
@@ -203,6 +204,10 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_Loopback.cpp" />
     <ClCompile Include="PatchT4MAM_Cinematic.cpp" />
     <ClCompile Include="PatchT4MAM_FriendOverlay.cpp" />
+    <ClCompile Include="PatchT4MAM_FsDiag.cpp" />
+    <ClCompile Include="PatchT4MAM_FsPakOpen.cpp" />
+    <ClCompile Include="PatchT4MAM_AssetPool.cpp" />
+    <ClCompile Include="PatchT4Mem.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
     <ClCompile Include="PatchT4NoBorder.cpp" />
     <ClCompile Include="PatchT4Script.cpp" />

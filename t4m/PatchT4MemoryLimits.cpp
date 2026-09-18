@@ -540,6 +540,12 @@ void T4_Reconstructed::R_InitGlobalStructs()
 		//   cmp eax, imm32 = 3D [imm32]       → immediate at instr+1
 		//   mov [imm32],imm32 = C7 05 [a4][v4] → value at instr+6
 
+#if 0 // === MIGRATED TO C++ === these 12 functions are now detoured in
+	  // PatchT4MAM_AssetPool.cpp (they read the C++ pointer g_assetEntryPool), so
+	  // their vanilla bodies — and these byte-patches — are unreachable. The pool
+	  // is still allocated + g_assetEntryPool set above; only the .text patches go.
+	  // sub_48F9B0 (below) is NOT yet detoured, so its two patches stay live.
+	  // Re-enable this block if any of those detours is reverted.
 		// ---- sub_48D340 (DB_InitAssetEntryPool) ----
 		// C7 05 84 78 95 00 [60 1C A5 00] → mov dword_957884, offset unk_A51C60
 		*(DWORD*)T4M::GetAddress("assetPool_reloc_48D371") = newPoolAddr10;
@@ -615,11 +621,12 @@ void T4_Reconstructed::R_InitGlobalStructs()
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
 		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F704") = newPoolAddr;
 
-		// ---- sub_48F9B0 ----
+		// ---- sub_48F9B0 (now detoured too — DB_PostUnloadCleanup) ----
 		// 05 [50 1C A5 00] → add eax, offset dword_A51C50
 		*(DWORD*)T4M::GetAddress("assetPool_reloc_48F9D4") = newPoolAddr;
 		// 81 C6 [50 1C A5 00] → add esi, offset dword_A51C50
 		*(DWORD*)T4M::GetAddress("assetPool_reloc_48FA28") = newPoolAddr;
+#endif // === MIGRATED TO C++ (all 13 g_assetEntryPool functions detoured) ===
 
 		// Restore whatever protection was there before. Note this is currently a
 		// no-op: Main_UnprotectModule (Main.cpp) already turns the whole PE image

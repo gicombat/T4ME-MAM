@@ -23,6 +23,7 @@ namespace T4
 		WEAK symbol<void(*)(XAssetHeader* header, const char* stringTableEntry)> DB_XAssetSetNameHandlers{"DB_XAssetSetNameHandlers"};
 		WEAK symbol<void(*)(void* pool, void* header)> DB_XAssetFreeHandlers{"DB_XAssetFreeHandlers"};
 		WEAK symbol<void*(*)(void* pool)> DB_XAssetAllocHandlers{ "DB_XAssetAllocHandlers" };
+		WEAK symbol<void(*)(void* pool, int size)> DB_XAssetPoolInitHandlers{ "DB_XAssetPoolInitHandlers" }; // 0x8DC678 (g_poolSize/g_assetRefCount live in globals.hpp)
 		WEAK symbol<const char*> DB_XAssetDefaultNames{ "DB_XAssetDefaultNames" };  // data: const char** (array of names)
 		WEAK symbol<void*> DB_XAssetPool{ "DB_XAssetPool" };                        // data: void** (array of pools)
 		WEAK symbol<const char*(*)(XAssetHeader*)> DB_XAssetGetNameHandlers{ "DB_XAssetGetNameHandlers" };
@@ -45,6 +46,8 @@ namespace T4
 		WEAK symbol<void()> DB_SyncAssets{ "DB_SyncAssets" };
 		WEAK symbol<void(XZoneInfo*, int)> DB_AddZonesToQueue{ "DB_AddZonesToQueue" };
 		WEAK symbol<void()> DB_InUseHandlerDispatch{ "DB_InUseHandlerDispatch" };
+		// SL_TransferSystem / SL_GetStringOfSize / gScrMemTreePub used by the
+		// DB_PostUnloadCleanup reconstruction live in cod/clientscript/*.hpp.
 		WEAK symbol<void()> DB_PromoteHelper{ "DB_PromoteHelper" };
 		WEAK symbol<int(XZoneQueueEntry*, int)> DB_OpenZoneFile{ "DB_OpenZoneFile" };
 	}

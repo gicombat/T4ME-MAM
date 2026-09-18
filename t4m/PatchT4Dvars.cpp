@@ -13,14 +13,17 @@
 
 #include "StdInc.h"
 
-float cgFov90 = 90.0f;
+// Vanilla cg_fov max is 160.0 (dword_8AF588, shared with cg_fovMin's max and
+// four unrelated sites — never patch the constant itself). T4M used to lower it
+// to 90 through the registration site; kept here to raise it again if needed.
+float cgFovMax = 160.0f;
 
 void PatchT4_Dvars()
 {
 	//DVAR: cg_fov
-	//MODS: Clear cheat flag, set archive flag, set maximum to 90
+	//MODS: Clear cheat flag, set archive flag. Max left at the vanilla 160.
 	*(WORD*)T4M::GetAddress("cg_fov_flags_site") ^= DVAR_FLAG_CHEAT | DVAR_FLAG_ARCHIVE;
-	*(float**)T4M::GetAddress("cg_fov_valuePtr_site") = &cgFov90;
+	//*(float**)T4M::GetAddress("cg_fov_valuePtr_site") = &cgFovMax;
 
 	//DVAR: cg_fovMin
 	//MODS: Clear cheat flag, set archive flag

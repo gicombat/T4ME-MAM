@@ -610,6 +610,15 @@ int T4M::Q_stricmpn(const char* s1, const char* s2, int maxLen)
 	return 0;
 }
 
+// @modified — the DB reader/writer lock is now REENTRANT for the writer owner.
+// The count-based reconstruction dead-locks when one thread holds the writer and
+// then, nested, takes the reader (e.g. a load/unload section that resolves an asset
+// via DB_FindXAssetHeader): the reader spins on g_dbWriterCount that the SAME thread
+// never releases. Tracking the writer-owning thread lets a nested reader on that
+// thread pass through — reading inside your own exclusive section is safe. Inert for
+// code that never nests reader-in-writer.
+static volatile DWORD s_dbWriterOwnerTid = 0;
+
 // @faithful — sub_48D020
 // T4M::DB_WriterAcquire: waits until readerCount == 0, then increments
 // writerCount to 1 (exclusive lock).
@@ -629,7 +638,10 @@ void T4M::DB_WriterAcquire()
 
 		// 3. If we are the first writer and no reader raced in, lock acquired.
 		if (newCount == 1 && *T4::g_dbReaderCount == 0)
+		{
+			s_dbWriterOwnerTid = ::GetCurrentThreadId();
 			return;
+		}
 
 		// 4. Rollback and retry
 		InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount);
@@ -640,14 +652,15 @@ void T4M::DB_WriterAcquire()
 // @faithful — sub_48D020 (release half)
 void T4M::DB_WriterRelease()
 {
-	InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount);
+	if (InterlockedDecrement((LONG*)(int*)T4::g_dbWriterCount) == 0)
+		s_dbWriterOwnerTid = 0;
 }
 
-// @faithful — sub_48D560 (reader lock acquire)
+// @modified — sub_48D560 (reader lock acquire), reentrant for the writer owner.
 void T4M::DB_ReaderAcquire()
 {
 	InterlockedIncrement((LONG*)(int*)T4::g_dbReaderCount);
-	while (*T4::g_dbWriterCount != 0)
+	while (*T4::g_dbWriterCount != 0 && s_dbWriterOwnerTid != ::GetCurrentThreadId())
 		Sleep(0);
 }
 
@@ -1046,16 +1059,44 @@ void* T4_Reconstructed::DB_FindXAssetHeader(int type, const char* name, bool use
 	char  sub5FEC60Buf[32] = { 0 };
 	XAssetEntry* entry = nullptr;
 
+	// T4M diag — a call that spins here for >3 s is the map-load hang. Log its target
+	// ONCE (any timeout). entry != null + zoneIndex 0 => stale HEAD (override promotion
+	// missed); entry == null => never linked. Local timer so it works whatever timeoutMs.
+	const DWORD t4mCallStart = timeGetTime();
+	bool        t4mLogged    = false;
+
 loc_48DA44:
 	// Reader acquire: inc reader count, then spin while writer count != 0.
 	InterlockedIncrement((LONG*)(int*)T4::g_dbReaderCount);
-	while (*T4::g_dbWriterCount != 0) Sleep(0);
+	{
+		// reentrant for writer owner; T4M diag names the writer-holding thread on a hang.
+		static bool s_lockHangLogged = false;
+		DWORD spinStart = timeGetTime();
+		while (*T4::g_dbWriterCount != 0 && s_dbWriterOwnerTid != ::GetCurrentThreadId())
+		{
+			if (!s_lockHangLogged && (int)(timeGetTime() - spinStart) > 3000)
+			{
+				s_lockHangLogged = true;
+				T4M::FsDiag_Note("DBLOCKHANG readerWait writer=%ld reader=%ld ownerTid=%u myTid=%u type=%d name='%s'\n",
+					*T4::g_dbWriterCount, *T4::g_dbReaderCount, s_dbWriterOwnerTid,
+					::GetCurrentThreadId(), type, name ? name : "(null)");
+			}
+			Sleep(0);
+		}
+	}
 
 	// Lookup
 	entry = T4_Reconstructed::DB_FindXAssetByName(type, name);
 
 	// Reader release
 	InterlockedDecrement((LONG*)(int*)T4::g_dbReaderCount);
+
+	if (!t4mLogged && (int)(timeGetTime() - t4mCallStart) > 3000)
+	{
+		t4mLogged = true;
+		T4M::FsDiag_Note("DBHANG type=%d name='%s' timeout=%d entry=%p zoneIndex=%d\n",
+			type, name ? name : "(null)", timeoutMs, (void*)entry, entry ? (int)entry->zoneIndex : -1);
+	}
 
 	if (entry == nullptr) goto loc_48DAC9;
 
