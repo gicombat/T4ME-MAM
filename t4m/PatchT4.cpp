@@ -36,6 +36,10 @@ void PatchT4MAM_ConfigStrings();
 void PatchT4MAM_Loopback();
 void PatchT4MAM_Cinematic();
 void PatchT4MAM_FriendOverlay();
+void PatchT4MAM_FsDiag();
+void PatchT4MAM_FsPakOpen();
+void PatchT4_Mem();
+void PatchT4_AssetPool();
 void PatchT4MAM_ActorLimit();
 void PatchT4MP();
 void PatchT4E_Window();
@@ -86,7 +90,11 @@ void PatchT4()
 	PatchT4MAM_Loopback(); // enlarge SP loopback packet queue (16 -> 128 slots) for >520-model gamestates
 	PatchT4MAM_Cinematic();
 	PatchT4MAM_FriendOverlay(); // faithful G_UpdateFriendlyOverlay recon + health-based name color
-	PatchT4MAM_ActorLimit(); // AI cap 32 -> 64, all phases (gated OFF: t4m_aiLimitExpand)
+	PatchT4MAM_FsDiag(); // observation-only: absurd FS lengths + failing Hunk temp requests
+	PatchT4MAM_FsPakOpen(); // fixes the shared-master race in the .iwd open path
+	PatchT4_Mem(); // full memory-subsystem detour — Phase 1: flat-hunk temp-high (faithful)
+	PatchT4_AssetPool(); // C++ migration of all 13 g_assetEntryPool DB functions (MemoryLimits byte-patches retired)
+	PatchT4MAM_ActorLimit(); // AI cap 32 -> 64, all phases (always on, no gate)
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

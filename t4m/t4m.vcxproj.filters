@@ -90,6 +90,12 @@
     <ClCompile Include="PatchT4MAM_ActorLimit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_FsDiag.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_FsPakOpen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LAAPatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -205,6 +211,9 @@
       <Filter>cod</Filter>
     </ClInclude>
     <ClInclude Include="include\cod\dvars.hpp">
+      <Filter>cod</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cod\fs.hpp">
       <Filter>cod</Filter>
     </ClInclude>
     <ClInclude Include="include\cod\enums.hpp">

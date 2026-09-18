@@ -337,6 +337,12 @@ namespace T4M
 		void DB_EnumAssetPool(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
 		void DB_EnumAssetPoolB(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
 
+		// ── Diagnostics (PatchT4MAM_FsDiag.cpp) ────────────────────────────────
+		// Appends one timestamped line to t4m_fsdiag.log. Safe from any thread,
+		// never prints to the console: it must survive a freeze, where the
+		// console is never drawn again.
+		void __cdecl FsDiag_Note(const char* fmt, ...);
+
 		// ── Project helpers / asset pool utilities ─────────────────────────────
 		void*         DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
 		char*         __cdecl DB_GetXAssetTypeName(int type);

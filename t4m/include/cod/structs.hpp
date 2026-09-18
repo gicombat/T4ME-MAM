@@ -13623,6 +13623,63 @@ namespace T4
 		}; // size == 0x1390
 
 
+		// FS handle slot — fsh[] at 0x02126E20, stride 0x11C, indices 1..61.
+		// Ranges are per thread (FS_HandleForFile, sub_5DAB80): 1..49 main,
+		// 50..59 thread 1, 60 thread 3, 61 thread 2.
+		struct FsHandleEntry
+		{
+			void* file;            // +0x00 FILE* (raw) or unzFile* (pak entry)
+			int   isUnzClone;      // +0x04 the unzFile above was cloned from the pak master
+			int   pad08;           // +0x08
+			int   pad0C;           // +0x0C
+			int   posInCentralDir; // +0x10 pak entry offset passed to unzSetOffset
+			void* pak;             // +0x14 owning pak, NULL for a raw file (FS_FileLength switches on it)
+			int   pad18;           // +0x18
+			char  name[0x100];     // +0x1C
+		}; // size == 0x11C
+
+		// minizip unz_file_info — every field a uLong, tm_unz is 6 more.
+		struct UnzFileInfo
+		{
+			unsigned int version;              // +0x00
+			unsigned int versionNeeded;        // +0x04
+			unsigned int flag;                 // +0x08
+			unsigned int compressionMethod;    // +0x0C
+			unsigned int dosDate;              // +0x10
+			unsigned int crc;                  // +0x14
+			unsigned int compressedSize;       // +0x18
+			unsigned int uncompressedSize;     // +0x1C — what FS_FOpenFileRead returns for a pak entry
+			unsigned int sizeFilename;         // +0x20
+			unsigned int sizeFileExtra;        // +0x24
+			unsigned int sizeFileComment;      // +0x28
+			unsigned int diskNumStart;         // +0x2C
+			unsigned int internalFa;           // +0x30
+			unsigned int externalFa;           // +0x34
+			unsigned int tmuDate[6];           // +0x38 tm_unz
+		}; // size == 0x50
+
+		// minizip unz_s. Only the first 0x80 bytes matter to WaW: that is exactly
+		// what unzReOpen (sub_622EA0) clones per handle.
+		struct UnzFile
+		{
+			void*        file;                 // +0x00 own FILE*
+			unsigned int pad04[2];             // +0x04
+			unsigned int byteBeforeTheZipFile; // +0x0C added to every central-directory seek
+			unsigned int pad10;                // +0x10
+			unsigned int posInCentralDir;      // +0x14 written by unzSetOffset BEFORE it parses
+			unsigned int curFileInfoOk;        // +0x18 1 if curFileInfo was refreshed, 0 if the parse failed
+			unsigned int pad1C[3];             // +0x1C
+			UnzFileInfo  curFileInfo;          // +0x28 — uncompressedSize lands at +0x44
+			unsigned int pad78;                // +0x78 offset written by the parse
+			unsigned int pad7C;                // +0x7C cleared by unzReOpen
+		}; // size == 0x80
+
+		// NOTE: the memory-subsystem structs (hunkUsed_t, HunkUser, PhysicalMemory,
+		// PhysicalMemoryPrim, PhysicalMemoryAllocation) already live earlier in this
+		// file — reused, not redefined. See plans/plan_memory_full_detour.md.
+		// hunkHeader_t (temp-low block prefix, WaW magic 0x89537892) is the only one
+		// missing; it is added in mem.hpp's reconstruction phase if needed.
+
 		struct vec2_t { float x, y; };
 		struct vec3_t { float x, y, z; };
 		struct vec4_t { float x, y, z, w; };
@@ -13642,6 +13699,8 @@ namespace T4
 #include "server.hpp"
 #include "bgame.hpp"
 #include "actor.hpp"
+#include "fs.hpp"
+#include "mem.hpp"
 #include "globals.hpp"
 
 #pragma pack(pop)
