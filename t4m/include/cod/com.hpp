@@ -11,6 +11,7 @@ namespace T4
 
 		WEAK symbol<void(int type, const char* message, ...)>Com_Error{ "Com_Error" };
 		WEAK symbol<void(int channel, const char* format, ...)>Com_Printf{ "Com_Printf" };
+		WEAK symbol<void(int channel, const char* format, ...)>Com_DPrintf{ "Com_DPrintf" };   // sub_59A310 (developer-gated)
 		WEAK symbol<void(int channel, const char* fmt, int error)>Com_PrintMessage{ "Com_PrintMessage" };
 		WEAK symbol<void(int channel, const char* fmt, ...)>Com_PrintError{ "Com_PrintError" };   // sub_59A380 ("^1Error: ", type 3)
 		WEAK symbol<void(int channel, const char* fmt, ...)>Com_PrintWarning{ "Com_PrintWarning" }; // sub_59A440 ("^3", type 2)

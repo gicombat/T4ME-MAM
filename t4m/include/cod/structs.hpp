@@ -1470,9 +1470,12 @@ namespace T4
 			int attachedEntNum; //OFS: 0x60 SIZE: 0x4
 			int attachedTagIndex; //OFS: 0x64 SIZE: 0x4
 			int animScriptedAnim; //OFS: 0x68 SIZE: 0x4
-			int hudwarningType; //OFS: 0x6C SIZE: 0x4
-			int lookAtEntNum; //OFS: 0x70 SIZE: 0x4
-			int lastLookAtEntNum; //OFS: 0x74 SIZE: 0x4
+			// 0x6C..0x74 corrected 2026-08-21 against the WaW actorState netfield table
+			// (0x8368C0, 29 entries): WaW has animScriptedAnimTime where CoD4 has nothing,
+			// which shifts the last two fields. No call site used them.
+			int animScriptedAnimTime; //OFS: 0x6C SIZE: 0x4
+			int hudwarningType; //OFS: 0x70 SIZE: 0x4
+			int lookAtEntNum; //OFS: 0x74 SIZE: 0x4
 		};
 		ASSERT_STRUCT_SIZE(actorState_s, 0x78);
 		ASSERT_STRUCT_OFFSET(actorState_s, actorIndex, 0x0);
@@ -1485,9 +1488,12 @@ namespace T4
 		ASSERT_STRUCT_OFFSET(actorState_s, attachedEntNum, 0x60);
 		ASSERT_STRUCT_OFFSET(actorState_s, attachedTagIndex, 0x64);
 		ASSERT_STRUCT_OFFSET(actorState_s, animScriptedAnim, 0x68);
-		ASSERT_STRUCT_OFFSET(actorState_s, hudwarningType, 0x6C);
-		ASSERT_STRUCT_OFFSET(actorState_s, lookAtEntNum, 0x70);
-		ASSERT_STRUCT_OFFSET(actorState_s, lastLookAtEntNum, 0x74);
+		ASSERT_STRUCT_OFFSET(actorState_s, animScriptedAnimTime, 0x6C);
+		ASSERT_STRUCT_OFFSET(actorState_s, hudwarningType, 0x70);
+		ASSERT_STRUCT_OFFSET(actorState_s, lookAtEntNum, 0x74);
+
+		// actor_s already lives further down in this file (0x31B8, ent@0x0, sentient@0x4,
+		// as@0xC, inuse@0x2140) — RE confirmed those four offsets, do not redefine it here.
 
 		struct ai_transition_cmd_t
 		{
@@ -13635,6 +13641,7 @@ namespace T4
 #include "com.hpp"
 #include "server.hpp"
 #include "bgame.hpp"
+#include "actor.hpp"
 #include "globals.hpp"
 
 #pragma pack(pop)

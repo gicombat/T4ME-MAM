@@ -296,6 +296,19 @@ namespace T4_Reconstructed
 		// @modified — sub_6D69D0 (R_InitGlobalStructs). 1:1 with vanilla except
 		//   it also clears the relocated rgp.sortedMaterials (PatchT4MemoryLimits.cpp).
 		void             R_InitGlobalStructs();
+
+		// --- AI limit (PatchT4MAM_ActorLimit.cpp) --------------------------------
+		// @modified — sub_4B4CA0 / CoD4 game/actor.cpp Actor_Alloc. 1:1 with vanilla
+		//   except the pool is walked up to NEW_MAX_ACTORS instead of a baked 32.
+		T4::engine::actor_s*    Actor_Alloc();
+		// @modified — sub_566030 / CoD4 game/sentient.cpp Sentient_Alloc. Same deal.
+		T4::engine::sentient_s* Sentient_Alloc();
+		// @modified — sub_4B52C0 / CoD4 game/actor.cpp G_InitActors, with
+		//   Actor_EventListener_Init inlined exactly as vanilla does.
+		void                    G_InitActors();
+		// @modified - WaW 0x52F000, the setailimit() GSC builtin: same shape as vanilla,
+		// but bounded by NEW_MAX_ACTORS and naming that bound in its error message.
+		void                    GScr_SetAILimit();
 	} // extern "C"
 } // namespace T4_Reconstructed
 
@@ -310,6 +323,10 @@ namespace T4M
 	extern "C"
 	{
 		// ── @faithful helpers (not detoured) ───────────────────────────────────
+		// Suffix appended to the console version line: " -ai:64" / " -ai:FAILED" /
+		// Identifies the loaded DLL and what its AI patch did with it. Never null.
+		const char* AiLimitStatusTag();
+
 		void FS_BuildZonePath(char* dst, int mode, const char* mapName);
 		bool FS_ZoneFileExists(const char* mapName, int mode);
 		int  Q_stricmpn(const char* s1, const char* s2, int maxLen);
@@ -433,6 +450,9 @@ extern dvar_t* vulkan;
 // Tweak switch Mode
 extern dvar_t* is_watching_for_switch_mode_input;
 extern dvar_t* switch_mode_input_pressed;
+// AI limit expansion (PatchT4MAM_ActorLimit.cpp) — gated OFF while the chantier is unfinished
+extern dvar_t* ai_max_actors;
+extern dvar_t* ai_ring_watch;
 // Friendly-name overlay — health-based coloring (PatchT4MAM_FriendOverlay.cpp)
 extern dvar_t* friendlyNameHealthColorAll;
 extern dvar_t* friendlyNameHealthColorPow;

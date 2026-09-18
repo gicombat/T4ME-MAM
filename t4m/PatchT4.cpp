@@ -36,6 +36,7 @@ void PatchT4MAM_ConfigStrings();
 void PatchT4MAM_Loopback();
 void PatchT4MAM_Cinematic();
 void PatchT4MAM_FriendOverlay();
+void PatchT4MAM_ActorLimit();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -85,6 +86,7 @@ void PatchT4()
 	PatchT4MAM_Loopback(); // enlarge SP loopback packet queue (16 -> 128 slots) for >520-model gamestates
 	PatchT4MAM_Cinematic();
 	PatchT4MAM_FriendOverlay(); // faithful G_UpdateFriendlyOverlay recon + health-based name color
+	PatchT4MAM_ActorLimit(); // AI cap 32 -> 64, all phases (gated OFF: t4m_aiLimitExpand)
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

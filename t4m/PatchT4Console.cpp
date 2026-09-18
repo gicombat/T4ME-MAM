@@ -349,6 +349,10 @@ void PatchT4_Console()
 	loadout_preset_usa = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_usa", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	loadout_preset_rus = T4::dvar::Dvar_RegisterInt(0, "loadout_preset_rus", 0, 25, T4::dvar::DVAR_FLAG_ARCHIVE, "Parameter for loadoutsetup");
 	censored_ver = T4::dvar::Dvar_RegisterBool(0, "censored_ver", T4::dvar::DVAR_FLAG_ARCHIVE, "Indicate if we want to play as a censored version (aka german) or uncensored version");
+	// Read-only mirror of the cap actually in force, for GSC (getdvarint). Left at
+	// the vanilla value until PatchT4MAM_ActorLimit reports a successful patch.
+	ai_max_actors = T4::dvar::Dvar_RegisterInt(32, "t4m_aiMaxActors", 32, 127, T4::dvar::DVAR_FLAG_ROM, "Simultaneous AI cap actually in force.");
+	ai_ring_watch = T4::dvar::Dvar_RegisterBool(0, "t4m_aiRingWatch", T4::dvar::DVAR_FLAG_ARCHIVE, "Log when the client actor ring runs out of history and a snapshot is dropped (requires restart).");
 	friendlyNameHealthColorAll = T4::dvar::Dvar_RegisterBool(0, "friendlyNameHealthColorAll", T4::dvar::DVAR_FLAG_ARCHIVE, "Color every displayed friendly name by the target's health.");
 	friendlyNameHealthColorPow = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorPow", 1.0f, 0.1f, 8.0f, T4::dvar::DVAR_FLAG_ARCHIVE, "Curve applied to the health->color ramp (>1 keeps the healthy color longer).");
 	friendlyNameHealthColorRedAt = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorRedAt", 0.20f, 0.0f, 0.9f, T4::dvar::DVAR_FLAG_ARCHIVE, "Health fraction at which the last ramp stop is fully reached; below it the color stays pinned there.");

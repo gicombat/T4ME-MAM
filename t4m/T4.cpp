@@ -25,6 +25,9 @@ dvar_t* vulkan;
 // Tweak switch Mode
 dvar_t* is_watching_for_switch_mode_input;
 dvar_t* switch_mode_input_pressed;
+// AI limit expansion
+dvar_t* ai_max_actors;
+dvar_t* ai_ring_watch;
 // Friendly-name overlay — health-based coloring
 dvar_t* friendlyNameHealthColorAll;
 dvar_t* friendlyNameHealthColorPow;
