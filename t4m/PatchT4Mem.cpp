@@ -49,10 +49,10 @@ namespace
 	// Vanilla file string passed to Sys_OutOfMemError from the PMem allocator.
 	const char* const kPMemFile = "C:\\cod5\\cod\\codsrc\\src\\universal\\physicalmemory.cpp";
 
-	// PMem region size — C++ is now the authority on it (was the 0x12C00000 immediate
-	// inside Hunk_InitMemory). Keep it at the vanilla 300 MB for the faithful phase;
-	// bump here to grow the zone budget without touching any .text immediate.
-	const unsigned int kPMemSize = 0x12C00000; // 300 MB
+	// PMem region size — sole authority since the Hunk_InitMemory detour; the old
+	// g_mem_5F5492/5F54D1/5F54DB immediate patches are dead code. Vanilla = 0x12C00000
+	// (300 MB) is too small for big custom maps (Sys_OutOfMemError physicalmemory.cpp:966).
+	const unsigned int kPMemSize = 0x40000000; // 1 GB, as the former immediate patch
 }
 
 namespace T4_Reconstructed

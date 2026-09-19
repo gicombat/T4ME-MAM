@@ -467,11 +467,11 @@ void T4_Reconstructed::R_InitGlobalStructs()
 		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_PHYSPRESET, 256);
 		T4M::DB_ReallocXAssetPool(T4::engine::ASSET_TYPE_XMODELPIECES, 256);
 
-		// change the size of g_mem from 0x12C00000 to 0x19600000, UGX-Mod v1.1 is pretty fucking huge
-		// had to increase due to it crashing in Com_BeginParseSession
-		*(DWORD*)T4M::GetAddress("g_mem_5F5492") = 0x40000000; //0x14800000
-		*(DWORD*)T4M::GetAddress("g_mem_5F54D1") = 0x40000000; //0x14800000
-		*(DWORD*)T4M::GetAddress("g_mem_5F54DB") = 0x40000000; //0x14800000
+		// g_mem size: now kPMemSize in PatchT4Mem.cpp — Hunk_InitMemory is detoured,
+		// so these immediates are never executed.
+		//*(DWORD*)T4M::GetAddress("g_mem_5F5492") = 0x40000000; //0x14800000
+		//*(DWORD*)T4M::GetAddress("g_mem_5F54D1") = 0x40000000; //0x14800000
+		//*(DWORD*)T4M::GetAddress("g_mem_5F54DB") = 0x40000000; //0x14800000
 
 		//*(DWORD*)0x5F5492 = 0x26100000; //0x14800000
 		//*(DWORD*)0x5F54D1 = 0x26100000; //0x14800000
