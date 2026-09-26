@@ -90,6 +90,33 @@
     <ClCompile Include="PatchT4MAM_ActorLimit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_ActorSentientInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_CompassActors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_Actor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_EntInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_Events.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_Senses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_Threat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_Turret.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_SentientInfo_ScriptCmd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PatchT4MAM_FsDiag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

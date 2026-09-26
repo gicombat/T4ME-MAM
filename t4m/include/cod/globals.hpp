@@ -77,5 +77,91 @@ namespace T4
 		// friendly-name overlay style dvars (read by CG_DrawFriendOverlay)
 		WEAK symbol<dvar_t*> friendlyNameFontColor{ "dvar_friendlyNameFontColor" };
 		WEAK symbol<dvar_t*> hostileNameFontColor{ "dvar_hostileNameFontColor" };
+
+		// --- AI limit phase 8.2 (globals) ------------------------------
+		// level_locals_t level. The recon reads only level.time (+0x1040 = 0x18F6DC8).
+		WEAK symbol<level_locals_s> level{ "level" };
+
+		// CoD4 g_threatBias (actor_threat.cpp). threatTable[enemyGroup][selfGroup] @+0x20.
+		WEAK symbol<threat_bias_t> g_threatBias{ "g_threatBias" };
+
+		// level.time (level_locals_s + 0x1040, level = 0x18F5D88)
+		WEAK symbol<int> level_time{ "level_time" };
+
+		// Com_GetServerDObj tables: serverObjMap[entnum] -> 1-based slot in objBuf (DObj_s, stride 0x68)
+		WEAK symbol<unsigned short> serverObjMap{ "serverObjMap" };
+
+		WEAK symbol<BYTE>           objBuf{ "objBuf" };
+
+		// non-zero while the client side is up; gates every G_Debug* draw
+		WEAK symbol<int> g_48AE4D4_inCgame{ "g_48AE4D4_inCgame" };
+
+		// cl_debug: server-side debug string / line lists and their "fromServer" flag
+		WEAK symbol<int>  clsDebug_fromServer{ "clsDebug_fromServer" };
+
+		WEAK symbol<BYTE> clsDebug_svStrings{ "clsDebug_svStrings" };
+
+		WEAK symbol<BYTE> clsDebug_svLines{ "clsDebug_svLines" };
+
+		// CL_GetViewPos source (float[3])
+		WEAK symbol<float> clViewPos{ "clViewPos" };
+
+		// shared debug colors (float[4] each, .rdata)
+		WEAK symbol<float> colorRed{ "colorRed" };
+
+		WEAK symbol<float> colorGreen{ "colorGreen" };
+
+		WEAK symbol<float> colorBlue{ "colorBlue" };
+
+		WEAK symbol<float> colorYellow{ "colorYellow" };
+
+		WEAK symbol<float> colorMagenta{ "colorMagenta" };
+
+		WEAK symbol<float> colorCyan{ "colorCyan" };
+
+		WEAK symbol<float> colorOrange{ "colorOrange" };
+
+		WEAK symbol<float> colorWhite{ "cornerDebug_color" };
+
+		// entinfo / AI debug dvars (names from CoD4 usage; see notes.md)
+		WEAK symbol<dvar_t*> g_entinfo{ "dvar_g_entinfo" };
+
+		WEAK symbol<dvar_t*> g_entinfo_maxdist{ "dvar_g_entinfo_maxdist" };
+
+		WEAK symbol<dvar_t*> g_entinfo_scale{ "dvar_g_entinfo_scale" };
+
+		WEAK symbol<dvar_t*> g_entinfo_AItext{ "dvar_g_entinfo_AItext" };
+
+		WEAK symbol<dvar_t*> ai_debugEntIndex{ "dvar_ai_debugEntIndex" };
+
+		WEAK symbol<dvar_t*> ai_debugAccuracy{ "dvar_ai_debugAccuracy" };
+
+		WEAK symbol<dvar_t*> ai_showClaimedNode{ "dvar_ai_showClaimedNode" };
+
+		WEAK symbol<dvar_t*> ai_debugCoverSelection{ "dvar_ai_debugCoverSelection" };
+
+		WEAK symbol<dvar_t*> ai_debugThreatSelection{ "dvar_ai_debugThreatSelection" };
+
+		WEAK symbol<dvar_t*> ai_showRegion{ "dvar_ai_showRegion" };
+
+		// WaW-only: pointer to the proximity visitor (colgeom_visitor_inlined_t, a local of
+		// sub_4BEA40) that Actor_SightTrace hands to SV_SightTrace as its prim list; null
+		// outside that call.
+		WEAK symbol<colgeom_visitor_inlined_t*> actorSightProximity{ "actorSightProximity" };
+
+		// g_scr_data.anim.weapons[128] (scr_animscript_t, 8 bytes). Indexed by turret weapon.
+		WEAK symbol<scr_animscript_t> g_scr_animWeapons{ "g_scr_animWeapons" };
+
+		// EntHandleList g_entitiesHandleList[MAX_GENTITIES] (CoD4 game/enthandle.cpp).
+		WEAK symbol<EntHandleList>  g_entitiesHandleList{ "g_entitiesHandleList" };
+
+		// scr_const.enemy (scr_const + 0x244). cscr_const_t only describes the first 0x20 bytes.
+		WEAK symbol<unsigned short> scr_const_enemy{ "scr_const_enemy" };
+
+		// --- AI limit phase 9 (client compass) ------------------------------
+		// cg_entities[localClientNum << 10 | entnum] (centity_s, 0x2D4), entnum < 1024.
+		WEAK symbol<centity_s> cg_entities{ "cg_entities" };
+		// Same indexing for entnum >= 1024: a 0x31C-byte element whose leading fields match centity_s.
+		WEAK symbol<BYTE>      cg_entitiesHigh{ "cg_entitiesHigh" };
 	}
 }

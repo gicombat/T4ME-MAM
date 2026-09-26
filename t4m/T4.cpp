@@ -28,6 +28,7 @@ dvar_t* switch_mode_input_pressed;
 // AI limit expansion
 dvar_t* ai_max_actors;
 dvar_t* ai_ring_watch;
+dvar_t* ai_sentinel_check;
 // Friendly-name overlay — health-based coloring
 dvar_t* friendlyNameHealthColorAll;
 dvar_t* friendlyNameHealthColorPow;

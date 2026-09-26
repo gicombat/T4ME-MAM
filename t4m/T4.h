@@ -309,6 +309,141 @@ namespace T4_Reconstructed
 		// @modified - WaW 0x52F000, the setailimit() GSC builtin: same shape as vanilla,
 		// but bounded by NEW_MAX_ACTORS and naming that bound in its error message.
 		void                    GScr_SetAILimit();
+
+		// --- AI limit phase 8 (PatchT4MAM_ActorSentientInfo.cpp) ------------------
+		// @modified — sub_50F3F0 / CoD4 game/g_save.cpp ReadActor. Reached through
+		//   T4M::ReadActor_Wrapper (usercall save@eax).
+		void                    ReadActor(T4::engine::actor_s* actor, T4::engine::SaveGame* save);
+		// --- AI limit phase 9 (PatchT4MAM_CompassActors.cpp) ----------------------
+		// @modified — sub_434A80 / CoD4 cgame/cg_compassfriendlies.cpp CG_CompassAddWeaponPingInfo.
+		void                    CG_CompassAddWeaponPingInfo(int localClientNum, T4::engine::centity_s* cent, const float* origin, int msec);
+		// @modified — sub_434B30 / CoD4 CG_CompassUpdateActorInfo.
+		void                    CG_CompassUpdateActorInfo(int localClientNum, int entityIndex);
+
+		// --- AI limit phase 8.2 (PatchT4MAM_SentientInfo_*.cpp) ------------------
+		// @modified — sub_4B4650 / CoD4 game/actor.cpp SentientInfo_Copy. Reached through
+		//   T4M::SentientInfo_Copy_Wrapper (usercall index@eax, pTo@edx, pFrom@esi).
+		void                    SentientInfo_Copy(T4::engine::actor_s* pTo, const T4::engine::actor_s* pFrom, int index);
+
+		// @modified — sub_4B56F0 / CoD4 game/actor.cpp Actor_DissociateSentient. Reached through
+		//   T4M::Actor_DissociateSentient_Wrapper (usercall self@ecx, other@eax).
+		void                    Actor_DissociateSentient(T4::engine::actor_s* self, T4::engine::sentient_s* other);
+
+		// @modified — sub_4B6870 / CoD4 game/actor.cpp Actor_Pain. cdecl, detoured directly.
+		void                    Actor_Pain(T4::engine::gentity_s* self, T4::engine::gentity_s* pAttacker, int iDamage,
+		                                   const float* vPoint, int iMod, const float* vDir, int hitLoc, int weaponIdx);
+
+		// @modified — sub_4BB7F0 / CoD4 game/actor.cpp Actor_InFixedNodeExposedCombat. Reached through
+		//   T4M::Actor_InFixedNodeExposedCombat_Wrapper (usercall self@ecx -> al).
+		bool                    Actor_InFixedNodeExposedCombat(T4::engine::actor_s* self);
+
+		// @modified — sub_4BE5D0 / CoD4 game/actor.cpp Actor_UpdateGoalPos. Reached through
+		//   T4M::Actor_UpdateGoalPos_Wrapper (usercall self@ecx). Also called directly by
+		//   T4_Reconstructed::Actor_DissociateSentient.
+		void                    Actor_UpdateGoalPos(T4::engine::actor_s* self);
+
+		// @modified — sub_4C4170 / CoD4 game/actor_cover.cpp Actor_Cover_CheckWithEnemy. Reached through
+		//   T4M::Actor_Cover_CheckWithEnemy_Wrapper (usercall self@eax, 2 stack args, retn 8).
+		bool                    Actor_Cover_CheckWithEnemy(T4::engine::actor_s* self, const T4::engine::pathnode_t* node,
+		                                                   bool checkEnemyRange);
+
+		// @modified — sub_4DFE70 Actor_UpdateLastEnemySightPos. Via wrapper.
+		void                    Actor_UpdateLastEnemySightPos(T4::engine::actor_s* self);
+
+		// @modified — sub_4DF440 Actor_CanSeeEntityEx. stdcall, detoured directly.
+		bool __stdcall          Actor_CanSeeEntityEx(T4::engine::actor_s* self, T4::engine::gentity_s* ent, float fovDot, float fMaxDistSqrd);
+
+// sub_4B6DD0 — DETOURED (PatchT4MAM_ActorSentientInfo.cpp)
+void Actor_EntInfo(T4::engine::gentity_s* self, float* source);
+
+		// @modified — sub_4C7890 / CoD4 actor_events.cpp Actor_EventPain. Reached through
+		//   T4M::Actor_EventPain_Wrapper (usercall pAttacker@eax, self@edi).
+		void                    Actor_EventPain(T4::engine::actor_s* self, T4::engine::sentient_s* pAttacker);
+
+		// @modified — sub_4C7930 / CoD4 actor_events.cpp Actor_EventBullet. Reached through
+		//   T4M::Actor_EventBullet_Wrapper (usercall originator@edi).
+		void                    Actor_EventBullet(T4::engine::actor_s* self, T4::engine::gentity_s* originator,
+		                                          const float* vStart, const float* vEnd, int suppression);
+
+		// @modified — sub_4C79A0 / CoD4 actor_events.cpp Actor_ReceivePointEvent. Reached through
+		//   T4M::Actor_ReceivePointEvent_Wrapper (usercall eType@eax, originator@ecx).
+		void                    Actor_ReceivePointEvent(T4::engine::actor_s* self, T4::engine::gentity_s* originator,
+		                                                int eType, const float* vOrigin);
+
+		// @modified — sub_4C7BD0 / CoD4 actor_events.cpp Actor_ReceiveLineEvent. Reached through
+		//   T4M::Actor_ReceiveLineEvent_Wrapper (usercall eType@eax, originator@ecx).
+		void                    Actor_ReceiveLineEvent(T4::engine::actor_s* self, T4::engine::gentity_s* originator,
+		                                               int eType, const float* vStart, const float* vEnd);
+
+		// @modified — sub_4C7DB0 / CoD4 actor_exposed.cpp Actor_Exposed_Combat. Reached through
+		//   T4M::Actor_Exposed_Combat_Wrapper (usercall self@esi).
+		void                    Actor_Exposed_Combat(T4::engine::actor_s* self);
+
+		// @modified — sub_4D5D60 / CoD4 actor_orientation.cpp Actor_FaceEnemy. Reached through
+		//   T4M::Actor_FaceEnemy_Wrapper (usercall self@eax).
+		void                    Actor_FaceEnemy(T4::engine::actor_s* self, T4::engine::ai_orient_t* pOrient);
+
+		// @modified — sub_4DEF20 / CoD4 actor_senses.cpp Actor_SightTrace. Plain __stdcall,
+		//   detoured directly.
+		bool __stdcall          Actor_SightTrace(T4::engine::actor_s* self, const float* start, const float* end,
+		                                         int passEntNum);
+
+		// @modified — sub_4DFE10 Actor_UpdateLastKnownPos. Via wrapper.
+		void                    Actor_UpdateLastKnownPos(T4::engine::actor_s* self, T4::engine::sentient_s* other);
+
+		// --- AI limit phase 8, group D (actor_senses / actor_orientation) ----------
+		// @modified — sub_4D5690 Actor_GetAnglesToLikelyEnemyPath. stdcall, detoured directly.
+		bool __stdcall          Actor_GetAnglesToLikelyEnemyPath(T4::engine::actor_s* self);
+
+		// @modified — sub_4DF800 Actor_CanSeeSentient. Via T4M::Actor_CanSeeSentient_Wrapper.
+		bool                    Actor_CanSeeSentient(T4::engine::actor_s* self, T4::engine::sentient_s* sentient, int iMaxLatency);
+
+		// @modified — sub_4DF930 Actor_CanSeeEnemyExtended (useClaimedNode folded to 1). Via wrapper.
+		bool                    Actor_CanSeeEnemyExtended(T4::engine::actor_s* self);
+
+		// @modified — sub_4DF9D0 Actor_KnowAboutEnemy. Via wrapper.
+		bool                    Actor_KnowAboutEnemy(T4::engine::actor_s* self, int hadPath);
+
+		// @modified — sub_4DFC30 Actor_UpdateSight. stdcall, detoured directly.
+		void __stdcall          Actor_UpdateSight(T4::engine::actor_s* self);
+
+		// --- AI limit phase 8, groupe E (actor_threat / actor_turret) ---------------
+		// @modified — loc_4E31E0 / CoD4 Actor_FlagEnemyUnattackable. Via T4M::Actor_FlagEnemyUnattackable_Wrapper.
+		void                    Actor_FlagEnemyUnattackable(T4::engine::actor_s* self);
+
+		// @modified — sub_4E3270 / CoD4 Actor_IsFullyAware. Via T4M::Actor_IsFullyAware_Wrapper.
+		int                     Actor_IsFullyAware(T4::engine::actor_s* self, T4::engine::sentient_s* enemy, int isCurrentEnemy);
+
+		// @modified — sub_4E3540 / CoD4 Actor_UpdateSingleThreat. stdcall, detoured directly.
+		int  __stdcall          Actor_UpdateSingleThreat(T4::engine::actor_s* self, T4::engine::sentient_s* enemy);
+
+		// @modified — sub_4E3900 / CoD4 Actor_UpdateThreat. stdcall, detoured directly.
+		void __stdcall          Actor_UpdateThreat(T4::engine::actor_s* self);
+
+		// @modified — sub_4E3CF0 / CoD4 Actor_CanAttackAll. stdcall, detoured directly.
+		void __stdcall          Actor_CanAttackAll(T4::engine::actor_s* self);
+
+		// @modified — 0x4E5060 / CoD4 Actor_Turret_Think. Via T4M::Actor_Turret_Think_Wrapper.
+		int                     Actor_Turret_Think(T4::engine::actor_s* self);
+
+		// @modified — sub_56A280 / CoD4 game/turret.cpp turret_think_auto (cdecl, detoured directly).
+		int turret_think_auto(T4::engine::gentity_s* self, T4::engine::actor_s* actor);
+
+		// @modified — sub_56AB00 / CoD4 turret_think_manual. Reached through
+		//   T4M::turret_think_manual_Wrapper (usercall self@eax).
+		int turret_think_manual(T4::engine::gentity_s* self, T4::engine::actor_s* actor);
+
+		// @modified — sub_56B420 / CoD4 turret_canuse_auto (cdecl, detoured directly).
+		int turret_canuse_auto(T4::engine::gentity_s* self, T4::engine::actor_s* actor);
+
+		// @modified — GSC methods (BuiltinMethod, plain __cdecl, no wrapper). sentientInfo via
+		//   T4M::Actor_SentientInfo. 0x4DE2E0 "clearenemy", 0x4DEC10 "isknownenemyinradius",
+		//   0x566E80 "getclosestenemysqdist".
+		void                    ActorCmd_ClearEnemy(scr_entref_t entref);
+
+		void                    ActorCmd_IsKnownEnemyInRadius(scr_entref_t entref);
+
+		void                    SentientCmd_GetClosestEnemySqDist(scr_entref_t entref);
 	} // extern "C"
 } // namespace T4_Reconstructed
 
@@ -326,6 +461,75 @@ namespace T4M
 		// Suffix appended to the console version line: " -ai:64" / " -ai:FAILED" /
 		// Identifies the loaded DLL and what its AI patch did with it. Never null.
 		const char* AiLimitStatusTag();
+
+		// ── AI limit phase 8: per-sentient arrays moved out of actor_s ─────────
+		// (PatchT4MAM_ActorSentientInfo.cpp, R&D analysis/actor_sentientinfo_sidetable.md)
+		// actor_s::sentientInfo[36] / vis_blockers[36] are indexed by sentient index and
+		// overflow past 36. Every vanilla reader/writer is reconstructed to go through these.
+		T4::engine::sentient_info_t* Actor_SentientInfo(T4::engine::actor_s* actor, int sentientIndex);
+		unsigned short*              Actor_VisBlocker(T4::engine::actor_s* actor, int sentientIndex);
+		// Row reset for a freshly allocated / restored actor (vanilla memsets the arrays).
+		void                         Actor_SentientInfoReset(T4::engine::actor_s* actor);
+		void                         Actor_VisBlockersReset(T4::engine::actor_s* actor);
+		// @wrapper — usercall(save@eax, actor@stack) → T4_Reconstructed::ReadActor.
+		void                         ReadActor_Wrapper();
+		// cg.bgs.actorinfo[index] in the relocated client array (PatchT4MAM_ActorLimit.cpp).
+		T4::engine::actorInfo_t*     CgActorInfo(int index);
+		// @wrapper — usercall(localClientNum@eax, cent@ecx, origin@edi, msec@stack) → T4_Reconstructed::CG_CompassAddWeaponPingInfo.
+		void                         CG_CompassAddWeaponPingInfo_Wrapper();
+		// @wrapper — usercall(localClientNum@edi, entityIndex@ecx) → T4_Reconstructed::CG_CompassUpdateActorInfo.
+		void                         CG_CompassUpdateActorInfo_Wrapper();
+
+		// ── AI limit phase 8.2 wrappers (PatchT4MAM_SentientInfo_*.cpp) ────────
+		// @wrapper — usercall(index@eax, pTo@edx, pFrom@esi) → T4_Reconstructed::SentientInfo_Copy.
+		void                         SentientInfo_Copy_Wrapper();
+
+		// @wrapper — usercall(self@ecx, other@eax) → T4_Reconstructed::Actor_DissociateSentient.
+		void                         Actor_DissociateSentient_Wrapper();
+
+		// @wrapper — usercall(self@ecx) -> al → T4_Reconstructed::Actor_InFixedNodeExposedCombat.
+		void                         Actor_InFixedNodeExposedCombat_Wrapper();
+
+		// @wrapper — usercall(self@ecx) → T4_Reconstructed::Actor_UpdateGoalPos.
+		void                         Actor_UpdateGoalPos_Wrapper();
+
+		// @wrapper — usercall(self@eax, node, checkEnemyRange ; retn 8) → T4_Reconstructed::Actor_Cover_CheckWithEnemy.
+		void                         Actor_Cover_CheckWithEnemy_Wrapper();
+
+		// @wrapper — usercall bridges to the T4_Reconstructed actor event / sense functions.
+		void                         Actor_EventPain_Wrapper();          // pAttacker@eax, self@edi ; retn
+		void                         Actor_EventBullet_Wrapper();        // originator@edi ; retn 10h ; keeps ecx
+		void                         Actor_ReceivePointEvent_Wrapper();  // eType@eax, originator@ecx ; retn 8
+		void                         Actor_ReceiveLineEvent_Wrapper();   // eType@eax, originator@ecx ; retn 0Ch
+		void                         Actor_Exposed_Combat_Wrapper();     // self@esi ; retn
+		void                         Actor_FaceEnemy_Wrapper();          // self@eax ; retn 4
+
+		// @wrapper — usercall(sentient@eax, self@esi, iMaxLatency@stack), retn 4, keeps ecx.
+		void                         Actor_CanSeeSentient_Wrapper();
+
+		// @wrapper — usercall(self@edi), retn.
+		void                         Actor_CanSeeEnemyExtended_Wrapper();
+
+		// @wrapper — usercall(self@edi, hadPath@stack), retn 4, keeps ecx.
+		void                         Actor_KnowAboutEnemy_Wrapper();
+
+		// @wrapper — usercall(other@esi, self@stack), retn 4.
+		void                         Actor_UpdateLastKnownPos_Wrapper();
+
+		// @wrapper — usercall(self@eax), retn, keeps ecx.
+		void                         Actor_UpdateLastEnemySightPos_Wrapper();
+
+		// @wrapper — usercall(self@ecx) → T4_Reconstructed::Actor_FlagEnemyUnattackable.
+		void                         Actor_FlagEnemyUnattackable_Wrapper();
+
+		// @wrapper — usercall(self@eax, enemy@edi, isCurrentEnemy@stack), retn 4.
+		void                         Actor_IsFullyAware_Wrapper();
+
+		// @wrapper — usercall(self@ecx) -> eax.
+		void                         Actor_Turret_Think_Wrapper();
+
+		// @wrapper — usercall(self@eax, actor@stack) → T4_Reconstructed::turret_think_manual.
+		void                         turret_think_manual_Wrapper();
 
 		void FS_BuildZonePath(char* dst, int mode, const char* mapName);
 		bool FS_ZoneFileExists(const char* mapName, int mode);
@@ -456,9 +660,24 @@ extern dvar_t* vulkan;
 // Tweak switch Mode
 extern dvar_t* is_watching_for_switch_mode_input;
 extern dvar_t* switch_mode_input_pressed;
-// AI limit expansion (PatchT4MAM_ActorLimit.cpp) — gated OFF while the chantier is unfinished
+// AI limit expansion (PatchT4MAM_ActorLimit.cpp, PatchT4MAM_ActorSentientInfo.cpp)
+#define VANILLA_MAX_ACTORS    32
+#define VANILLA_MAX_SENTIENTS 36
+#define NEW_MAX_ACTORS        64
+#define SP_MAX_CLIENTS        4                                  // dword_18F6DC0
+#define NEW_MAX_SENTIENTS     (NEW_MAX_ACTORS + SP_MAX_CLIENTS)
+void PatchT4MAM_ActorSentientInfo();   // called by PatchT4MAM_ActorLimit once the pools grew
+void PatchT4MAM_CompassActors();       // called by PatchT4MAM_ActorLimit once the pools grew
+void PatchT4MAM_SentientInfo_Actor();
+void PatchT4MAM_SentientInfo_EntInfo();
+void PatchT4MAM_SentientInfo_Events();
+void PatchT4MAM_SentientInfo_Senses();
+void PatchT4MAM_SentientInfo_Threat();
+void PatchT4MAM_SentientInfo_Turret();
+void PatchT4MAM_SentientInfo_ScriptCmd();
 extern dvar_t* ai_max_actors;
 extern dvar_t* ai_ring_watch;
+extern dvar_t* ai_sentinel_check;
 // Friendly-name overlay — health-based coloring (PatchT4MAM_FriendOverlay.cpp)
 extern dvar_t* friendlyNameHealthColorAll;
 extern dvar_t* friendlyNameHealthColorPow;

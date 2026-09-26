@@ -29,9 +29,8 @@
 #include "StdInc.h"
 #include <safetyhook.hpp>
 
-#define NEW_MAX_ACTORS       64
-#define SP_MAX_CLIENTS       4                                  // dword_18F6DC0
-#define NEW_MAX_SENTIENTS    (NEW_MAX_ACTORS + SP_MAX_CLIENTS)
+// NEW_MAX_ACTORS / NEW_MAX_SENTIENTS / VANILLA_MAX_* live in T4.h (shared with
+// PatchT4MAM_ActorSentientInfo.cpp).
 
 #define ACTOR_SIZE           0x31B8
 #define SENTIENT_SIZE        0x88
@@ -65,8 +64,6 @@
 // one a freshly allocated slot has to be given.
 #define ACTOR_SUBOBJ_OFFSET  0xD94
 
-#define VANILLA_MAX_ACTORS    32
-#define VANILLA_MAX_SENTIENTS 36
 #define VANILLA_MAX_LISTENERS 32
 
 // AI event listeners are per listening *entity*, not per actor, and the array is
@@ -99,7 +96,8 @@ static_assert(VANILLA_SNAP_SIZE == VANILLA_SNAP_TAIL + 4, "the trailing field is
 // ==========================================================
 
 // @modified — sub_4B4CA0 / CoD4 src/game/actor.cpp Actor_Alloc.
-//   1:1 with vanilla except the walk stops at NEW_MAX_ACTORS.
+//   1:1 with vanilla except the walk stops at NEW_MAX_ACTORS, and the actor's rows of the
+//   sentientInfo / vis_blockers side tables are cleared along with the actor_s memset.
 //   DETOURED — do not call directly.
 T4::engine::actor_s* T4_Reconstructed::Actor_Alloc()
 {
@@ -110,6 +108,8 @@ T4::engine::actor_s* T4_Reconstructed::Actor_Alloc()
 		if (!actor->inuse)
 		{
 			memset(actor, 0, sizeof(T4::engine::actor_s));
+			T4M::Actor_SentientInfoReset(actor);
+			T4M::Actor_VisBlockersReset(actor);
 			actor->inuse = 1;
 			T4::game::Actor_SetDefaults(actor);
 			return actor;
@@ -895,6 +895,12 @@ void PatchT4MAM_ActorLimit()
 	                             reinterpret_cast<uintptr_t>(&T4_Reconstructed::GScr_SetAILimit),
 	                             Detours::X86Option::USE_JUMP);
 
+	// Phase 8: per-sentient arrays of actor_s moved to side tables.
+	PatchT4MAM_ActorSentientInfo();
+
+	// Phase 9: the client compass keeps its own per-actor array (36 = 32 actors + 4 players).
+	PatchT4MAM_CompassActors();
+
 	// Phase 7: let GSC read the real cap instead of hardcoding 32. Registered ROM in
 	// PatchT4_Console with the vanilla value; only a successful patch raises it.
 	if (ai_max_actors)
@@ -906,6 +912,17 @@ void PatchT4MAM_ActorLimit()
 		static auto ring_watch_hook = safetyhook::create_mid(T4M::GetAddress("aiRing_ClActorHistory_63A4FD"),
 		                                                    &T4M::RingWatchTick);
 	}
+}
+
+static_assert(sizeof(T4::engine::actorInfo_t) == ACTORTREE_SIZE, "actorInfo_t layout");
+
+// @new - cg.bgs.actorinfo[] lives in the relocated client tree array once the patch ran;
+// the copy inside cg_s only has the vanilla 32 slots. Reconstructions read it through this.
+T4::engine::actorInfo_t* T4M::CgActorInfo(int index)
+{
+	BYTE* const base = T4M::g_newCgActorTrees ? T4M::g_newCgActorTrees
+	                                          : reinterpret_cast<BYTE*>(T4M::GetAddress("cgActorAnimTrees"));
+	return reinterpret_cast<T4::engine::actorInfo_t*>(base) + index;
 }
 
 // @new - lets the console version line prove which DLL is loaded and what the AI patch

@@ -6,6 +6,11 @@ namespace T4
 	namespace dvar
 	{
 		struct dvar_s;
+
+		// --- AI limit phase 8.2 (AI dvars) ------------------------------
+		// "ai_foliageSeeThroughDist" — registered in sub_4FF700 (AI dvar init), stored at 0x18E86FC.
+		// CoD4 calls it ai_foliageIngoreDist.
+		WEAK engine::symbol<dvar_s*> ai_foliageSeeThroughDist{ "ai_foliageSeeThroughDist" };
 	}
 }
 
@@ -25,5 +30,10 @@ namespace T4
 		// moved from T4.cpp extern "C"
 		WEAK symbol<void(DWORD)> NET_RegisterDvars{ "NET_RegisterDvars" };
 		WEAK symbol<dvar_t*(const char*)> Dvar_FindMalleableVar{ "Dvar_FindMalleableVar" };
+
+		// --- AI limit phase 8.2 (AI dvars) ------------------------------
+		WEAK symbol<T4::dvar::dvar_s*> ai_threatUpdateInterval{ "ai_threatUpdateInterval" };
+
+		WEAK symbol<T4::dvar::dvar_s*> ai_showPotentialThreatDir{ "ai_showPotentialThreatDir" };
 	}
 } // namespace T4::engine

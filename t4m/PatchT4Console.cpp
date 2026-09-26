@@ -353,6 +353,7 @@ void PatchT4_Console()
 	// the vanilla value until PatchT4MAM_ActorLimit reports a successful patch.
 	ai_max_actors = T4::dvar::Dvar_RegisterInt(32, "t4m_aiMaxActors", 32, 127, T4::dvar::DVAR_FLAG_ROM, "Simultaneous AI cap actually in force.");
 	ai_ring_watch = T4::dvar::Dvar_RegisterBool(0, "t4m_aiRingWatch", T4::dvar::DVAR_FLAG_ARCHIVE, "Log when the client actor ring runs out of history and a snapshot is dropped (requires restart).");
+	ai_sentinel_check = T4::dvar::Dvar_RegisterBool(0, "t4m_aiSentinelCheck", T4::dvar::DVAR_FLAG_NONE, "Each server frame, verify no vanilla code still writes actor_s::sentientInfo / vis_blockers (moved to a side table). Logs the first hit per actor.");
 	friendlyNameHealthColorAll = T4::dvar::Dvar_RegisterBool(0, "friendlyNameHealthColorAll", T4::dvar::DVAR_FLAG_ARCHIVE, "Color every displayed friendly name by the target's health.");
 	friendlyNameHealthColorPow = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorPow", 1.0f, 0.1f, 8.0f, T4::dvar::DVAR_FLAG_ARCHIVE, "Curve applied to the health->color ramp (>1 keeps the healthy color longer).");
 	friendlyNameHealthColorRedAt = T4::dvar::Dvar_RegisterFloat("friendlyNameHealthColorRedAt", 0.20f, 0.0f, 0.9f, T4::dvar::DVAR_FLAG_ARCHIVE, "Health fraction at which the last ramp stop is fully reached; below it the color stays pinned there.");
