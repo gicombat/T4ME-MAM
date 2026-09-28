@@ -541,12 +541,6 @@ namespace T4M
 		void DB_EnumAssetPool(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
 		void DB_EnumAssetPoolB(int type, void (__cdecl* callback)(void*, int*), int* pType, int followOverrides);
 
-		// ── Diagnostics (PatchT4MAM_FsDiag.cpp) ────────────────────────────────
-		// Appends one timestamped line to t4m_fsdiag.log. Safe from any thread,
-		// never prints to the console: it must survive a freeze, where the
-		// console is never drawn again.
-		void __cdecl FsDiag_Note(const char* fmt, ...);
-
 		// ── Reload extensions (PatchT4MAM_Reload.cpp) ─────────────────────────
 		// Fills absent reloadStartEmpty* fields from their reloadStart* counterparts.
 		void __cdecl Reload_ApplyWeaponDefDefaults(T4::engine::WeaponDef* weapDef);

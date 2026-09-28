@@ -90,8 +90,6 @@ extern "C" int __cdecl T4_Reconstructed_FS_OpenPakEntry(
 			// that is the whole bug: the caller gets the previous entry's size,
 			// or -- worse -- a value with bit 31 set, which Scr_ReadFile memoizes
 			// as "this file does not exist" for the rest of the session.
-			T4M::FsDiag_Note("PAKOPEN giving up on '%s' after %d seeks (pos 0x%08X, pak %p)\n",
-				localName, attempt, (unsigned int)pos, pak);
 			Com_Error(ERR_DROP, "FS_FOpenFileRead: unreadable archive entry for '%s'", localName);
 			return -1;
 		}

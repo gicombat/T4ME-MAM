@@ -383,10 +383,6 @@ namespace T4M
 	void __cdecl DB_LoadMapZones(const char* mapName)
 	{
 		T4::engine::Com_Printf(0x10, "[T4M] - DB_LoadMapZones Start for map %s\n", mapName);
-		// Also to t4m_fsdiag.log: when a load freezes, this is the last thing
-		// written, and it names the map the next lines belong to.
-		T4M::FsDiag_Note("MAP load '%s' (lang '%s', fs_game '%s')\n", mapName,
-			*T4::engine::language_system, (*T4::engine::fs_game)->current.string);
 
 		// Reset the fastfile streaming progress counters
 		T4::engine::db_streamReadBlocksTotal = 0;  // 0x957400
@@ -489,8 +485,6 @@ namespace T4M
 						// channel 10 for _load / _patch / default / localized_ names. Every asset it
 						// carried later freezes its first requester in DB_FindXAssetHeader.
 						T4::engine::Com_PrintWarning(0, "[T4M] - zone dropped, could not open '%s' (allocFlags 0x%X)\n",
-							entry->name, entry->allocFlags);
-						T4M::FsDiag_Note("ZONE dropped '%s' (allocFlags 0x%X)\n",
 							entry->name, entry->allocFlags);
 						*T4::engine::g_pendingZoneCount -= 1;
 					}

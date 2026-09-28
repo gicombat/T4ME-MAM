@@ -120,9 +120,6 @@
     <ClCompile Include="PatchT4MAM_SentientInfo_ScriptCmd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PatchT4MAM_FsDiag.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="PatchT4MAM_FsPakOpen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

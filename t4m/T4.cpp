@@ -1063,30 +1063,13 @@ void* T4_Reconstructed::DB_FindXAssetHeader(int type, const char* name, bool use
 	char  sub5FEC60Buf[32] = { 0 };
 	XAssetEntry* entry = nullptr;
 
-	// T4M diag — a call that spins here for >3 s is the map-load hang. Log its target
-	// ONCE (any timeout). entry != null + zoneIndex 0 => stale HEAD (override promotion
-	// missed); entry == null => never linked. Local timer so it works whatever timeoutMs.
-	const DWORD t4mCallStart = timeGetTime();
-	bool        t4mLogged    = false;
-
 loc_48DA44:
 	// Reader acquire: inc reader count, then spin while writer count != 0.
 	InterlockedIncrement((LONG*)(int*)T4::g_dbReaderCount);
 	{
-		// reentrant for writer owner; T4M diag names the writer-holding thread on a hang.
-		static bool s_lockHangLogged = false;
-		DWORD spinStart = timeGetTime();
+		// reentrant for writer owner
 		while (*T4::g_dbWriterCount != 0 && s_dbWriterOwnerTid != ::GetCurrentThreadId())
-		{
-			if (!s_lockHangLogged && (int)(timeGetTime() - spinStart) > 3000)
-			{
-				s_lockHangLogged = true;
-				T4M::FsDiag_Note("DBLOCKHANG readerWait writer=%ld reader=%ld ownerTid=%u myTid=%u type=%d name='%s'\n",
-					*T4::g_dbWriterCount, *T4::g_dbReaderCount, s_dbWriterOwnerTid,
-					::GetCurrentThreadId(), type, name ? name : "(null)");
-			}
 			Sleep(0);
-		}
 	}
 
 	// Lookup
@@ -1094,13 +1077,6 @@ loc_48DA44:
 
 	// Reader release
 	InterlockedDecrement((LONG*)(int*)T4::g_dbReaderCount);
-
-	if (!t4mLogged && (int)(timeGetTime() - t4mCallStart) > 3000)
-	{
-		t4mLogged = true;
-		T4M::FsDiag_Note("DBHANG type=%d name='%s' timeout=%d entry=%p zoneIndex=%d\n",
-			type, name ? name : "(null)", timeoutMs, (void*)entry, entry ? (int)entry->zoneIndex : -1);
-	}
 
 	if (entry == nullptr) goto loc_48DAC9;
 
