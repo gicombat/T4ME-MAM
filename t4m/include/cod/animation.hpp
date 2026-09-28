@@ -10,5 +10,21 @@ namespace T4
 
 		// Variable
 		WEAK symbol<void> AnimAllocCb{ "AnimAllocCb" };		
+
+		// --- AI limit phase 8.2 (DObj) ------------------------------
+		// WaW sub_60FAE0 — usercall(obj@ecx, header@eax, buffer@stack) ; retn, caller cleans 4.
+		// Buffer size 0x800 is hardcoded in the callee.
+		inline void DObjDisplayAnimToBuffer(const void* obj, const char* header, char* buffer)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("DObjDisplayAnimToBuffer"));
+			__asm
+			{
+				push buffer
+				mov  ecx, obj
+				mov  eax, header
+				call fn
+				add  esp, 4
+			}
+		}
 	}
 }

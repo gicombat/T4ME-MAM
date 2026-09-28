@@ -13,20 +13,25 @@
 
 const char* SetConsoleVersion()
 {
+	// The AI tag is resolved here rather than baked into the version macros: branding
+	// runs before the AI patch, but the engine calls this back later, so by then the
+	// tag says what actually happened - not just what was compiled in.
+	const char* ai = T4M::AiLimitStatusTag();
+
 	if (IsUsingVulkan == 1)
 	{
 #ifdef IS_BETA
-		return va("CoD WaW %s", VERSION_BETA_VULKAN_STR);	
+		return va("CoD WaW %s%s", VERSION_BETA_VULKAN_STR, ai);
 #else
-		return va("CoD WaW %s", VERSION_VULKAN_STR);		
+		return va("CoD WaW %s%s", VERSION_VULKAN_STR, ai);
 #endif		
 	}
 	else
 	{
 #ifdef IS_BETA
-		return va("CoD WaW %s", VERSION_BETA_STR);	
+		return va("CoD WaW %s%s", VERSION_BETA_STR, ai);
 #else
-		return va("CoD WaW %s", VERSION_STR);	
+		return va("CoD WaW %s%s", VERSION_STR, ai);
 #endif		
 	}
 }

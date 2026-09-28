@@ -1470,9 +1470,12 @@ namespace T4
 			int attachedEntNum; //OFS: 0x60 SIZE: 0x4
 			int attachedTagIndex; //OFS: 0x64 SIZE: 0x4
 			int animScriptedAnim; //OFS: 0x68 SIZE: 0x4
-			int hudwarningType; //OFS: 0x6C SIZE: 0x4
-			int lookAtEntNum; //OFS: 0x70 SIZE: 0x4
-			int lastLookAtEntNum; //OFS: 0x74 SIZE: 0x4
+			// 0x6C..0x74 corrected 2026-08-21 against the WaW actorState netfield table
+			// (0x8368C0, 29 entries): WaW has animScriptedAnimTime where CoD4 has nothing,
+			// which shifts the last two fields. No call site used them.
+			int animScriptedAnimTime; //OFS: 0x6C SIZE: 0x4
+			int hudwarningType; //OFS: 0x70 SIZE: 0x4
+			int lookAtEntNum; //OFS: 0x74 SIZE: 0x4
 		};
 		ASSERT_STRUCT_SIZE(actorState_s, 0x78);
 		ASSERT_STRUCT_OFFSET(actorState_s, actorIndex, 0x0);
@@ -1485,9 +1488,12 @@ namespace T4
 		ASSERT_STRUCT_OFFSET(actorState_s, attachedEntNum, 0x60);
 		ASSERT_STRUCT_OFFSET(actorState_s, attachedTagIndex, 0x64);
 		ASSERT_STRUCT_OFFSET(actorState_s, animScriptedAnim, 0x68);
-		ASSERT_STRUCT_OFFSET(actorState_s, hudwarningType, 0x6C);
-		ASSERT_STRUCT_OFFSET(actorState_s, lookAtEntNum, 0x70);
-		ASSERT_STRUCT_OFFSET(actorState_s, lastLookAtEntNum, 0x74);
+		ASSERT_STRUCT_OFFSET(actorState_s, animScriptedAnimTime, 0x6C);
+		ASSERT_STRUCT_OFFSET(actorState_s, hudwarningType, 0x70);
+		ASSERT_STRUCT_OFFSET(actorState_s, lookAtEntNum, 0x74);
+
+		// actor_s already lives further down in this file (0x31B8, ent@0x0, sentient@0x4,
+		// as@0xC, inuse@0x2140) — RE confirmed those four offsets, do not redefine it here.
 
 		struct ai_transition_cmd_t
 		{
@@ -1910,7 +1916,7 @@ namespace T4
 			int playerSightAccuracy; //OFS: 0xC40 SIZE: 0x4
 			int missCount; //OFS: 0xC44 SIZE: 0x4
 			int hitCount; //OFS: 0xC48 SIZE: 0x4
-			int debugLastAccuracy; //OFS: 0xC4C SIZE: 0x4
+			float debugLastAccuracy; //OFS: 0xC4C SIZE: 0x4
 			int lastShotTime; //OFS: 0xC50 SIZE: 0x4
 			__int16 properName; //OFS: 0xC54 SIZE: 0x2
 			__int16 weaponName; //OFS: 0xC56 SIZE: 0x2
@@ -1959,8 +1965,8 @@ namespace T4
 			int pathWaitTime; //OFS: 0x1950 SIZE: 0x4
 			int iTeamMoveWaitTime; //OFS: 0x1954 SIZE: 0x4
 			int iTeamMoveDodgeTime; //OFS: 0x1958 SIZE: 0x4
-			int pPileUpActor; //OFS: 0x195C SIZE: 0x4
-			int pPileUpEnt; //OFS: 0x1960 SIZE: 0x4
+			actor_s* pPileUpActor; //OFS: 0x195C SIZE: 0x4
+			gentity_s* pPileUpEnt; //OFS: 0x1960 SIZE: 0x4
 			int bDontAvoidPlayer; //OFS: 0x1964 SIZE: 0x4
 			__int16 chainFallback; //OFS: 0x1968 SIZE: 0x2
 			int sideMove; //OFS: 0x196C SIZE: 0x4
@@ -10145,6 +10151,17 @@ namespace T4
 		ASSERT_STRUCT_OFFSET(actor_physics_local_t, iTraceMask, 0x5C);
 		ASSERT_STRUCT_OFFSET(actor_physics_local_t, stepheight, 0x60);
 
+		struct pathnodeRange_t
+		{
+			float minSqDist; //OFS: 0x0 SIZE: 0x4
+			float fAngleMin; //OFS: 0x4 SIZE: 0x4
+			float fAngleMax; //OFS: 0x8 SIZE: 0x4
+		};
+		ASSERT_STRUCT_SIZE(pathnodeRange_t, 0xC);
+		ASSERT_STRUCT_OFFSET(pathnodeRange_t, minSqDist, 0x0);
+		ASSERT_STRUCT_OFFSET(pathnodeRange_t, fAngleMin, 0x4);
+		ASSERT_STRUCT_OFFSET(pathnodeRange_t, fAngleMax, 0x8);
+
 		struct ai_funcs_t
 		{
 			bool(__cdecl* pfnStart)(actor_s* pSelf, ai_state_t ePrevState); //OFS: 0x0 SIZE: 0x4
@@ -10153,7 +10170,8 @@ namespace T4
 			bool(__cdecl* pfnResume)(actor_s* pSelf, ai_state_t ePrevState); //OFS: 0xC SIZE: 0x4
 			actor_think_result_t(__cdecl* pfnThink)(actor_s* pSelf); //OFS: 0x10 SIZE: 0x4
 			void(__cdecl* pfnTouch)(actor_s* pSelf, gentity_s* pOther); //OFS: 0x14 SIZE: 0x4
-			void(__cdecl* pfnPain)(actor_s* pSelf, gentity_s* pAttacker, int iDamage, float* vPoint, int iMod, float* vDir, hitLocation_t hitLoc); //OFS: 0x18 SIZE: 0x4
+			// __fastcall: both WaW pain handlers (0x4CA4F0, 0x4E5380) end in retn 14h.
+			void(__fastcall* pfnPain)(actor_s* pSelf, gentity_s* pAttacker, int iDamage, const float* vPoint, int iMod, const float* vDir, hitLocation_t hitLoc); //OFS: 0x18 SIZE: 0x4
 		};
 		ASSERT_STRUCT_SIZE(ai_funcs_t, 0x1C);
 		ASSERT_STRUCT_OFFSET(ai_funcs_t, pfnStart, 0x0);
@@ -13693,6 +13711,8 @@ namespace T4
 #include "server.hpp"
 #include "bgame.hpp"
 #include "cgame.hpp"
+#include "actor.hpp"
+#include "turret.hpp"
 #include "fs.hpp"
 #include "mem.hpp"
 #include "globals.hpp"

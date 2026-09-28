@@ -124,6 +124,8 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Hooking.h" />
+    <ClInclude Include="include\cod\actor.hpp" />
+    <ClInclude Include="include\cod\turret.hpp" />
     <ClInclude Include="include\cod\animation.hpp" />
     <ClInclude Include="include\cod\bgame.hpp" />
     <ClInclude Include="include\cod\cgame.hpp" />
@@ -210,6 +212,16 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_FsPakOpen.cpp" />
     <ClCompile Include="PatchT4MAM_AssetPool.cpp" />
     <ClCompile Include="PatchT4Mem.cpp" />
+    <ClCompile Include="PatchT4MAM_ActorLimit.cpp" />
+    <ClCompile Include="PatchT4MAM_ActorSentientInfo.cpp" />
+    <ClCompile Include="PatchT4MAM_CompassActors.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_Actor.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_EntInfo.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_Events.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_Senses.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_Threat.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_Turret.cpp" />
+    <ClCompile Include="PatchT4MAM_SentientInfo_ScriptCmd.cpp" />
     <ClCompile Include="PatchT4MP.cpp" />
     <ClCompile Include="PatchT4NoBorder.cpp" />
     <ClCompile Include="PatchT4Script.cpp" />
