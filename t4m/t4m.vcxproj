@@ -126,6 +126,7 @@ popd</Command>
     <ClInclude Include="Hooking.h" />
     <ClInclude Include="include\cod\animation.hpp" />
     <ClInclude Include="include\cod\bgame.hpp" />
+    <ClInclude Include="include\cod\cgame.hpp" />
     <ClInclude Include="include\cod\server.hpp" />
     <ClInclude Include="include\cod\clientscript\clientscript_public.hpp" />
     <ClInclude Include="include\cod\clientscript\cscr_animtree.hpp" />
@@ -197,6 +198,7 @@ popd</Command>
     <ClCompile Include="PatchT4MAM_WeaponState.cpp" />
     <ClCompile Include="PatchT4MAM_WeaponDef.cpp" />
     <ClCompile Include="PatchT4MAM_LowReady.cpp" />
+    <ClCompile Include="PatchT4MAM_Reload.cpp" />
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
     <ClCompile Include="PatchT4MAM_ModelIndex.cpp" />

@@ -326,6 +326,13 @@ namespace T4M
 		// console is never drawn again.
 		void __cdecl FsDiag_Note(const char* fmt, ...);
 
+		// ── Reload extensions (PatchT4MAM_Reload.cpp) ─────────────────────────
+		// Fills absent reloadStartEmpty* fields from their reloadStart* counterparts.
+		void __cdecl Reload_ApplyWeaponDefDefaults(T4::engine::WeaponDef* weapDef);
+		// Viewmodel chooser branch for the T4M vm-anim codes (lowReady 0x20-0x22,
+		// VM_ANIM_RELOAD_START_EMPTY); false = vanilla code, not handled.
+		bool __cdecl ViewmodelChooser_CustomSlot(T4::engine::playerState_s* ps, void* weaponHandle);
+
 		// ── Project helpers / asset pool utilities ─────────────────────────────
 		void*         DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
 		char*         __cdecl DB_GetXAssetTypeName(int type);
@@ -409,6 +416,11 @@ namespace T4M
 	{
 		return T4::engine::DB_GetXAssetSizeHandler[type]();
 	}
+
+	// Reload extensions: vm-anim code written to ps->weapAnim for an empty segmented
+	// reload start, and the viewmodel tree slot it plays (after lowReady 0x25-0x27).
+	constexpr int VM_ANIM_RELOAD_START_EMPTY = 0x23;
+	constexpr int VM_SLOT_RELOAD_START_EMPTY = 0x28;
 } // namespace T4M
 
 #define retptr (uintptr_t)&T4M::DoReturn

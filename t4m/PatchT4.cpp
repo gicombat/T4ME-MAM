@@ -25,6 +25,7 @@ void PatchT4_NoBorder();
 void PatchT4_PreLoad();
 void PatchT4MAM_WeaponDef();
 void PatchT4MAM_LowReady();
+void PatchT4MAM_Reload();
 void PatchT4_Script();
 void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
@@ -84,6 +85,7 @@ void PatchT4()
 	PatchT4MAM_Override();
 	PatchT4MAM_WeaponState();
 	PatchT4MAM_LowReady();
+	PatchT4MAM_Reload(); // closedBolt / reloadAmmoAddEmpty / reloadStartEmpty reconstructions (plan_weapon_reload_ext.md)
 	PatchT4MAM_ModelIndex(); // faithful G_ModelIndex recon + detour (instrumented)
 	PatchT4MAM_ConfigStrings(); // CS subsystem reconstruction (detours gated OFF until flip)
 	PatchT4MAM_Loopback(); // enlarge SP loopback packet queue (16 -> 128 slots) for >520-model gamestates

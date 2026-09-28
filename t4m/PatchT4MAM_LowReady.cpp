@@ -74,38 +74,9 @@ namespace T4M
 // Args follow vanilla cdecl: arg_0 = ps-like global ptr, arg_4 = weapon-handle ptr.
 extern "C" void __cdecl T4M_ChooserHook_LowReady(playerState_s* ps, void* arg_4)
 {
-    int vm_state_raw = *(int*)((char*)ps + 0x910);
-    int vm_state     = vm_state_raw & ~0x200;
-
-    if (vm_state >= 0x20 && vm_state <= 0x22) 
-    {
-        int weapon_idx = (*(int*)((char*)ps + 0x10) & 2)
-            ? *(int*)((char*)ps + 0xFC)        // offhand
-            : *(int*)((char*)ps + 0x104);      // main
-
-        // Tree handle stored by sub_464BF0 at dword_3463C40 + weapon_idx*0x48 + 0x30.
-        void* tree = *(void**)((char*)T4M::GetAddress("viewmodelAnimTreeHandles") + weapon_idx * 0x48 + 0x30);
-        
-        DWORD func = T4M::GetAddress("CG_ViewmodelAnim_SetSlotBlend");
-
-        if (tree) 
-        {
-            int   slot  = 0x25 + (vm_state - 0x20);
-            float blend = 0.0f;
-            // sub_464080 __usercall(eax=slot, ecx=weapon_idx, [esp+4]=tree, [esp+8]=blend)
-            __asm 
-            {
-                push    blend
-                push    tree
-                mov     eax, slot
-                mov     ecx, weapon_idx
-                mov     edx, func
-                call    edx
-                add     esp, 8
-            }
-        }
-        return; // suppress vanilla chooser
-    }
+    // T4M vm-anim codes (lowReady 0x20-0x22, reload ext 0x23) play their own tree slot.
+    if (T4M::ViewmodelChooser_CustomSlot(ps, arg_4))
+        return;
 
     // Vanilla path: directly call sub_4643A0 (its entry is unpatched, no recursion).
     ((void(__cdecl*)(playerState_s*, void*))T4M::GetAddress("CG_ViewmodelAnim_Chooser"))(ps, arg_4);
@@ -125,26 +96,20 @@ void PatchT4MAM_LowReady()
         [](SafetyHookContext& ctx) 
     {
             T4M::ApplyLowReadyDefaults((WeaponDef*)ctx.eax);
+            T4M::Reload_ApplyWeaponDefDefaults((WeaponDef*)ctx.eax);
         });
 
-    // Phase 3 - block RELOAD_START while lowReady intent is set (or already in any LOWREADY_* state).
-    // sub_41EA30 entry: esi = ps (vanilla __usercall). Redirect to 0x0041EB9C (raw retn after the
-    // function's own pop ebp) since push ebp hasn't executed yet at the hook point.
-    
-    static auto reload_block_hook = safetyhook::create_mid(T4M::GetAddress("CG_ReloadStartCheck_hook"), [](SafetyHookContext& ctx)
-    {
-            auto* ps = (playerState_s*)ctx.esi;
-            if ((ps->eFlags & 0x400) != 0
-                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_START
-                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_LOOP
-                || ps->weaponstate == T4::engine::WEAPON_LOWREADY_END)
-            {
-                ctx.eip = T4M::GetAddress("CG_ReloadStartCheck_ret");   // retn only (no pop ebp pairing needed)
-            }
-        });
+    // Phase 3 - the RELOAD_START block (lowReady intent or LOWREADY_* state) now lives at the
+    // top of T4M::PM_BeginWeaponReload (PatchT4MAM_Reload.cpp), which detours the same entry.
 
     // Phase 4 - viewmodel anim tree extension.
-    Memory::VP::Patch<uint8_t>(T4M::GetAddress("viewmodelAnimSlotCapacity_imm_site"), 0x28);   // capacity 0x25 -> 0x28
+    Memory::VP::Patch<uint8_t>(T4M::GetAddress("viewmodelAnimSlotCapacity_imm_site"), T4M::VM_SLOT_RELOAD_START_EMPTY + 1);   // 0x25 -> 0x29 (lowReady 0x25-0x27, reload ext 0x28)
+    // Root blend node children 1..0x24 -> 1..0x28: slots past the vanilla root are otherwise
+    // orphaned, and playing one leaves the root with no weighted child (bind pose).
+    Memory::VP::Patch<uint32_t>(T4M::GetAddress("viewmodelAnimRootChildCount_imm_site"), T4M::VM_SLOT_RELOAD_START_EMPTY);   // mov eax, 24h -> 28h
+    // sub_464080 gives the played slot weight 1 and every other slot weight 0 in a loop over
+    // slots 1..0x24; a slot past that bound is never weighted in.
+    Memory::VP::Patch<uint8_t>(T4M::GetAddress("CG_ViewmodelAnim_SetSlotBlend_slotCount_site"), T4M::VM_SLOT_RELOAD_START_EMPTY + 1);   // cmp esi, 25h -> 29h
 
     // Relocate dword_8DD5B0 (slot -> WeaponDef-field-offset table) to add 3
     // entries for our slots 0x25/0x26/0x27.
@@ -153,9 +118,13 @@ void PatchT4MAM_LowReady()
     if (newSlotOffsetTable) 
     {
         memcpy(newSlotOffsetTable, (void*)T4M::GetAddress("viewmodelAnimSlotOffsetTable"), 0x25 * sizeof(DWORD));
-        newSlotOffsetTable[0x25] = offsetof(WeaponDef, slowReadyInAnim);
-        newSlotOffsetTable[0x26] = offsetof(WeaponDef, slowReadyLoopAnim);
-        newSlotOffsetTable[0x27] = offsetof(WeaponDef, slowReadyOutAnim);
+        // Entries are the WeaponDef TIME field sub_464080 scales playback to (animLength / time);
+        // -1 = natural rate. The loop plays at natural rate: iLowReadyLoopTime is the state
+        // duration (0 = infinite), which would freeze the anim.
+        newSlotOffsetTable[0x25] = offsetof(WeaponDef, iLowReadyInTime);
+        newSlotOffsetTable[0x26] = (DWORD)-1;
+        newSlotOffsetTable[0x27] = offsetof(WeaponDef, iLowReadyOutTime);
+        newSlotOffsetTable[T4M::VM_SLOT_RELOAD_START_EMPTY] = offsetof(WeaponDef, iReloadStartEmptyTime);   // playback-rate time field
         Memory::VP::Patch<DWORD>(T4M::GetAddress("viewmodelAnimSlotOffsetTable_ref_site"), (DWORD)newSlotOffsetTable);
     }
     
@@ -173,6 +142,9 @@ void PatchT4MAM_LowReady()
             T4M::RegisterTreeSlot(tree, w->slowReadyInAnim,   w->sidleAnim, 0x25);
             T4M::RegisterTreeSlot(tree, w->slowReadyLoopAnim, w->sidleAnim, 0x26);
             T4M::RegisterTreeSlot(tree, w->slowReadyOutAnim,  w->sidleAnim, 0x27);
+
+            const char* startFallback = (w->sreloadStartAnim && *w->sreloadStartAnim) ? w->sreloadStartAnim : w->sidleAnim;
+            T4M::RegisterTreeSlot(tree, w->sreloadStartEmptyAnim, startFallback, T4M::VM_SLOT_RELOAD_START_EMPTY);
         });
 
     // Chooser detour: redirect the unique call site of sub_4643A0 at 0x00469B15.

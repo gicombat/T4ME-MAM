@@ -4747,8 +4747,26 @@ namespace T4
 			const char* slowReadyInAnim;   //OFS: 0x9D0 SIZE: 0x4
 			const char* slowReadyLoopAnim; //OFS: 0x9D4 SIZE: 0x4
 			const char* slowReadyOutAnim;  //OFS: 0x9D8 SIZE: 0x4
+
+			// T4M reload extensions (+0x20 bytes)
+			int   closedBolt;                   //OFS: 0x9DC SIZE: 0x4
+			int   iReloadAmmoAddEmpty;          //OFS: 0x9E0 SIZE: 0x4
+			int   iReloadStartEmptyTime;        //OFS: 0x9E4 SIZE: 0x4
+			int   iReloadStartEmptyAddTime;     //OFS: 0x9E8 SIZE: 0x4
+			int   iReloadStartEmptyAdd;         //OFS: 0x9EC SIZE: 0x4
+			const char* sreloadStartEmptyAnim;  //OFS: 0x9F0 SIZE: 0x4
+			snd_alias_list_t* reloadStartEmptySound;       //OFS: 0x9F4 SIZE: 0x4
+			snd_alias_list_t* reloadStartEmptySoundPlayer; //OFS: 0x9F8 SIZE: 0x4
 		};
-		ASSERT_STRUCT_SIZE(WeaponDef, 0x9DC);
+		ASSERT_STRUCT_SIZE(WeaponDef, 0x9FC);
+		ASSERT_STRUCT_OFFSET(WeaponDef, closedBolt, 0x9DC);
+		ASSERT_STRUCT_OFFSET(WeaponDef, iReloadAmmoAddEmpty, 0x9E0);
+		ASSERT_STRUCT_OFFSET(WeaponDef, iReloadStartEmptyTime, 0x9E4);
+		ASSERT_STRUCT_OFFSET(WeaponDef, iReloadStartEmptyAddTime, 0x9E8);
+		ASSERT_STRUCT_OFFSET(WeaponDef, iReloadStartEmptyAdd, 0x9EC);
+		ASSERT_STRUCT_OFFSET(WeaponDef, sreloadStartEmptyAnim, 0x9F0);
+		ASSERT_STRUCT_OFFSET(WeaponDef, reloadStartEmptySound, 0x9F4);
+		ASSERT_STRUCT_OFFSET(WeaponDef, reloadStartEmptySoundPlayer, 0x9F8);
 		ASSERT_STRUCT_OFFSET(WeaponDef, szInternalName, 0x0);
 		ASSERT_STRUCT_OFFSET(WeaponDef, szDisplayName, 0x4);
 		ASSERT_STRUCT_OFFSET(WeaponDef, szOverlayName, 0x8);
