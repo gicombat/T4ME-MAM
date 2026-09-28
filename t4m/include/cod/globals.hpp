@@ -45,6 +45,9 @@ namespace T4
 		WEAK symbol<XAssetEntry*> g_copyInfo{ "g_copyInfo" };
 		WEAK symbol<gentity_s> g_entities{ "g_entities" };
 		WEAK symbol<WeaponDef*> bg_weaponDefs{ "bg_weaponDefs" };
+		WEAK symbol<unsigned int> bg_numWeapons{ "bg_numWeapons" };
+		WEAK symbol<char*> globalScriptData{ "clientStatePtr" };        // animScriptData_t* ; +0x19B98 = scriptEvents[ANIM_ET_RELOAD]
+		WEAK symbol<unsigned int> cg_lastViewmodelAnimWeapon{ "cg_lastViewmodelAnimWeapon" };  // dword_352B590, chooser dedup
 		WEAK symbol<AimAssistGlobals> aaGlobArray{ "aaGlobArray" };
 		WEAK symbol<ZoneFileEntry> g_zoneFileNames{ "g_zoneFileNames" };
 		WEAK symbol<PMem_Pool> g_pmem_pools{ "g_pmem_pools" };

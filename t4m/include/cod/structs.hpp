@@ -13692,6 +13692,7 @@ namespace T4
 #include "com.hpp"
 #include "server.hpp"
 #include "bgame.hpp"
+#include "cgame.hpp"
 #include "fs.hpp"
 #include "mem.hpp"
 #include "globals.hpp"
