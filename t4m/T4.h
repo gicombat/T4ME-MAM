@@ -548,6 +548,12 @@ namespace T4M
 		// VM_ANIM_RELOAD_START_EMPTY); false = vanilla code, not handled.
 		bool __cdecl ViewmodelChooser_CustomSlot(T4::engine::playerState_s* ps, void* weaponHandle);
 
+		// ── MP maps in SP (PatchT4MAM_MpMapInSp.cpp) ──────────────────────────
+		// @modified — sub_48E300; MP world assets are renamed/retyped to what SP looks up.
+		void* __cdecl DB_AddXAsset(int type, void* header);
+		// @wrapper — usercall(type@eax, header@stack) → T4M::DB_AddXAsset.
+		void          DB_AddXAsset_Wrapper();
+
 		// ── Project helpers / asset pool utilities ─────────────────────────────
 		void*         DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
 		char*         __cdecl DB_GetXAssetTypeName(int type);

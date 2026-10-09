@@ -75,6 +75,9 @@
     <ClCompile Include="PatchT4MAM_Override.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_MpMapInSp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PatchT4MAM_ModelIndex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

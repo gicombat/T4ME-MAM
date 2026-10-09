@@ -31,6 +31,7 @@ void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
+void PatchT4MAM_MpMapInSp();
 void PatchT4MAM_WeaponState();
 void PatchT4MAM_ModelIndex();
 void PatchT4MAM_ConfigStrings();
@@ -83,6 +84,7 @@ void PatchT4()
 	PatchT4_Script();
 	PatchT4_Load();
 	PatchT4MAM_Override();
+	PatchT4MAM_MpMapInSp(); // MP map fastfiles in SP: world asset rename/retype at DB_AddXAsset
 	PatchT4MAM_WeaponState();
 	PatchT4MAM_LowReady();
 	PatchT4MAM_Reload(); // closedBolt / reloadAmmoAddEmpty / reloadStartEmpty reconstructions (plan_weapon_reload_ext.md)

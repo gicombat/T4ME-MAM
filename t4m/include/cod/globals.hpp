@@ -37,7 +37,9 @@ namespace T4
 		WEAK symbol<DWORD> g_dbSecondaryThreadId{ "g_dbSecondaryThreadId" };
 		WEAK symbol<HANDLE> g_dbPauseEventHandle{ "g_dbPauseEventHandle" };
 		WEAK symbol<int> g_dbWorkerPausedFlag{ "g_dbWorkerPausedFlag" };
+		WEAK symbol<uint8_t> g_mayRecoverLostAssets{ "g_mayRecoverLostAssets" };       // byte_951A01
 		WEAK symbol<uint8_t> g_comInitDone{ "g_comInitDone" };
+		WEAK symbol<uint8_t> g_isRecoveringLostDevice{ "g_isRecoveringLostDevice" };   // byte_951A03
 		WEAK symbol<uint8_t> g_dbFlag3BED85D{ "g_dbFlag3BED85D" };
 		WEAK symbol<DWORD> g_dbPtr99724C{ "g_dbPtr99724C" };
 		WEAK symbol<bool> g_assetsDirty{ "g_assetsDirty" };
