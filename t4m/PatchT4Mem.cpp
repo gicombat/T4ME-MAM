@@ -222,6 +222,45 @@ namespace T4_Reconstructed
 	}
 }
 
+namespace T4M
+{
+	// @modified - sub_5E47B0 (Hunk_UserAlloc). HunkUser::locked (+0x14) is the committed end.
+	// Vanilla commits only when the new pos passes it, so a 0-byte alloc landing exactly on a
+	// page boundary returns an uncommitted address, and sub_693830 faults writing its '\0'
+	// there. Commit on >= instead (while still inside the reservation).
+	void* __cdecl Hunk_UserAlloc(HunkUser* user, int size, int alignment)
+	{
+		const int alignMask = alignment - 1;
+		HunkUser* cur = user->current;
+		int result = (cur->pos + alignMask) & ~alignMask;
+		int newPos = result + size;
+		while (newPos > cur->end)
+		{
+			if (user->fixed)
+				Com_Error(0, "Hunk_UserAlloc: out of memory");
+			HunkUser* block = Hunk_UserCreate(user->maxSize, user->name, 0, user->tempMem, user->debugMem,
+				user->type, (void*)T4M::GetAddress("Hunk_UserCreate"));
+			user->current = block;
+			cur->next = block;
+			cur = block;
+			result = (cur->pos + alignMask) & ~alignMask;
+			newPos = result + size;
+		}
+
+		const int committed = cur->locked;
+		cur->pos = newPos;
+		if (newPos > committed || (newPos == committed && committed < cur->end))
+		{
+			const int commitSize = ((newPos + 0x1000) & 0xFFFFF000) - committed;
+			const DWORD fl = MEM_COMMIT | (commitSize > 0x20000 ? 0 : MEM_TOP_DOWN);
+			if (!VirtualAlloc((void*)committed, commitSize, fl, PAGE_READWRITE))
+				Sys_OutOfMemError("C:\\cod5\\cod\\codsrc\\src\\universal\\com_memory.cpp", 0x187);
+			cur->locked += commitSize;
+		}
+		return (void*)result;
+	}
+}
+
 // @wrapper — usercall(size@eax) -> cdecl. Detoured over sub_5E4220.
 __declspec(naked) void W_Hunk_AllocateTempMemoryHigh()
 {
@@ -293,6 +332,8 @@ void PatchT4_Mem()
 	// PatchT4Load.cpp; this takes the alloc + init paths to match.)
 	Detours::X86::DetourFunction(T4M::GetAddress("Hunk_InitMemory"),
 		(uintptr_t)&T4_Reconstructed::PMem_Init, Detours::X86Option::USE_JUMP);
+	Detours::X86::DetourFunction(T4M::GetAddress("Hunk_UserAlloc"),
+		(uintptr_t)&T4M::Hunk_UserAlloc, Detours::X86Option::USE_JUMP);
 	Detours::X86::DetourFunction(T4M::GetAddress("PMem_Alloc"),
 		(uintptr_t)&W_PMem_Alloc, Detours::X86Option::USE_JUMP);
 }

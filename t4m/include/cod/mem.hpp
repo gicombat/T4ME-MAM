@@ -30,6 +30,8 @@ namespace T4
 		WEAK symbol<void(const char* file, int line)> Sys_OutOfMemError{ "Sys_OutOfMemError" };
 		// PMem_Init (Hunk_InitMemory) — WaW 0x5F5480, cdecl(), guarded lazy 300 MB init.
 		WEAK symbol<void()> Hunk_InitMemory{ "Hunk_InitMemory" };
+		// WaW sub_5E46E0 - usercall(maxSize@edi, name, fixed, tempMem, debugMem, type). Defined in game.cpp.
+		HunkUser* Hunk_UserCreate(signed int maxSize, const char* name, int fixed, int tempMem, int debugMem, int typ, void* call_addr);
 
 		// ── Function VA map (detoured in later phases; keys live in the CSV) ─
 		// Flat hunk:
@@ -43,8 +45,8 @@ namespace T4
 		//   Hunk_FreeTempMemory                     0x5E4580   cdecl(buf)
 		//   Hunk_ClearTempMemory                    0x4B2F80   cdecl
 		// HunkUser:
-		//   Hunk_UserCreate                         0x5E46E0   cdecl
-		//   Hunk_UserAlloc                          0x5E47B0   cdecl(user, size, align)
+		//   Hunk_UserCreate                         0x5E46E0   usercall(maxSize@edi)
+		//   Hunk_UserAlloc                          0x5E47B0   cdecl(user, size, align)  DETOURED (T4M::Hunk_UserAlloc)
 		// PMem:
 		//   PMem_Init (Hunk_InitMemory)             0x5F5480   cdecl  (300 MB commit)
 		//   PMem_Alloc (DB_MemAlloc)                0x5F5590   usercall(size@eax, allocType@stack)
