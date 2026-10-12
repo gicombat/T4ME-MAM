@@ -204,6 +204,7 @@ popd</Command>
     <ClCompile Include="PatchT4MemoryLimits.cpp" />
     <ClCompile Include="PatchT4MAM_Override.cpp" />
     <ClCompile Include="PatchT4MAM_MpMapInSp.cpp" />
+    <ClCompile Include="PatchT4MAM_PathNodes.cpp" />
     <ClCompile Include="PatchT4MAM_ModelIndex.cpp" />
     <ClCompile Include="PatchT4MAM_ConfigStrings.cpp" />
     <ClCompile Include="PatchT4MAM_Loopback.cpp" />

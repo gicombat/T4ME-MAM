@@ -548,6 +548,10 @@ namespace T4M
 		// VM_ANIM_RELOAD_START_EMPTY); false = vanilla code, not handled.
 		bool __cdecl ViewmodelChooser_CustomSlot(T4::engine::playerState_s* ps, void* weaponHandle);
 
+		// ── Runtime pathnodes (PatchT4MAM_PathNodes.cpp) ──────────────────────
+		// @modified - sub_55A2D0; adds <map>.nodes nodes and rebuilds paths on a fresh fastfile load.
+		void __cdecl Path_InitLinkCounts();
+
 		// ── MP maps in SP (PatchT4MAM_MpMapInSp.cpp) ──────────────────────────
 		// @modified — sub_48E300; MP world assets are renamed/retyped to what SP looks up.
 		void* __cdecl DB_AddXAsset(int type, void* header);

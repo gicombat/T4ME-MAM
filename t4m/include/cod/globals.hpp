@@ -168,5 +168,20 @@ namespace T4
 		WEAK symbol<centity_s> cg_entities{ "cg_entities" };
 		// Same indexing for entnum >= 1024: a 0x31C-byte element whose leading fields match centity_s.
 		WEAK symbol<BYTE>      cg_entitiesHigh{ "cg_entitiesHigh" };
+
+		// --- Pathnodes ----------------------------------------------------------
+		// Same VA as dvar_singlethreadRender: that CSV name is wrong, the dvar is useFastFile.
+		WEAK symbol<dvar_t*> useFastFile{ "useFastFile" };
+		// Single-slot pool of asset type game_map_sp; off_8E1D80 points here.
+		WEAK symbol<GameWorldSp> gameWorldSp{ "gameWorldSp" };
+		// Path_ConnectPaths / Path_LoadPaths caches (qword_190EC24), allocated only when NULL.
+		WEAK symbol<pathlink_s*> g_pathLinkPool{ "g_pathLinkPool" };
+		WEAK symbol<unsigned short*> g_pathTreeNodeIndices{ "g_pathTreeNodeIndices" };
+		WEAK symbol<PathnodeClassType> pathnodeClassTypes{ "pathnodeClassTypes" };
+		// Nodes paired with a node_* entity by G_SpawnPathnodeDynamic; also the pathVis row stride.
+		WEAK symbol<unsigned int> actualNodeCount{ "actualNodeCount" };
+		WEAK symbol<MapEnts*> cm_mapEnts{ "cm_mapEnts" };
+		WEAK symbol<const char*> g_entityBeginParsePoint{ "g_entityBeginParsePoint" };
+		WEAK symbol<const char*> g_entityEndParsePoint{ "g_entityEndParsePoint" };
 	}
 }

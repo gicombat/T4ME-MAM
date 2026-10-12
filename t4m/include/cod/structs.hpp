@@ -5762,6 +5762,14 @@ namespace T4
 		ASSERT_STRUCT_OFFSET(SpawnVar, numSpawnVarChars, 0x208);
 		ASSERT_STRUCT_OFFSET(SpawnVar, spawnVarChars, 0x20C);
 
+		// off_83A180 — { "node_pathnode", 1 }, ..., { NULL, 0 }.
+		struct PathnodeClassType
+		{
+			const char* classname; //OFS: 0x0 SIZE: 0x4
+			int type; //OFS: 0x4 SIZE: 0x4
+		};
+		ASSERT_STRUCT_SIZE(PathnodeClassType, 0x8);
+
 		struct cached_tag_mat_t
 		{
 			int time; //OFS: 0x0 SIZE: 0x4
@@ -13712,6 +13720,7 @@ namespace T4
 #include "bgame.hpp"
 #include "cgame.hpp"
 #include "actor.hpp"
+#include "path.hpp"
 #include "turret.hpp"
 #include "fs.hpp"
 #include "mem.hpp"
