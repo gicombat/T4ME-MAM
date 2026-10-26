@@ -272,6 +272,8 @@ namespace T4_Reconstructed
 				}
 			}
 		}
+
+		SL_ShutdownSystem((scriptInstance_t)0, 8);    // 0x48FAE5: frees the unloaded zones' names (user 8)
 	}
 }
 

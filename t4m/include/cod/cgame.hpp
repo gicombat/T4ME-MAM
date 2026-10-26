@@ -121,6 +121,20 @@ namespace T4
 			}
 		}
 
+		// WaW sub_457080 — usercall(pose@eax, obj@stack, partBits@stack) ; caller cleans 8.
+		inline void CG_DoControllers(const engine::cpose_t* pose, const engine::DObj_s* obj, int* partBits)
+		{
+			static void* fn = reinterpret_cast<void*>(T4M::GetAddress("CG_DoControllers"));
+			__asm
+			{
+				push partBits
+				push obj
+				mov  eax, pose
+				call fn
+				add  esp, 8
+			}
+		}
+
 		// WaW sub_42B580 — usercall(weapDef@edx) -> eax ; 0 when the alt weapon also uses AltWeapon
 		inline unsigned int GetWeaponAltIndex(const engine::WeaponDef* weapDef)
 		{

@@ -31,6 +31,7 @@ void PatchT4_SteamDRM();
 void PatchT4_FileDebug();
 void PatchT4_Load();
 void PatchT4MAM_Override();
+void PatchT4MAM_SysError();
 void PatchT4MAM_WeaponState();
 void PatchT4MAM_ModelIndex();
 void PatchT4MAM_ConfigStrings();
@@ -41,6 +42,8 @@ void PatchT4MAM_FsPakOpen();
 void PatchT4_Mem();
 void PatchT4_AssetPool();
 void PatchT4MAM_ActorLimit();
+void PatchT4MAM_ScriptStrings();
+void PatchT4MAM_DObjPose();
 void PatchT4MP();
 void PatchT4E_Window();
 void PatchT4E_Shaders();
@@ -83,6 +86,7 @@ void PatchT4()
 	PatchT4_Script();
 	PatchT4_Load();
 	PatchT4MAM_Override();
+	PatchT4MAM_SysError(); // Sys_Error off the main thread: message box instead of console deadlock
 	PatchT4MAM_WeaponState();
 	PatchT4MAM_LowReady();
 	PatchT4MAM_Reload(); // closedBolt / reloadAmmoAddEmpty / reloadStartEmpty reconstructions (plan_weapon_reload_ext.md)
@@ -95,6 +99,8 @@ void PatchT4()
 	PatchT4_Mem(); // full memory-subsystem detour — Phase 1: flat-hunk temp-high (faithful)
 	PatchT4_AssetPool(); // C++ migration of all 13 g_assetEntryPool DB functions (MemoryLimits byte-patches retired)
 	PatchT4MAM_ActorLimit(); // AI cap 32 -> 64, all phases (always on, no gate)
+	PatchT4MAM_ScriptStrings(); // sl_dump + dump on "exceeded maximum number of script strings" (observation)
+	PatchT4MAM_DObjPose(); // pose reconstructions: actor left-hand IK + simulated j_sling_ bones (plan_ai_left_hand_ik.md, plan_weapon_sling_physics.md)
 	PatchT4E_Window();
 	PatchT4E_Shaders();
 	PatchT4E_Render();

@@ -4926,13 +4926,17 @@ namespace T4
 		{
 			_BYTE gap_0[28]; //OFS: 0x0 SIZE: 0x1C
 			float vieworg[3]; //OFS: 0x1C SIZE: 0xC
-			_BYTE gap_28[17083]; //OFS: 0x28 SIZE: 0x42BB
+			_BYTE gap_28[40]; //OFS: 0x28 SIZE: 0x28
+			float viewOffset[3]; //OFS: 0x50 SIZE: 0xC — skel matrices are world minus this (sub_456B50)
+			_BYTE gap_5C[17031]; //OFS: 0x5C SIZE: 0x4287
 			char field_42E3; //OFS: 0x42E3 SIZE: 0x1
 		};
 		ASSERT_STRUCT_SIZE(refdef_s, 0x42E4);
 		ASSERT_STRUCT_OFFSET(refdef_s, gap_0, 0x0);
 		ASSERT_STRUCT_OFFSET(refdef_s, vieworg, 0x1C);
 		ASSERT_STRUCT_OFFSET(refdef_s, gap_28, 0x28);
+		ASSERT_STRUCT_OFFSET(refdef_s, viewOffset, 0x50);
+		ASSERT_STRUCT_OFFSET(refdef_s, gap_5C, 0x5C);
 		ASSERT_STRUCT_OFFSET(refdef_s, field_42E3, 0x42E3);
 
 		struct Camera

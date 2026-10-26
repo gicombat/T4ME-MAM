@@ -37,6 +37,23 @@ dvar_t* friendlyNameHealthColor75;
 dvar_t* friendlyNameHealthColor50;
 dvar_t* friendlyNameHealthColor25;
 dvar_t* friendlyNameHealthColor0;
+// Simulated weapon sling
+dvar_t* sling_enable;
+dvar_t* sling_gravity;
+dvar_t* sling_damping;
+dvar_t* sling_stiffness;
+dvar_t* sling_iterations;
+dvar_t* sling_resetDist;
+dvar_t* sling_collide;
+dvar_t* ik_hand_enable;
+dvar_t* ik_hand_rFull;
+dvar_t* ik_hand_rZero;
+dvar_t* ik_hand_xZero;
+dvar_t* ik_hand_xFull;
+dvar_t* ik_hand_slide;
+dvar_t* ik_hand_tagRotX;
+dvar_t* ik_hand_tagRotY;
+dvar_t* ik_hand_tagRotZ;
 
 
 namespace T4

@@ -38,6 +38,11 @@ namespace T4
 		WEAK symbol<HANDLE> g_dbPauseEventHandle{ "g_dbPauseEventHandle" };
 		WEAK symbol<int> g_dbWorkerPausedFlag{ "g_dbWorkerPausedFlag" };
 		WEAK symbol<uint8_t> g_comInitDone{ "g_comInitDone" };
+		// Shared by Com_Error and Sys_Error.
+		WEAK symbol<CRITICAL_SECTION> com_errorCritSect{ "com_errorCritSect" };
+		WEAK symbol<int> com_errorEntered{ "com_errorEntered" };
+		// Console window (s_wcd.hWnd); owned by the thread that created it.
+		WEAK symbol<HWND> s_wcd_hWnd{ "s_wcd_hWnd" };
 		WEAK symbol<uint8_t> g_dbFlag3BED85D{ "g_dbFlag3BED85D" };
 		WEAK symbol<DWORD> g_dbPtr99724C{ "g_dbPtr99724C" };
 		WEAK symbol<bool> g_assetsDirty{ "g_assetsDirty" };

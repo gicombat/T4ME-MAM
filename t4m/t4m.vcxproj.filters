@@ -75,6 +75,9 @@
     <ClCompile Include="PatchT4MAM_Override.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PatchT4MAM_SysError.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="PatchT4MAM_ModelIndex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,6 +91,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PatchT4MAM_FriendOverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_ScriptStrings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_WeaponSling.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_DObjPose.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PatchT4MAM_HandIK.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PatchT4MAM_ActorLimit.cpp">
