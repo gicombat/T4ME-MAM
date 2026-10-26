@@ -548,6 +548,11 @@ namespace T4M
 		// VM_ANIM_RELOAD_START_EMPTY); false = vanilla code, not handled.
 		bool __cdecl ViewmodelChooser_CustomSlot(T4::engine::playerState_s* ps, void* weaponHandle);
 
+		// ── Fatal error (PatchT4MAM_SysError.cpp) ─────────────────────────────
+		// @modified - sub_5FE8C0; reports through the message box when the console window
+		// belongs to another (suspended) thread instead of freezing.
+		void __cdecl Sys_Error(const char* fmt, ...);
+
 		// ── Project helpers / asset pool utilities ─────────────────────────────
 		void*         DB_ReallocXAssetPool(XAssetType type, unsigned int newSize);
 		char*         __cdecl DB_GetXAssetTypeName(int type);
@@ -579,6 +584,30 @@ namespace T4M
 		void VerifyRelocations();       // `verifyrelocs`      — did every claimed .text site move?
 		void ValidateAssetEntryPool();  // `validateassetpool` — walk the XAssetEntry free list
 		void ListAssetCaps();           // `listassetcaps`     — requested pool size vs reachable cap
+
+		// ── Debug utilities (PatchT4MAM_ScriptStrings.cpp) — @new ─────────────
+		void SL_DumpStrings_f();        // `sl_dump`           — every live script string to t4m_sl_dump_<n>.txt
+
+		// ── Debug utilities (PatchT4MAM_WeaponSling.cpp / PatchT4MAM_HandIK.cpp) — @new ─
+		void Sling_Info_f();            // `sling_info`        — detected sling rigs, rigid check, active slings
+		void HandIK_Info_f();           // `ik_hand_info`      — guns with tag_ik_hand_left, IK applied, residual
+
+		// ── DObj pose passes, called by the CG_DObjCalcPose / CG_DObjCalcBone reconstructions
+		//    (PatchT4MAM_DObjPose.cpp) under the DObj lock — @new ─────────────────
+		struct HandIKJob
+		{
+			int pass1[4];               // first DObjCalcSkel: wrist chain + tag chain
+			int shoulder, elbow, wrist; // DObj bone indices
+			int weaponParent;           // bone the gun hangs on (tag_weapon_right)
+			int tag;                    // tag_ik_hand_left
+			int gun;                    // stats slot
+		};
+		// Left-hand IK of actors (plan_ai_left_hand_ik.md): true = DObjCalcSkel(job->pass1),
+		// HandIK_Solve, then DObjCalcSkel of the full set.
+		bool HandIK_Prepare(const T4::engine::cpose_t* pose, T4::engine::DObj_s* obj, const int* partBits, const int* before, HandIKJob* job);
+		void HandIK_Solve(T4::engine::DObj_s* obj, const HandIKJob* job);
+		// Weapon sling (plan_weapon_sling_physics.md); `before` = skel bits before the first DObjCalcSkel.
+		void Sling_PostSkel(T4::engine::DObj_s* obj, const int* before);
 
 		// ── __usercall → __cdecl wrappers (PatchT4MAM_Override.cpp) — @wrapper ─
 		// (naked qualifier only on the definition, not on the declaration)
@@ -695,6 +724,24 @@ extern dvar_t* friendlyNameHealthColor75;
 extern dvar_t* friendlyNameHealthColor50;
 extern dvar_t* friendlyNameHealthColor25;
 extern dvar_t* friendlyNameHealthColor0;
+// Simulated weapon sling (PatchT4MAM_WeaponSling.cpp)
+extern dvar_t* sling_enable;
+extern dvar_t* sling_gravity;
+extern dvar_t* sling_damping;
+extern dvar_t* sling_stiffness;
+extern dvar_t* sling_iterations;
+extern dvar_t* sling_resetDist;
+extern dvar_t* sling_collide;
+// Left-hand IK of actors (PatchT4MAM_HandIK.cpp)
+extern dvar_t* ik_hand_enable;
+extern dvar_t* ik_hand_rFull;
+extern dvar_t* ik_hand_rZero;
+extern dvar_t* ik_hand_xZero;
+extern dvar_t* ik_hand_xFull;
+extern dvar_t* ik_hand_slide;
+extern dvar_t* ik_hand_tagRotX;
+extern dvar_t* ik_hand_tagRotY;
+extern dvar_t* ik_hand_tagRotZ;
 
 #define CONFIG_FILE_LOCATION ".\\T4M-MAM.conf"
 #define IS_BETA

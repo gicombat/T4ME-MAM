@@ -293,6 +293,9 @@ void Cmd_Init_T4()
 	T4M::Cmd_AddCommand("validateassetpool", T4M::ValidateAssetEntryPool);
 	T4M::Cmd_AddCommand("listassetcaps", T4M::ListAssetCaps);
 	T4M::Cmd_AddCommand("addrmapcheck", AddrMapCheck_f);
+	T4M::Cmd_AddCommand("sl_dump", T4M::SL_DumpStrings_f);
+	T4M::Cmd_AddCommand("sling_info", T4M::Sling_Info_f);
+	T4M::Cmd_AddCommand("ik_hand_info", T4M::HandIK_Info_f);
 }
 
 void ShitTest()
@@ -364,6 +367,22 @@ void PatchT4_Console()
 	friendlyNameHealthColor50 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor50", 1.00f, 1.00f, 0.55f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the ramp midpoint.");
 	friendlyNameHealthColor25 = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor25", 1.00f, 0.80f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the third ramp quarter.");
 	friendlyNameHealthColor0  = T4::dvar::Dvar_RegisterVec4("friendlyNameHealthColor0",  1.00f, 0.45f, 0.45f, 0.70f, T4::dvar::DVAR_FLAG_ARCHIVE, "Friendly name color at the ramp end (friendlyNameHealthColorRedAt health and below).");
+	sling_enable = T4::dvar::Dvar_RegisterBool(1, "sling_enable", T4::dvar::DVAR_FLAG_ARCHIVE, "Simulate the j_sling_ bones of models (weapon slings). 0 = vanilla pose.");
+	sling_gravity = T4::dvar::Dvar_RegisterFloat("sling_gravity", 800.0f, 0.0f, 4000.0f, T4::dvar::DVAR_FLAG_NONE, "Sling gravity, units/s^2.");
+	sling_damping = T4::dvar::Dvar_RegisterFloat("sling_damping", 0.04f, 0.0f, 1.0f, T4::dvar::DVAR_FLAG_NONE, "Sling velocity loss per 1/60 s (frame-rate independent).");
+	sling_stiffness = T4::dvar::Dvar_RegisterFloat("sling_stiffness", 0.025f, 0.0f, 1.0f, T4::dvar::DVAR_FLAG_NONE, "Pull of the sling back to its modeled shape per 1/60 s (frame-rate independent).");
+	sling_iterations = T4::dvar::Dvar_RegisterInt(4, "sling_iterations", 1, 16, T4::dvar::DVAR_FLAG_NONE, "Sling length-constraint iterations per step.");
+	sling_resetDist = T4::dvar::Dvar_RegisterFloat("sling_resetDist", 48.0f, 1.0f, 1024.0f, T4::dvar::DVAR_FLAG_NONE, "Anchor jump in one frame that snaps the sling back to its modeled shape.");
+	sling_collide = T4::dvar::Dvar_RegisterBool(1, "sling_collide", T4::dvar::DVAR_FLAG_NONE, "Keep the sling out of the carrier's torso, arms and thighs, and out of the weapon (LOD0 geometry).");
+	ik_hand_enable = T4::dvar::Dvar_RegisterBool(1, "ik_hand_enable", T4::dvar::DVAR_FLAG_ARCHIVE, "Move the left hand of actors onto tag_ik_hand_left of their weapon. 0 = vanilla pose.");
+	ik_hand_rFull = T4::dvar::Dvar_RegisterFloat("ik_hand_rFull", 5.0f, 0.0f, 50.0f, T4::dvar::DVAR_FLAG_NONE, "Left-hand IK at full weight while the animated wrist is within this distance of the weapon axis.");
+	ik_hand_rZero = T4::dvar::Dvar_RegisterFloat("ik_hand_rZero", 6.5f, 0.0f, 50.0f, T4::dvar::DVAR_FLAG_NONE, "Left-hand IK off beyond this distance of the animated wrist to the weapon axis.");
+	ik_hand_xZero = T4::dvar::Dvar_RegisterFloat("ik_hand_xZero", -10.0f, -50.0f, 50.0f, T4::dvar::DVAR_FLAG_NONE, "Left-hand IK off with the animated wrist behind this point of the weapon axis (rear grips).");
+	ik_hand_xFull = T4::dvar::Dvar_RegisterFloat("ik_hand_xFull", -8.5f, -50.0f, 50.0f, T4::dvar::DVAR_FLAG_NONE, "Left-hand IK at full weight with the animated wrist ahead of this point of the weapon axis.");
+	ik_hand_slide = T4::dvar::Dvar_RegisterFloat("ik_hand_slide", 1.5f, 0.0f, 50.0f, T4::dvar::DVAR_FLAG_NONE, "How far the left hand may stay from tag_ik_hand_left when the anim holds the gun elsewhere (0 = on the tag).");
+	ik_hand_tagRotX = T4::dvar::Dvar_RegisterFloat("ik_hand_tagRotX", 0.0f, -180.0f, 180.0f, T4::dvar::DVAR_FLAG_NONE, "Tuning: turn tag_ik_hand_left about its own X (degrees, on top of the -90 tag convention), before Y and Z.");
+	ik_hand_tagRotY = T4::dvar::Dvar_RegisterFloat("ik_hand_tagRotY", 0.0f, -180.0f, 180.0f, T4::dvar::DVAR_FLAG_NONE, "Tuning: turn tag_ik_hand_left about its own Y (degrees), after X.");
+	ik_hand_tagRotZ = T4::dvar::Dvar_RegisterFloat("ik_hand_tagRotZ", 0.0f, -180.0f, 180.0f, T4::dvar::DVAR_FLAG_NONE, "Tuning: turn tag_ik_hand_left about its own Z (degrees), after X and Y.");
 
 	*(BYTE*)T4M::GetAddress("ingame_console_enable") = 0xEB; // force enable ingame console
 	FilterConsoleSpam();
